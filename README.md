@@ -1,2 +1,33 @@
-# regrafilo
-グラフを表現するフォーマットからグラフを表現するフォーマットや画像、アニメーションを生成するCLIツール
+# ReGRaFiLo
+![ロゴ 案](./logo_draft.png)
+この**ReGRaFiLo**は一言でいうと「Rustで書かれてたグラフを表現するフォーマットからグラフを表現するフォーマットや画像、アニメーションを生成するCLIツール」です。
+Haskellerならおなじみの「ある文書構造を他の形式の文書構造に変換する[Pandoc](http://sky-y.github.io/site-pandoc-jp/users-guide/)のグラフ理論的グラフ版」だと思ってもいいかもしれません。
+ちなみに読み方は「リグラフィーロ」です。<br/>
+```cargo install regrafilo```などでインストールした後に```regrafilo input.dot output.png```のように扱います。**（予定）**
+
+```v1.0.0```以降で対応している形式は次の通りです。
+## 対応している入力形式
+1. [.regrf](#.regrfのファイル形式)<br/>ReGRaFiLoの中間形式。詳細は後述。
+1. [.dot](https://www.graphviz.org/doc/info/lang.html)<br/>グラフといえばおなじみのdot言語です。
+1. [.gml](http://www.fim.uni-passau.de/index.php?id=17297&L=1)<br/>グラフモデリング言語（GML）形式です。階層的なAscii形式をベースとした宣言的な形式。非常に簡単な構文でネットワークデータをサポートしている。
+1.  [.xgmml](http://xml.coverpages.org/xgmml-draft-xgmml-20000315.html)<br/>GMLの機能をベースとしたXML形式です。.gmlとお互いに容易に変換できます。
+1. [.gexf](https://gephi.org/gexf/format/)<br/>オープンなグラフ可視化プラットフォームである[Gephi](http://oss.infoscience.co.jp/gephi/gephi.org/index.html)の内部形式で使われています。非常に変換元として優秀です。
+1. [.gdf](http://graphexploration.cond.org/manual.html#_Toc116465166)<br/>CSVのデータテーブル風に頂点や辺を定義していく形式です。
+1.  [.graphml](http://graphml.graphdrawing.org/specification.html)<br/>XML形式のGMLですはノードとエッジの属性、階層グラフをサポートしており、柔軟なアーキテクチャによって多くのメリットを持っている。
+## 対応している出力形式
+* テキスト形式
+1. [.regrf](#.regrfのファイル形式)<br/> ReGRaFiLoの中間形式。詳細は後述。
+1. [対応している入力形式に出ている形式](#対応している入力形式)
+* 画像形式
+1. [.png](https://www.w3.org/TR/PNG/)<br/>画像データを無劣化な可逆圧縮により記録するラスタ画像形式の一つ。透過も可能。
+1. [.jpg](https://www.w3.org/Graphics/JPEG/jfif3.pdf)<br/>画像データを劣化する非可逆圧縮により記録するラスタ画像形式の一つ。色の透過はできない。
+1. [.bmp](http://www.dragonwins.com/domains/GetTechEd/bmp/bmpfileformat.htm)<br/>最も基本的な画像形式の一つ。非圧縮画像のため画質はいいが、データ量は重い。
+1. [.eps](https://www.loc.gov/preservation/digital/formats/fdd/fdd000246.shtml)<br/>PDFのようにPostScriptから派生したベクタ画像形式の一つ。そのためPDFで使われることの多い。
+1. [.svg](https://www.loc.gov/preservation/digital/formats/fdd/fdd000020.shtml)<br/>XML形式で記述されるベクタ画像形式の一つ。通常HTML上で使われる上に、アニメーションにも対応している。
+1. [.gif](https://www.loc.gov/preservation/digital/formats/fdd/fdd000133.shtml)<br/>画像データを可逆圧縮により記録するラスタ画像形式の一つ。色数の少ない画像データの保存に適しており、透過もできる。
+* アニメーション対応
+1. .svg<br/>画像形式だけでなくアニメーションにも対応している。
+1. .gif<br/>画像形式だけでなくアニメーションにも対応している。
+
+# 作成可能なグラフ
+# .regrfのファイル形式
