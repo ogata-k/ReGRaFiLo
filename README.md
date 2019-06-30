@@ -40,6 +40,7 @@ regrf形式のファイルは先にみたように属性無しのXML風の形式
 XML同様タグを用いて宣言していきますが、XMLと違いいくつかの制限がかかっています。
 その制限は
    1. 属性を利用できない
+   1. タグ名はハイフンが文字列の終始にならない文字列で、半角英文字の小文字とハイフンのみからなる
    1. <hoge/>形式の中身を持たないタグは利用できない
    1. 値を持たない場合は<hoge></hoge>としなければいけない
    
@@ -58,21 +59,25 @@ regrf形式の全体の構造は次のように表現されます。
         </img-size>
     </meta>
     <layout>
-        <colors>
-            <color>color</color>
-        </colors>
-        <labels>
-            <label>label</label>
-        </labels>
-        <graphs>
-            <graph>inner graph structure</graph>
-        </graphs>
-        <nodes>
-            <node>node structure</node>
-        </nodes>
-        <edges>
-            <edge>edge structure</edge>
-        </edges>
+        <enumerate>
+            <colors>
+                <color>color</color>
+            </colors>
+        </enumerate>
+        <structure>
+            <labels>
+                <label>label structure</label>
+            </labels>
+            <graphs>
+                <graph>inner graph structure</graph>
+            </graphs>
+            <nodes>
+                <node>node structure</node>
+            </nodes>
+            <edges>
+                <edge>edge structure</edge>
+            </edges>
+        </structure>
     </layout>
     <outer-graph>
         <nodes>
@@ -100,6 +105,27 @@ img-sizeタグではheight、widthタグを使用してサイズを定義しま�
 ちなみに画像サイズにおいては指定していたとしても、変換時に値が指定されていればその値で上書きされます。
 
 ## layout
-次にlayoutタグについて見ていきます。
+次にlayoutタグについて見ていきます。<br/>
+layoutタグではレイアウトで用いる定数を列挙するenumerateタグと、グラフをきれいに見せるためのstructureタグがあります。<br/>
+enumerateタグではcolorsタグを宣言できます。基本的な色はここで宣言しなくてもサポートするつもりです。
+しかし、バージョンによって色が微妙に変わってくる恐れがあるので、ここで宣言しておいた方がよいと思います。<br/>
+colorsタグの中では描画色を表すcolorタグを宣言できます。colorタグは一意的な名前を表すidタグと色を指定するタグからなります。
+色を指定するタグはrgbaやrgb、hsl、hsv、cmykタグが使用できます。
+これらのタグではrgb系統の```(244,44,12,255)```のように0から255を使った指定やその他の系統の```(100, 23, 9)```のように0から100を使った指定ができます。
+その上、```#A011220B```のように#から始まるHex形式の指定もできます。<br/>
+structureタグではlabels、graphs、nodes、edgesタグが宣言できます。
+それぞれ文字フォント、（内部）グラフ、頂点、辺のレイアウト構造を定義します。<br/>
+どのタグの中で宣言されるタブでも一意的な名前を表すidタグと構造を宣言するtypeタグは必須となっています。
+さらにtypeタグはユーザー宣言型かデフォルトで用意されている型かを区別するためのclassタグが必須で、デフォルト設定を上書きするためのstyleタグが任意です。<br/>
+では、まずlabelsタグ内で宣言するlabelタグについてみていきます。<br/>
+// TODO
+次にgraphsタグ内で宣言するgraphタグについてみていきます。<br/>
+// TODO
+次にnodesタグ内で宣言するnodeタグについてみていきます。<br/>
+// TODO
+最後にedgesタグ内で宣言するedgeタグについてみていきます。<br/>
+//TODO
+
 ## outer-graph
-最後はouter-graphタグについてです。
+最後はouter-graphタグについてです。<br/>
+//TODO
