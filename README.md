@@ -37,3 +37,51 @@ Haskellerならおなじみの「ある文書構造を他の形式の文書構�
 
 # .regrfのファイル形式
 regrf形式のファイルは先にみたように属性無しのXML風の形式で記述します。最初にレイアウト構造を定義し、次にグラフを定義していく形で記述していきます。
+regrf形式の全体の構造は次のように表現されます。
+
+```xml:example.regrf
+<regrf>
+    <meta>
+        <charset>utf8</charset>
+        <img-size>
+            <height>height</height>
+            <width>width</width>
+        </img-size>
+    </meta>
+    <layout>
+        <colors>
+            <color>color</color>
+        </colors>
+        <labels>
+            <label>label</label>
+        </labels>
+        <graphs>
+            <graph>inner graph structure</graph>
+        </graphs>
+        <nodes>
+            <node>node structure</node>
+        </nodes>
+        <edges>
+            <edge>edge structure</edge>
+        </edges>
+    </layout>
+    <outer-graph>
+        <nodes>
+            <node>node body</node>
+        </nodes>
+        <inner-graphs>
+            <inner-graph>inner graph body</inner-graph>
+        </inner-graphs>
+        <edges>
+            <edge>edge body</edge>
+        </edges>
+    </outer-graph>
+</regrf>
+```
+このようにregrfはregrfタグの下にmeta、layout、outer-graphタグを保持しています。これらは必須です。何を宣言しているのか順番に見ていきます。
+## meta
+まず最初はmetaタグです。
+## layout
+次にlayoutタグについて見ていきます。
+## outer-graph
+最後はouter-graphタグについてです。
