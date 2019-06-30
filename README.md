@@ -25,7 +25,7 @@ Haskellerならおなじみの「ある文書構造を他の形式の文書構�
 1. [.eps](https://www.loc.gov/preservation/digital/formats/fdd/fdd000246.shtml)<br/>PDFのようにPostScriptから派生したベクタ画像形式の一つ。そのためPDFで使われることの多い。
 1. [.svg](https://www.loc.gov/preservation/digital/formats/fdd/fdd000020.shtml)<br/>XML形式で記述されるベクタ画像形式の一つ。通常HTML上で使われる上に、アニメーションにも対応している。
 1. [.gif](https://www.loc.gov/preservation/digital/formats/fdd/fdd000133.shtml)<br/>画像データを可逆圧縮により記録するラスタ画像形式の一つ。色数の少ない画像データの保存に適しており、透過もできる。
-* アニメーション対応
+* アニメーション対応 ※```v2.0.0```以降から対応予定
 1. .svg<br/>画像形式だけでなくアニメーションにも対応している。
 1. .gif<br/>画像形式だけでなくアニメーションにも対応している。
 
@@ -33,7 +33,7 @@ Haskellerならおなじみの「ある文書構造を他の形式の文書構�
 まず丁寧に記述された[dot言語のファイル](document/example.dot)をご覧ください。
 このファイルを入力としてgraphvizのコマンド```dot -T png document/example.dot -o document/example.png```により同名のpng画像を出力出力すると次のようになります。<br/>
 ![出力例](document/example.png)<br/>
-そしてこのdotファイルをregrf形式で記述すると[このregrfファイル](document/example.regrf)になります。（予定）
+そしてこのdotファイルをregrf形式で記述すると[このregrfファイル](document/example.regrf)になります。
 
 # .regrfのファイル形式
 regrf形式のファイルは先にみたように属性無しのXML風の形式で記述します。
