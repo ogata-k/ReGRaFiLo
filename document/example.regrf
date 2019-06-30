@@ -1,12 +1,12 @@
 <regrf>
-    <metas>
+    <meta>
         <comment>define meta-data</comment>
         <charset>utf8</charset>
         <img-size>
             <height>400</height>
             <width>600</width>
         </img-size>
-    </metas>
+    </meta>
     <layout>
         <colors>
             <comment>define using color</comment>
