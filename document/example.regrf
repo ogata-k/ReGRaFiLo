@@ -1,9 +1,32 @@
 <regrf>
-    <structure>
-        <metas>
-            <comment>define meta-data</comment>
-            <charset>utf8</charset>
-        </metas>
+    <metas>
+        <comment>define meta-data</comment>
+        <charset>utf8</charset>
+        <img-size>
+            <height>400</height>
+            <width>600</width>
+        </img-size>
+    </metas>
+    <layout>
+        <colors>
+            <comment>define using color</comment>
+            <color>
+                <id>light-dark-grey</id>
+                <rgba>#343434FF</rgba>
+            </color>
+            <color>
+                <id>white</id>
+                <rgba>#FFFFFF</rgba>
+            </color>
+            <color>
+                <id>light-yellow</id>
+                <rgba>#DDFD33FF</rgba>
+            </color>
+            <color>
+                <id>green</id>
+                <rgba>#449933FF</rgba>
+            </color>
+        </colors>
         <labels>
             <comment>define font-data</comment>
             <label>
@@ -28,25 +51,6 @@
                 <size>14</size>
             </label>
         </labels>
-        <colors>
-            <comment>define using color</comment>
-            <color>
-                <id>light-dark-grey</id>
-                <rgba>#343434FF</rgba>
-            </color>
-            <color>
-                <id>white</id>
-                <rgba>#FFFFFF</rgba>
-            </color>
-            <color>
-                <id>light-yellow</id>
-                <rgba>#DDFD33FF</rgba>
-            </color>
-            <color>
-                <id>green</id>
-                <rgba>#449933FF</rgba>
-            </color>
-        </colors>
         <nodes>
             <comment>define structures of node</comment>
             <node>
@@ -154,7 +158,7 @@
                 </outline>
             </edge>
         </edges>
-    </structure>
+    </layout>
     <outer-graph>
         <comment>start define graph-body</comment>
         <comment>this is root graph</comment>
