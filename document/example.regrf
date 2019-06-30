@@ -115,9 +115,9 @@
             <edge>
                 <id>arrow</id>
                 <type>
-                    <class>arrow</class>
+                    <class>diedge</class>
                     <head>
-                        <comment>if graph is non-directed, use head as tail and head</comment>
+                        <comment>if class is edge use head as tail and head</comment>
                         <type>triangle</type>
                     </head>
                 </type>
@@ -130,9 +130,9 @@
             <edge>
                 <id>dot-arrow</id>
                 <type>
-                    <class>arrow</class>
+                    <class>diedge</class>
                     <head>
-                        <comment>if graph is non-directed, use head as tail and head</comment>
+                        <comment>if class is edge, use head as tail and head</comment>
                         <type>triangle</type>
                     </head>
                 </type>
@@ -145,9 +145,9 @@
             <edge>
                 <id>box-arrow</id>
                 <type>
-                    <class>arrow</class>
+                    <class>edge</class>
                     <head>
-                        <comment>if graph is non-directed, use head as tail and head</comment>
+                        <comment>if class is edge, use head as tail and head</comment>
                         <type>box</type>
                     </head>
                 </type>
