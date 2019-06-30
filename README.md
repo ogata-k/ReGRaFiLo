@@ -1,8 +1,8 @@
 # ReGRaFiLo
-![ロゴ 案](./logo_draft.png)
+![ロゴ 案](document/logo_draft.png)
 この**ReGRaFiLo**は一言でいうと「Rustで書かれてたグラフを表現するフォーマットからグラフを表現するフォーマットや画像、アニメーションを生成するCLIツール」です。
 Haskellerならおなじみの「ある文書構造を他の形式の文書構造に変換する[Pandoc](http://sky-y.github.io/site-pandoc-jp/users-guide/)のグラフ理論的グラフ版」だと思ってもいいかもしれません。
-ちなみに読み方は「リグラフィーロ」です。<br/>
+ちなみに読み方は「リグラフィーロ」です。エスペラント語で「再度グラフを扱う道具」的な意味です。<br/>
 ```cargo install regrafilo```などでインストールした後に```regrafilo input.dot output.png```のように扱います。**（予定）**
 
 ```v1.0.0```以降で対応している形式は次の通りです。
@@ -30,4 +30,10 @@ Haskellerならおなじみの「ある文書構造を他の形式の文書構�
 1. .gif<br/>画像形式だけでなくアニメーションにも対応している。
 
 # 作成可能なグラフ
+まず丁寧に記述された[dot言語のファイル](document/example.dot)をご覧ください。
+このファイルを入力としてgraphvizのコマンド```dot -T png document/example.dot -o document/example.png```により同名のpng画像を出力出力すると次のようになります。<br/>
+![出力例](document/example.png)
+そしてこのdotファイルをregrf形式で記述すると[このregrfファイル](document/example.regrf)になります。（予定）
+
 # .regrfのファイル形式
+regrf形式のファイルは先にみたように属性無しのXML風の形式で記述します。最初にレイアウト構造を定義し、次にグラフを定義していく形で記述していきます。
