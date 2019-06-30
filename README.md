@@ -32,7 +32,7 @@ Haskellerならおなじみの「ある文書構造を他の形式の文書構�
 # 作成可能なグラフ
 まず丁寧に記述された[dot言語のファイル](document/example.dot)をご覧ください。
 このファイルを入力としてgraphvizのコマンド```dot -T png document/example.dot -o document/example.png```により同名のpng画像を出力出力すると次のようになります。<br/>
-![出力例](document/example.png)
+![出力例](document/example.png)<br/>
 そしてこのdotファイルをregrf形式で記述すると[このregrfファイル](document/example.regrf)になります。（予定）
 
 # .regrfのファイル形式
