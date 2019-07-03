@@ -13,19 +13,39 @@
                 <comment>define using color</comment>
                 <color>
                     <name>light-dark-grey</name>
-                    <rgba>#343434FF</rgba>
+                    <type>
+                        <class>rgba</class>
+                        <style>
+                            <tuple>(52, 52, 52, 265)</tuple>
+                        </style>
+                    </type>
                 </color>
                 <color>
                     <name>white</name>
-                    <rgba>#FFFFFF</rgba>
+                    <type>
+                        <class>rgba</class>
+                        <style>
+                            <hex>#FFFFFFFF</hex>
+                        </style>
+                    </type>
                 </color>
                 <color>
                     <name>light-yellow</name>
-                    <rgba>#DDFD33FF</rgba>
+                    <type>
+                        <class>rgba</class>
+                        <style>
+                            <hex>#DDFD33FF</hex>
+                        </style>
+                    </type>
                 </color>
                 <color>
                     <name>green</name>
-                    <rgba>#449933FF</rgba>
+                    <type>
+                        <class>rgba</class>
+                        <style>
+                            <hex>#449933FF</hex>
+                        </style>
+                    </type>
                 </color>
             </colors>
         </enumerate>
