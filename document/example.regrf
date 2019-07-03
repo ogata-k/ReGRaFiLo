@@ -1,6 +1,7 @@
 <regrf>
     <meta>
         <comment>define meta-data</comment>
+        <version>0.0.1</version>
         <charset>utf8</charset>
         <img-size>
             <height>400</height>
