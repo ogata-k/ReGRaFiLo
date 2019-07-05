@@ -1,5 +1,5 @@
 # ReGRaFiLo
-![ロゴ 案](document/logo_draft.png)
+![ロゴ 案](document/logo.png)
 この**ReGRaFiLo**は一言でいうと「Rustで書かれてたグラフを表現するフォーマットからグラフを表現するフォーマットや画像、アニメーションを生成するCLIツール」です。
 Haskellerならおなじみの「ある文書構造を他の形式の文書構造に変換する[Pandoc](http://sky-y.github.io/site-pandoc-jp/users-guide/)のグラフ理論的グラフ版」だと思ってもいいかもしれません。
 ちなみに読み方は「レグラフィーロ」です。エスペラント語で「再度グラフを扱う道具」的な意味です。<br/>
