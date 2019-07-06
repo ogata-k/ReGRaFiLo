@@ -47,37 +47,30 @@ XML同様タグを用いて宣言していきますが、XMLと違いいくつ�
 となっています。
 
 .regrfでは最初にレイアウト構造を定義し、次にグラフを定義していく形で記述していきます。
-regrf形式の全体の構造は次のように表現されます。
+regrf形式の全体構造の外形は次のように表現されます。
 
 ```xml:example.regrf
 <regrf>
     <meta>
         <charset>utf8</charset>
-        <img-size>
-            <height>height</height>
-            <width>width</width>
-        </img-size>
+        <version>0.0.1</version>
     </meta>
     <layout>
-        <enumerate>
-            <colors>
-                <color>color</color>
-            </colors>
-        </enumerate>
-        <structure>
-            <labels>
-                <label>label structure</label>
-            </labels>
-            <graphs>
-                <graph>inner graph structure</graph>
-            </graphs>
-            <nodes>
-                <node>node structure</node>
-            </nodes>
-            <edges>
-                <edge>edge structure</edge>
-            </edges>
-        </structure>
+        <colors>
+            <color>color</color>
+        </colors>
+        <labels>
+            <label>label structure</label>
+        </labels>
+        <graphs>
+            <graph>inner graph structure</graph>
+        </graphs>
+        <nodes>
+            <node>node structure</node>
+        </nodes>
+        <edges>
+            <edge>edge structure</edge>
+        </edges>
     </layout>
     <outer-graph>
         <nodes>
