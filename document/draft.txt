@@ -1,0 +1,214 @@
+構造ドキュメント案
+
+// 構築と参照のみに使用する。更新、削除はできない。→ 減ることがないならindexで取得できるVecで十分。
+// 基本的に正しいかどうかはLayoutGraph構築時に判断し、LayoutGraphからの変換時は正しいかの判定をしない。
+// 指定がなければエラーではなくデフォルトを使用するようにしする。そのためすべての属性にはデフォルトを追加する。この対応のためにログ表示をきちんとさせる必要がある。
+
+- ItemIndex = usize
+- RefIndex<K, V> = BTreeMap<K, V>  // private in crate
+
+ // pushを少し変更して、挿入時のindexを取得できるようにする。これでnameとidを関係づけるときに楽になるはず。
+ // idをキーに取得するにはVecのインデックスをidとして取得すればよいはず
+- ItemArena<T>
+    - count: ItemIndex  // default 0
+    - arena: Vec<T>
+
+ //
+ // 親(Kind)によって子ども(Key)を制限する。親は簡単なenumを想定
+ // KindKeyPair<Kind, Key>{kind: Kind, isRangeRight: bool, key_value: Key}
+ // KindKeyPair<'a, BKind, Kind: Borrow<BKind>, BKey, Key: Borrow<BKey>>{kind: &'a BKind, isRangeRight: bool, key_value: &'a BKey}
+ // isRangeRightはデフォルトでは0, 範囲検索時(左<右のRange)では右側が1(bool as u8 or i8, true is 1)とすることでRangeがうまくいく。(※Kind, KeyともにOrdトレイトを実装している必要があるが)
+ //
+ // 以下のような感じでBorrowトレイとを実装すれば行けそう
+ // fn get_ref_key<'a, Kind, BKey, Key: Borrow<BKey>>(kind: Kind, key_value: &'a BKey) -> KindKeyPair<Kind, &'a BKey>
+ // {
+ //    return KindKeyPair{kind: kind, key_value: key_value};
+ // }
+ //
+
+- ArenaKind
+    |- Group
+    |- Node
+    |- Edge
+
+- AttributeKey
+    |- Form
+    |- Group
+
+// モジュール内のみ公開。実際にはAttributeKeyに該当する値がなければNone、あれば適当かどうかをマッチャーで調べて正しければその値、そうでないのはありえないのでunreachableを返すかNoneを。
+- AttributeValue
+    |- Form(String)
+    |- Group(String)
+
+- ArenaRefIndex<K, V> = RefIndex<KindKeyPair<ArenaKind, K>, V>
+- AttributeRefIndex = RefIndex<KindKeyPair<ArenaKind, KindKeyPair<ItemIndex, AttributeKey>>, AttributeValue>
+
+// newするときはLayoutGraphBuilderを使うようにする
+- LayoutGraphBuilder
+    - ...  // TODO ルートグループの各種設定
+    // 以下で各種ビルダーを登録していく。ビルド時には登録順にビルドしていく。
+    - register_group_builder(self, group_builder: GroupBuilder)
+    - register_node_builder(self, node_builder: NodeBuilder)
+    - register_edge_builder(self, edge_builder: EdgeBuilder)
+    // GroupだけはGroupTreeにインデックスの依存関係を登録するのを忘れずに。できればMapの最適化もしたいね。
+    - build(self)->LayoutGraph  // RouteGroup->Group->Node->Edgeの順にビルドしていく
+
+// 基本的にItem_idはエンドユーザーに触らせない
+- LayoutGraph
+    // RefIndexes
+    - RefIndexes
+        - NameIdRefIndex: RefIndex<KindKeyPair<ArenaKind, String>, ItemIndex>
+        - AttributeRefIndex: AttributeRefIndex
+        - ColorRefIndex: RefIndex<String, Color>  // #FFFFFFなどのカラーネーム直接指定時にはStringにカラーネームを使う
+        - FormRefIndex: RefIndex<KindKeyPair<ArenaKind, String>, Form>
+        - GroupTree: RefIndex<ItemIndex, Vec<ItemIndex>>   // Groupの依存関係を解決するための木構造のリンク表現
+    // Arenas(Item Pool)
+    - GroupArena: ItemArena<Group>  // グループに所属
+    - NodeArena: ItemArena<Node>    // グループに所属
+    - EdgeArena: ItemArena<Edge>
+
+// ARGBを直接ビット列で持つ -> 描画時には下の色をちゃんと塗るか、合成して一度で塗るか
+- Color(u32)
+    - get_alpha/red/green/blue()->u8
+
+// スタイルはまとまりごとに構築する
+- BoxShape
+    |- BackGroundColor
+    |- Shape
+        |- None
+        |- Circle{}    // TODO
+        |- Rect{}    // TODO 角丸半径
+        |- Diamond{}  // TODO
+        |- Custom{}    // TODO
+
+- AngleShape
+    |- Arrow
+    |- Diamond
+
+- LineLayout
+    |- Thickness
+    |- LineStyle
+    |- BorderColor
+
+// 直接構築するので間に合いそうだが、違う型を作らないようにラッパーを設ける
+- GroupForm
+    - is_undirected: bool
+    - GraphStyle
+        |- Star
+        |- Matrix
+        |- FromTo(Direction)
+    |- BoxShape
+    |- LineLayout
+
+- NodeForm
+    |- BoxShape
+    |- LineLayout
+
+- EdgeForm
+    |- StartShape(AngleShape)
+    |- TargetShape(AngleShape)
+    |- LineLayout
+
+// Formを作って構築用ラッパーに渡す
+- GroupFormBuilder -> GroupForm
+- NodeFormBuilder -> NodeForm
+- EdgeFormBuilder -> EdgeForm
+
+- Form
+    |- GroupForm(group_form)
+    |- NodeForm(node_form)
+    |- EdgeForm(edge_form)
+
+// 以下を実装したトレイトを用意する
+- YYYForm -> Form
+
+// *- は必須。それ以外は自動実装
+- ItemBuilder<Item, YYYForm> Trait  // BaseOptionで実装できる個所は自動的に実装させる
+    // belong_XXはnewの代わり
+    // ルートグループはLayoutGraphBuilderに任せるので考えない。Edgeは必要ない気もするが描画範囲を決めるときに使う。未指定なら強制的にルートグループである/に所属ということにする。
+    *- Self::belong_route()->Self
+    *- Self::belong_child(gourp_name: String)->Self
+    *- build_item(id: ItemIndex)->Item
+    *- get_arena_kind(&self)->ArenaKind
+    *- name<S: Into<String>>(S)->Self // Groupなら必須。それ以外は必須ではない
+    // 以下オプション
+    *- get_name(&self)->Option<&str>
+    *- XXXXX(self, YYY)->Self  // XXXXXには適当な属性、YYYには適当なvalue値。値をパースした状態で生で持つ
+    *- get_XXXX(&self)->Option<YYY>
+    *- form(self, name: String, form: YYYForm)
+    - validate(&self)->Option<Vec<String>>
+    - build(self, id: ItemIndex, index: &mut RefIndexes)  // RefIndexesに登録する
++ Edge
+    *- start(name)
+    *- target(name)
+
+// 基本的にItemは参照のみの用途
+- Item Trait  // BaseOptionで実装できる個所は自動的に実装させる
+    *- get_item_id(&self)->ItemIndex
+    *- get_arena_kind()->ArenaKind
+    *- belong_group()->&str  // 空文字ならルートグループを表す。
+     // XXXには使用したい適当な型やキーを入れる
+    - XXX_key(&self) -> KindKeyPair<ArenaKind, KindKeyPair<ItemIndex, AttributeKey>>
+
+- Direction
+    |- LR
+    |- RL
+    |- TB
+    |- BT
+
+// 各Itemは以下のような形だけど、トレイトや追加実装ができないならtypeでは作らない。
+- Item<AdditionalOption>
+    - BaseOption
+    - AdditionalOption  // この構造体でなくて中身をflatにした形で持っておく
+- BaseOption
+    - item_id: ItemIndex
+    - kind: ArenaKind
+    - form_name: String  // 空 -> 未指定 -> デフォルトを利用
+    - item_name: Srting
+    - belong_group_name: String  // GraphItemでルートの親はいない。その場合は空を返す。is_route(&self)->boolでチェック?
+
+// Meta情報はサブグラフ部分でも使うと思うのでGroupに押し込む
+- GroupBuilder -> Group  // ルートはLayoutGraphBuilderを使うので意識しない。
+- Group = Item<()>
+
+- NodeBuilder -> Node
+- Node = Item<()>
+
+- EdgeBuilder -> Edge
+- Edge = Item<EdgeAdditional>
+- EdgeAdditional
+    - Start: String
+    - End: String
+
+
+// log処理  logモジュールに初期化関数とフォーマッタ関数などをまとめておく
+// printlnマクロは使わない。すべてlog出力にする。
+- CLIの実行条件
+    - CLIフラグには--verbose(-v)、--code-traceは最低限必要
+    - debugビルド/releaseビルドを判断するにはdebug_assertをcfg!(debug_assertions): boolや#[cfg(debug_assertions)]（cfg(not(debug_assertions)で否定も可能）とするか
+- 条件ごとのフィルタ設定
+    cf: https://qiita.com/fujitayy/items/590145c0f4b4e7d06de7
+    - error!, warn!, info!, debug!, trace!の階層あり
+    - env_loggerクレート
+    - debugモード: --verbose+--code-trace=trace以上、--verbose=debug以上、そうでないならwarn以上。
+    - releaseモード: --verbose=info以上、そうでないならwarn以上
+- レベルごとに何を表すか
+    - trace: 属性などをセットした時の特定はできないまでも一意的な情報
+    - debug: アイテム構築時の特定はできないまでも一意的な情報
+    - info: CLIの開始/終了ステータス
+    - warning: 上書き登録されたとき
+    - error: panicやexpect、unwrap、エラー時のprintlnで表示するときの代わり
+// --code-trace付きかどうかでも切り替える
+- メッセージフォーマット
+    - 利用可能なrecord情報
+        - timestamp(buf.timestamp)  // いくつかフォーマットある
+        - message body(record.args)
+        - level(level)
+        - target(target)
+        - module path(module_path)
+        - file name(file)
+        - line(line)
+    - <Timestamp> [<Level>] <message>{ at <file>:<line>}
+- 使い方
+    - Logger::XXX(YY)
+    - ex: Logger::override(from, to, message);
