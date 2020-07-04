@@ -1,3 +1,4 @@
-pub use util::logger;
+//! ReGRaFiLo is converter from a graph format to another graph format.
 
-mod util;
+pub mod util;
+pub mod core;

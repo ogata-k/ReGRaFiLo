@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate log;
 
-use regrafilo::logger::Logger;
+use regrafilo::util::log::Logger;
 
 fn main() {
     Logger::init(true, true);

@@ -1,4 +1,4 @@
-//! ReGRaFiLo's logger module
+//! ReGRaFiLo's log module
 
 use std::io::Write;
 use std::process::exit;
