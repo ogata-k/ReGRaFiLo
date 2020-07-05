@@ -1,5 +1,5 @@
 //! ReGRaFiLo's log module
-//! usual message for item's log is "<item kind> item (with <option>)+ ..."
+//! usual message for item's log is "item of <item kind> (with <option>)+ ..."
 
 use std::fmt::Debug;
 use std::io::Write;
@@ -106,13 +106,13 @@ impl Logger {
 
     /// log when push item
     pub fn push_log(kind: &str, index: usize) {
-        trace!("push {} item with id {}", kind, index);
+        trace!("push item of {} with the id {}", kind, index);
     }
 
     /// log when push item with name
     pub fn with_name_push_log(kind: &str, name: &str, index: usize) {
         trace!(
-            "push {} item with id {} with name \"{}\"",
+            "push item of {} with the id {} with the name \"{}\"",
             kind,
             index,
             name
@@ -126,10 +126,10 @@ impl Logger {
 
     /// log when push item override
     pub fn override_log<S: ToString>(kind: &str, item: S) {
-        warn!("{} item override from {}", kind, item.to_string());
+        warn!("item of {} override from {}", kind, item.to_string());
     }
 
     pub fn inconsistent<D: Debug>(kind: &str, value: D) {
-        error!("{} item is inconsistent: {:?}", kind, value);
+        error!("item of {} is inconsistent: {:?}", kind, value);
     }
 }

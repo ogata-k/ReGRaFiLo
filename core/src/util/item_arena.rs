@@ -132,6 +132,8 @@ mod test {
 
     use crate::util::item_arena::{ItemArenaBuilder, ItemBase, ItemIndex};
 
+    const COUNT: usize = 10;
+
     #[derive(Debug, Eq, PartialEq, Clone)]
     struct Item {
         id: ItemIndex,
@@ -169,12 +171,11 @@ mod test {
     fn no_name_count() {
         Logger::init(true);
         let mut builder = ItemArenaBuilder::<Item>::new();
-        let count: usize = 10;
-        for _ in 0..count {
+        for _ in 0..COUNT {
             builder.push(Item::new());
         }
         let (arena, names) = builder.build();
-        assert_eq!(arena.count(), count);
+        assert_eq!(arena.count(), COUNT);
         assert_eq!(names.len(), 0);
     }
 
@@ -182,8 +183,7 @@ mod test {
     fn no_name_each_eq() {
         Logger::init(true);
         let mut builder = ItemArenaBuilder::<Item>::new();
-        let count: usize = 10;
-        for _ in 0..count {
+        for _ in 0..COUNT {
             builder.push(Item::new());
         }
         let (arena, _) = builder.build();
@@ -192,28 +192,26 @@ mod test {
             assert_eq!(item.get_item_id(), index);
             index += 1;
         }
-        assert_eq!(index, count);
+        assert_eq!(index, COUNT);
     }
 
     #[test]
     fn with_name_count() {
         Logger::init(true);
         let mut builder = ItemArenaBuilder::<Item>::new();
-        let count: usize = 10;
-        for i in 0..count {
+        for i in 0..COUNT {
             builder.push_with_name(&format!("{}", i), Item::new());
         }
         let (arena, names) = builder.build();
-        assert_eq!(arena.count(), count);
-        assert_eq!(names.len(), count);
+        assert_eq!(arena.count(), COUNT);
+        assert_eq!(names.len(), COUNT);
     }
 
     #[test]
     fn with_name_each_eq() {
         Logger::init(true);
         let mut builder = ItemArenaBuilder::<Item>::new();
-        let count: usize = 10;
-        for i in 0..count {
+        for i in 0..COUNT {
             builder.push_with_name(&format!("{}", i), Item::new());
         }
         let (arena, names) = builder.build();
@@ -223,6 +221,44 @@ mod test {
             assert_eq!(names.get(&format!("{}", index)), Some(&index));
             index += 1;
         }
-        assert_eq!(index, count);
+        assert_eq!(index, COUNT);
+    }
+
+    #[test]
+    fn mixed_count() {
+        Logger::init(true);
+        let mut builder = ItemArenaBuilder::<Item>::new();
+        for i in 0..COUNT {
+            builder.push_with_name(&format!("{}", i), Item::new());
+        }
+        for _ in 0..COUNT {
+            builder.push(Item::new());
+        }
+        let (arena, names) = builder.build();
+        assert_eq!(arena.count(), 2 * COUNT);
+        assert_eq!(names.len(), COUNT);
+    }
+
+    #[test]
+    fn mixed_each_eq() {
+        Logger::init(true);
+        let mut builder = ItemArenaBuilder::<Item>::new();
+        for i in 0..COUNT {
+            builder.push_with_name(&format!("{}", i), Item::new());
+        }
+        for _ in 0..COUNT {
+            builder.push(Item::new());
+        }
+        let (arena, names) = builder.build();
+        let mut index: usize = 0;
+        for item in (&arena).iter() {
+            assert_eq!(item.get_item_id(), index);
+            assert_eq!(
+                names.get(&format!("{}", index)),
+                if index < COUNT { Some(&index) } else { None }
+            );
+            index += 1;
+        }
+        assert_eq!(index, 2 * COUNT);
     }
 }
