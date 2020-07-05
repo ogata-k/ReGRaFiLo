@@ -178,13 +178,13 @@
 // printlnマクロは使わない。すべてlog出力にする。
 // パニックなどもログを経由して表示する。errorはパニックと同じ扱いにするためコードに直接panicマクロは書かせない
 - CLIの実行条件
-    - CLIフラグには--verbose(-v)、--code-traceは最低限必要
+    - CLIフラグには--verbose(-v)
     - debugビルド/releaseビルドを判断するにはdebug_assertをcfg!(debug_assertions): boolや#[cfg(debug_assertions)]（cfg(not(debug_assertions)で否定も可能）とするか
 - 条件ごとのフィルタ設定
     cf: https://qiita.com/fujitayy/items/590145c0f4b4e7d06de7
     - error!, warn!, info!, debug!, trace!の階層あり
     - env_loggerクレート
-    - debugモード: --verbose+--code-trace=trace以上、--verbose=debug以上、そうでないならinfo以上。
+    - debugモード: --verbose=trace以上、そうでないならdebug以上
     - releaseモード: --verbose=info以上、そうでないならwarn以上
 - レベルごとに何を表すか
     - trace: 属性などをセットした時の特定はできないまでも一意的な情報
@@ -192,7 +192,6 @@
     - info: CLIの開始/終了ステータス
     - warning: 上書き登録されたとき
     - error: panicやexpect、unwrap、エラー時のprintlnで表示するときの代わり
-// --code-trace付きかどうかでも切り替える
 - メッセージフォーマット
     - 利用可能なrecord情報
         - timestamp(buf.timestamp)  // いくつかフォーマットある
@@ -202,7 +201,7 @@
         - module path(module_path)
         - file name(file)
         - line(line)
-    - <Timestamp> [<Level>]\t<message>{ at <module>:<file>:<line>}
+    - <Timestamp> [<Level>]\t<message>
 - 使い方
     - Logger::XXX(YY)
     - ex: Logger::override(from, to, message);

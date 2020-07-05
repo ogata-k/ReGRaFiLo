@@ -56,40 +56,28 @@ macro_rules! error {
 
 impl Logger {
     /// initialize for this Logger
-    pub fn init(verbose: bool, code_trace: bool) {
+    pub fn init(verbose: bool) {
         let mut builder = Builder::new();
         builder
             .format_timestamp_secs()
             .format_level(true)
             .format_module_path(true)
-            .format_indent(Some(4));
-        if cfg!(debug_assertions) || cfg!(test) {
-            builder.format(|buf, record| {
-                let ts = buf.timestamp();
-                writeln!(
-                    buf,
-                    "{}  [{}]\t{} at {}:{}:{}",
-                    ts,
-                    record.level(),
-                    record.args(),
-                    record.module_path().unwrap_or("<Unknown>"),
-                    record.file().unwrap_or("<Unknown>"),
-                    record.line().unwrap_or(0)
-                )
-            });
-            match (verbose, code_trace) {
-                (true, true) => builder.filter_level(LevelFilter::Trace),
-                (true, false) => builder.filter_level(LevelFilter::Debug),
-                (false, _) => builder.filter_level(LevelFilter::Info),
-            };
-        } else {
-            builder.format(|buf, record| {
+            .format_indent(Some(4))
+            .format(|buf, record| {
                 let ts = buf.timestamp();
                 writeln!(buf, "{}  [{}]\t{}", ts, record.level(), record.args())
             });
-            match (verbose, code_trace) {
-                (true, _) => builder.filter_level(LevelFilter::Info),
-                (false, _) => builder.filter_level(LevelFilter::Warn),
+        if cfg!(debug_assertions) || cfg!(test) {
+            if verbose {
+                builder.filter_level(LevelFilter::Trace);
+            } else {
+                builder.filter_level(LevelFilter::Debug);
+            };
+        } else {
+            if verbose {
+                builder.filter_level(LevelFilter::Info);
+            } else {
+                builder.filter_level(LevelFilter::Warn);
             };
         }
 
@@ -114,22 +102,27 @@ impl Logger {
     //
 
     /// log when create builder
-    pub fn builder_start_log(kind: String) {
+    pub fn builder_start_log(kind: &str) {
         debug!("start {} builder", kind);
     }
 
     /// log when push item
-    pub fn push_log(kind: String, index: usize) {
+    pub fn push_log(kind: &str, index: usize) {
         trace!("push {} item with id {}", kind, index);
     }
 
     /// log when push item with name
-    pub fn with_name_push_log(kind: String, name: &str, index: usize) {
-        trace!("push {} item with id {} as {}", kind, index, name);
+    pub fn with_name_push_log(kind: &str, name: &str, index: usize) {
+        trace!(
+            "push {} item with id {} with name \"{}\"",
+            kind,
+            index,
+            name
+        );
     }
 
     /// log when builder have done building action
-    pub fn builder_finish_log(kind: String) {
+    pub fn builder_finish_log(kind: &str) {
         debug!("build {} builder", kind);
     }
 }

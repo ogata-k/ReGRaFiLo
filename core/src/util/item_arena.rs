@@ -11,7 +11,7 @@ pub type ItemIndex = usize;
 
 /// Item's base set
 pub trait ItemBase {
-    fn kind_string() -> String;
+    fn kind_string() -> &'static str;
     fn set_item_id(&mut self, index: ItemIndex);
     fn get_item_id(&self) -> ItemIndex;
 }
