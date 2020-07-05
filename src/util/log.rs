@@ -64,35 +64,29 @@ impl Logger {
             .format_module_path(true)
             .format_indent(Some(4));
         if cfg!(debug_assertions) || cfg!(test) {
-            builder
-                .format(|buf, record| {
-                    let ts = buf.timestamp();
-                    writeln!(buf,
-                             "{}  [{}]\t{} at {}:{}:{}",
-                             ts,
-                             record.level(),
-                             record.args(),
-                             record.module_path().unwrap_or("<Unknown>"),
-                             record.file().unwrap_or("<Unknown>"),
-                             record.line().unwrap_or(0)
-                    )
-                });
+            builder.format(|buf, record| {
+                let ts = buf.timestamp();
+                writeln!(
+                    buf,
+                    "{}  [{}]\t{} at {}:{}:{}",
+                    ts,
+                    record.level(),
+                    record.args(),
+                    record.module_path().unwrap_or("<Unknown>"),
+                    record.file().unwrap_or("<Unknown>"),
+                    record.line().unwrap_or(0)
+                )
+            });
             match (verbose, code_trace) {
                 (true, true) => builder.filter_level(LevelFilter::Trace),
                 (true, false) => builder.filter_level(LevelFilter::Debug),
                 (false, _) => builder.filter_level(LevelFilter::Info),
             };
         } else {
-            builder
-                .format(|buf, record| {
-                    let ts = buf.timestamp();
-                    writeln!(buf,
-                             "{}  [{}]\t{}",
-                             ts,
-                             record.level(),
-                             record.args()
-                    )
-                });
+            builder.format(|buf, record| {
+                let ts = buf.timestamp();
+                writeln!(buf, "{}  [{}]\t{}", ts, record.level(), record.args())
+            });
             match (verbose, code_trace) {
                 (true, _) => builder.filter_level(LevelFilter::Info),
                 (false, _) => builder.filter_level(LevelFilter::Warn),

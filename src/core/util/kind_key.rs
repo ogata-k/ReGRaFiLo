@@ -23,7 +23,6 @@ impl<Kind: Eq + Copy, Key> KindKey<Kind, Key> {
     }
 }
 
-
 //
 // impl Traits
 //
