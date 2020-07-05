@@ -109,6 +109,27 @@ impl Logger {
         }
     }
 
-    // TODO 各種表示用ラッパ
-    // Self::XXXという関数でログを書かせるイメージ
+    //
+    // 各種表示用ラッパ
+    //
+
+    /// log when create builder
+    pub fn builder_start_log(kind: String) {
+        debug!("start {} builder", kind);
+    }
+
+    /// log when push item
+    pub fn push_log(kind: String, index: usize) {
+        trace!("push {} item with id {}", kind, index);
+    }
+
+    /// log when push item with name
+    pub fn with_name_push_log(kind: String, name: &str, index: usize) {
+        trace!("push {} item with id {} as {}", kind, index, name);
+    }
+
+    /// log when builder have done building action
+    pub fn builder_finish_log(kind: String) {
+        debug!("build {} builder", kind);
+    }
 }
