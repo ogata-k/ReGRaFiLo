@@ -1,5 +1,5 @@
 use regrafilo_core::util::item_arena::{ItemArenaBuilder, ItemBase, ItemIndex};
-use regrafilo_util::log::Logger;
+use regrafilo_util::log::{KindGroup4Logger, Logger};
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 struct Item {
@@ -12,11 +12,13 @@ impl Item {
     }
 }
 
-impl ItemBase for Item {
-    fn kind_string() -> &'static str {
+impl KindGroup4Logger for Item {
+    fn kind_group() -> &'static str {
         "example"
     }
+}
 
+impl ItemBase for Item {
     fn set_item_id(&mut self, index: usize) {
         self.id = index;
     }

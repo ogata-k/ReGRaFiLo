@@ -1,20 +1,30 @@
 //! ReGRaFiLo's log module
+//! usual message for item's log is "<item kind> item (with <option>)+ ..."
 
+use std::fmt::Debug;
 use std::io::Write;
-use std::process::exit;
 
 use env_logger::Builder;
-use log::{Level, LevelFilter};
+use log::LevelFilter;
 
 /// ReGRaFiLo's logger
 pub struct Logger {}
+
+/// get kind name of the type for Logger
+pub trait KindGroup4Logger {
+    fn kind_group() -> &'static str;
+}
+
+/// get kind name of the instance for Logger
+pub trait KindKey4Logger {
+    fn get_kind_string(&self) -> String;
+}
 
 /// for Logger
 #[allow(unused_macros)]
 macro_rules! trace {
     ($($arg:tt)+) => (
         log::trace!($($arg)+);
-        Logger::conclusion_for(Level::Trace);
     )
 }
 
@@ -23,7 +33,6 @@ macro_rules! trace {
 macro_rules! debug {
     ($($arg:tt)+) => (
         log::debug!($($arg)+);
-        Logger::conclusion_for(Level::Debug);
     )
 }
 
@@ -32,7 +41,6 @@ macro_rules! debug {
 macro_rules! info {
     ($($arg:tt)+) => (
         log::info!($($arg)+);
-        Logger::conclusion_for(Level::Info);
     )
 }
 
@@ -41,7 +49,6 @@ macro_rules! info {
 macro_rules! warn {
     ($($arg:tt)+) => (
         log::warn!($($arg)+);
-        Logger::conclusion_for(Level::Warn);
     )
 }
 
@@ -50,7 +57,7 @@ macro_rules! warn {
 macro_rules! error {
     ($($arg:tt)+) => (
         log::error!($($arg)+);
-        Logger::conclusion_for(Level::Error);
+        panic!("occurred an unforeseen error");
     )
 }
 
@@ -88,15 +95,6 @@ impl Logger {
         }
     }
 
-    /// do action after show each message when use this Logger.
-    /// usually use in each log macro.
-    #[allow(dead_code)]
-    fn conclusion_for(level: Level) {
-        if level == Level::Error {
-            exit(1);
-        }
-    }
-
     //
     // 各種表示用ラッパ
     //
@@ -124,5 +122,14 @@ impl Logger {
     /// log when builder have done building action
     pub fn builder_finish_log(kind: &str) {
         debug!("build {} builder", kind);
+    }
+
+    /// log when push item override
+    pub fn override_log<S: ToString>(kind: &str, item: S) {
+        warn!("{} item override from {}", kind, item.to_string());
+    }
+
+    pub fn inconsistent<D: Debug>(kind: &str, value: D) {
+        error!("{} item is inconsistent: {:?}", kind, value);
     }
 }

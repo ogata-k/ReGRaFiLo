@@ -3,15 +3,14 @@
 use std::collections::BTreeMap;
 use std::slice::{Iter, SliceIndex};
 
-use regrafilo_util::log::Logger;
+use regrafilo_util::log::{KindGroup4Logger, Logger};
 
 /// index of item<br/>
 /// alias of usize because of use as vector index
 pub type ItemIndex = usize;
 
 /// Item's base set
-pub trait ItemBase {
-    fn kind_string() -> &'static str;
+pub trait ItemBase: KindGroup4Logger {
     fn set_item_id(&mut self, index: ItemIndex);
     fn get_item_id(&self) -> ItemIndex;
 }
@@ -27,7 +26,7 @@ pub struct ItemArenaBuilder<T: ItemBase> {
 impl<T: ItemBase> ItemArenaBuilder<T> {
     /// initializer
     pub fn new() -> Self {
-        Logger::builder_start_log(T::kind_string());
+        Logger::builder_start_log(T::kind_group());
         ItemArenaBuilder {
             count: 0,
             names: BTreeMap::default(),
@@ -41,7 +40,7 @@ impl<T: ItemBase> ItemArenaBuilder<T> {
         item.set_item_id(push_index);
         self.arena.push(item);
         self.count += 1;
-        Logger::push_log(T::kind_string(), push_index);
+        Logger::push_log(T::kind_group(), push_index);
         push_index
     }
 
@@ -52,7 +51,7 @@ impl<T: ItemBase> ItemArenaBuilder<T> {
         self.names.insert(name.to_string(), push_index);
         self.arena.push(item);
         self.count += 1;
-        Logger::with_name_push_log(T::kind_string(), name, push_index);
+        Logger::with_name_push_log(T::kind_group(), name, push_index);
         push_index
     }
 
@@ -69,7 +68,7 @@ impl<T: ItemBase> ItemArenaBuilder<T> {
             mut arena,
         } = self;
         (&mut arena).shrink_to_fit();
-        Logger::builder_finish_log(T::kind_string());
+        Logger::builder_finish_log(T::kind_group());
         (ItemArena { count, arena }, names)
     }
 }
@@ -129,7 +128,7 @@ impl<T: ItemBase> ItemArena<T> {
 
 #[cfg(test)]
 mod test {
-    use regrafilo_util::log::Logger;
+    use regrafilo_util::log::{KindGroup4Logger, Logger};
 
     use crate::util::item_arena::{ItemArenaBuilder, ItemBase, ItemIndex};
 
@@ -144,11 +143,13 @@ mod test {
         }
     }
 
-    impl ItemBase for Item {
-        fn kind_string() -> &'static str {
+    impl KindGroup4Logger for Item {
+        fn kind_group() -> &'static str {
             "example"
         }
+    }
 
+    impl ItemBase for Item {
         fn set_item_id(&mut self, index: usize) {
             self.id = index;
         }
