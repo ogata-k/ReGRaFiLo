@@ -81,7 +81,7 @@ impl Logger {
             };
         }
 
-        builder.is_test(false);
+        builder.is_test(true);
 
         if let Err(e) = builder.try_init() {
             log::error!("fail init for ReGRaFiLo: {}", e);

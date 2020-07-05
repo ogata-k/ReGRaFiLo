@@ -111,6 +111,11 @@ impl<T: ItemBase> ItemArena<T> {
         self.count
     }
 
+    /// item pool is empty
+    pub fn is_empty(&self) -> bool {
+        self.count == 0
+    }
+
     /// to iterator
     pub fn iter(&self) -> Iter<'_, T> {
         self.arena.iter()
@@ -122,4 +127,101 @@ impl<T: ItemBase> ItemArena<T> {
     }
 }
 
-// TODO add test
+#[cfg(test)]
+mod test {
+    use regrafilo_util::log::Logger;
+
+    use crate::util::item_arena::{ItemArenaBuilder, ItemBase, ItemIndex};
+
+    #[derive(Debug, Eq, PartialEq, Clone)]
+    struct Item {
+        id: ItemIndex,
+    }
+
+    impl Item {
+        fn new() -> Self {
+            Item { id: 0 }
+        }
+    }
+
+    impl ItemBase for Item {
+        fn kind_string() -> &'static str {
+            "example"
+        }
+
+        fn set_item_id(&mut self, index: usize) {
+            self.id = index;
+        }
+
+        fn get_item_id(&self) -> usize {
+            self.id
+        }
+    }
+
+    #[test]
+    fn is_empty() {
+        Logger::init(true);
+        assert!(ItemArenaBuilder::<Item>::new().build().0.is_empty());
+    }
+
+    #[test]
+    fn no_name_count() {
+        Logger::init(true);
+        let mut builder = ItemArenaBuilder::<Item>::new();
+        let count: usize = 10;
+        for _ in 0..count {
+            builder.push(Item::new());
+        }
+        let (arena, names) = builder.build();
+        assert_eq!(arena.count(), count);
+        assert_eq!(names.len(), 0);
+    }
+
+    #[test]
+    fn no_name_each_eq() {
+        Logger::init(true);
+        let mut builder = ItemArenaBuilder::<Item>::new();
+        let count: usize = 10;
+        for _ in 0..count {
+            builder.push(Item::new());
+        }
+        let (arena, _) = builder.build();
+        let mut index: usize = 0;
+        for item in (&arena).iter() {
+            assert_eq!(item.get_item_id(), index);
+            index += 1;
+        }
+        assert_eq!(index, count);
+    }
+
+    #[test]
+    fn with_name_count() {
+        Logger::init(true);
+        let mut builder = ItemArenaBuilder::<Item>::new();
+        let count: usize = 10;
+        for i in 0..count {
+            builder.push_with_name(&format!("{}", i), Item::new());
+        }
+        let (arena, names) = builder.build();
+        assert_eq!(arena.count(), count);
+        assert_eq!(names.len(), count);
+    }
+
+    #[test]
+    fn with_name_each_eq() {
+        Logger::init(true);
+        let mut builder = ItemArenaBuilder::<Item>::new();
+        let count: usize = 10;
+        for i in 0..count {
+            builder.push_with_name(&format!("{}", i), Item::new());
+        }
+        let (arena, names) = builder.build();
+        let mut index: usize = 0;
+        for item in (&arena).iter() {
+            assert_eq!(item.get_item_id(), index);
+            assert_eq!(names.get(&format!("{}", index)), Some(&index));
+            index += 1;
+        }
+        assert_eq!(index, count);
+    }
+}
