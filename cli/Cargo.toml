@@ -1,0 +1,9 @@
+[package]
+name = "regrafilo_cli"
+version = "0.0.1"
+authors = ["ogata-k <ogtkzk712@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+regrafilo_util = {path="../util"}
+regrafilo_core = {path="../core"}

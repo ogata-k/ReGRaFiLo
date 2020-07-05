@@ -1,2 +1,4 @@
-/target
+**/target
 **/*.rs.bk
+!cli/Cargo.lock
+**/Cargo.lock

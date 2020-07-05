@@ -1,0 +1,11 @@
+[package]
+name = "regrafilo_util"
+version = "0.0.1"
+authors = ["ogata-k <ogtkzk712@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+log = "0.4.8"
+env_logger = "0.7.1"

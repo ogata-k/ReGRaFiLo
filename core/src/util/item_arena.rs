@@ -98,8 +98,8 @@ impl<T> ItemArena<T> {
 
     /// item getter
     pub fn get<I>(&self, index: I) -> Option<&<I as SliceIndex<[T]>>::Output>
-                                   where
-                                       I: SliceIndex<[T]>,
+    where
+        I: SliceIndex<[T]>,
     {
         self.arena.get(index)
     }

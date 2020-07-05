@@ -1,36 +1,36 @@
 # ReGRaFiLo
-![ロゴ 案](document/logo.png)
+![ロゴ 案](logo.png)
 **ReGRaFiLo**は一言でいうと「グラフを表現するあるフォーマットからグラフを表現するあるフォーマットへ変換するRust純正のCLIツール」です。
-つまり「ある文書構造をある文書構造に変換する[Pandoc](http://sky-y.github.io/site-pandoc-jp/users-guide/)のグラフ版」だと思ってもいいかもしれません。
+つまり「ある文書構造をある文書構造に変換する[Pandoc](http://sky-y.github.io/site-pandoc-jp/users-guide/) のグラフ版」だと思ってもいいかもしれません。
 ちなみに読み方は「レグラフィーロ」です。エスペラント語で「再度グラフを扱う道具」の意味です。<br/>
 ```cargo install regrafilo```などでインストールした後に```regrafilo input.dot output.png```のように扱います。
 
 サポートしている形式は次の通りです。
 ## 対応している入力形式
-1. [.regrf](#.regrfのファイル形式)<br/>ReGRaFiLoの中間形式。詳細は後述。
-1. [.dot](https://www.graphviz.org/doc/info/lang.html)<br/>グラフといえばおなじみのdot言語です。
-1. [.gml](http://www.fim.uni-passau.de/index.php?id=17297&L=1)<br/>グラフモデリング言語（GML）形式です。階層的なAscii形式をベースとした宣言的な形式。非常に簡単な構文でネットワークデータをサポートしている。
-1. [.xgmml](http://xml.coverpages.org/xgmml-draft-xgmml-20000315.html)<br/>GMLの機能をベースとしたXML形式です。.gmlとお互いに容易に変換できます。
-1. [.gexf](https://gephi.org/gexf/format/)<br/>オープンなグラフ可視化プラットフォームである[Gephi](http://oss.infoscience.co.jp/gephi/gephi.org/index.html)の内部形式で使われています。非常に変換元として優秀です。
-1. [.gdf](http://graphexploration.cond.org/manual.html#_Toc116465166)<br/>CSVのデータテーブル風に頂点や辺を定義していく形式です。
-1. [.graphml](http://graphml.graphdrawing.org/specification.html)<br/>XML形式のGMLですはノードとエッジの属性、階層グラフをサポートしており、柔軟なアーキテクチャによって多くのメリットを持っている。
+1. [.regrf](#.regrfのファイル形式) <br/>ReGRaFiLoの中間形式。詳細は後述。
+1. [.dot](https://www.graphviz.org/doc/info/lang.html) <br/>グラフといえばおなじみのdot言語です。
+1. [.gml](http://www.fim.uni-passau.de/index.php?id=17297&L=1) <br/>グラフモデリング言語（GML）形式です。階層的なAscii形式をベースとした宣言的な形式。非常に簡単な構文でネットワークデータをサポートしている。
+1. [.xgmml](http://xml.coverpages.org/xgmml-draft-xgmml-20000315.html) <br/>GMLの機能をベースとしたXML形式です。.gmlとお互いに容易に変換できます。
+1. [.gexf](https://gephi.org/gexf/format/) <br/>オープンなグラフ可視化プラットフォームである[Gephi](http://oss.infoscience.co.jp/gephi/gephi.org/index.html) の内部形式で使われています。非常に変換元として優秀です。
+1. [.gdf](http://graphexploration.cond.org/manual.html#_Toc116465166) <br/>CSVのデータテーブル風に頂点や辺を定義していく形式です。
+1. [.graphml](http://graphml.graphdrawing.org/specification.html) <br/>XML形式のGMLですはノードとエッジの属性、階層グラフをサポートしており、柔軟なアーキテクチャによって多くのメリットを持っている。
 ## 対応している出力形式
 * テキスト形式
 1. [.regrf](#.regrfのファイル形式)<br/> ReGRaFiLoの中間形式。詳細は後述。
 1. [対応している入力形式に出ている形式](#対応している入力形式)
 * 画像形式
-1. [.png](https://www.w3.org/TR/PNG/)<br/>画像データを無劣化な可逆圧縮により記録するラスタ画像形式の一つ。透過も可能。
-1. [.jpg](https://www.w3.org/Graphics/JPEG/jfif3.pdf)<br/>画像データを劣化する非可逆圧縮により記録するラスタ画像形式の一つ。色の透過はできない。
-1. [.bmp](http://www.dragonwins.com/domains/GetTechEd/bmp/bmpfileformat.htm)<br/>最も基本的な画像形式の一つ。非圧縮画像のため画質はいいが、データ量は重い。
-1. [.eps](https://www.loc.gov/preservation/digital/formats/fdd/fdd000246.shtml)<br/>PDFのようにPostScriptから派生したベクタ画像形式の一つ。そのためPDFで使われることの多い。
-1. [.svg](https://www.loc.gov/preservation/digital/formats/fdd/fdd000020.shtml)<br/>XML形式で記述されるベクタ画像形式の一つ。通常HTML上で使われる上に、アニメーションにも対応している。
-1. [.gif](https://www.loc.gov/preservation/digital/formats/fdd/fdd000133.shtml)<br/>画像データを可逆圧縮により記録するラスタ画像形式の一つ。色数の少ない画像データの保存に適しており、透過もできる。
+1. [.png](https://www.w3.org/TR/PNG/) <br/>画像データを無劣化な可逆圧縮により記録するラスタ画像形式の一つ。透過も可能。
+1. [.jpg](https://www.w3.org/Graphics/JPEG/jfif3.pdf) <br/>画像データを劣化する非可逆圧縮により記録するラスタ画像形式の一つ。色の透過はできない。
+1. [.bmp](http://www.dragonwins.com/domains/GetTechEd/bmp/bmpfileformat.htm) <br/>最も基本的な画像形式の一つ。非圧縮画像のため画質はいいが、データ量は重い。
+1. [.eps](https://www.loc.gov/preservation/digital/formats/fdd/fdd000246.shtml) <br/>PDFのようにPostScriptから派生したベクタ画像形式の一つ。そのためPDFで使われることの多い。
+1. [.svg](https://www.loc.gov/preservation/digital/formats/fdd/fdd000020.shtml) <br/>XML形式で記述されるベクタ画像形式の一つ。
+1. [.gif](https://www.loc.gov/preservation/digital/formats/fdd/fdd000133.shtml) <br/>画像データを可逆圧縮により記録するラスタ画像形式の一つ。色数の少ない画像データの保存に適しており、透過もできる。
 
 # 作成可能なグラフ
-まず丁寧に記述された[dot言語のファイル](document/example.dot)をご覧ください。
+まず丁寧に記述された[dot言語のファイル](example.dot)をご覧ください。
 このファイルを入力としてgraphvizのコマンド```dot -T png document/example.dot -o document/example.png```により同名のpng画像を出力出力すると次のようになります。<br/>
-![出力例](document/example.png)<br/>
-そしてこのdotファイルをregrf形式で記述すると[このregrfファイル](document/example.regrf)になります。
+![出力例](example.png)<br/>
+そしてこのdotファイルをregrf形式で記述すると[このregrfファイル](example.regrf)になります。
 
 # .regrfのファイル形式
 （変更予定あり）
@@ -85,7 +85,7 @@ regrf形式の全体構造の外形は次のように表現されます。
 ```
 このように.regrfは属性を用いないXML風の形式で記述されます。
 中身を見ていくと、regrfタグの下にはmeta、layout、outer-graphタグが定義されています。これらは必須です。<br/>
-文法について詳しく知りたければ[こちらのファイル](document/regrf_syntax.md)をご覧ください。
+文法について詳しく知りたければ[こちらのファイル](regrf_syntax.md) をご覧ください。
 
 # Git
 階層が深い順に作成し、一つ上にプルリクして開発していきます。

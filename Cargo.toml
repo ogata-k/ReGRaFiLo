@@ -1,9 +1,0 @@
-[package]
-name = "regrafilo"
-version = "0.0.0"
-authors = ["ogata-k <ogtkzk712@gmail.com>"]
-edition = "2018"
-
-[dependencies]
-log = "0.4.8"
-env_logger = "0.7.1"
