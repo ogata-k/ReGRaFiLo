@@ -6,6 +6,7 @@ use crate::util::item_arena::ItemIndex;
 use crate::util::kind_key::KindKey;
 use crate::util::RefIndex;
 
+/// triple of ItemKind, Index, Key
 pub type AttributeRefKey<ItemKindKey> = KindKey<ItemKindKey, KindKey<ItemIndex, AttributeKey>>;
 
 /// helper for make reference key
@@ -41,7 +42,7 @@ impl KindGroup4Logger for AttributeKey {
 
 /// value of Attribute. but user wouldn't use
 #[derive(Debug, Eq, PartialEq, Clone)]
-pub enum AttributeValue {
+enum AttributeValue {
     String(String),
 }
 
@@ -189,7 +190,7 @@ impl<ItemKindKey: Ord + Eq + Copy + KindKey4Logger> AttributeRefIndex<ItemKindKe
 mod test {
     use regrafilo_util::log::{KindKey4Logger, Logger};
 
-    use crate::item::AttributeRefIndexBuilder;
+    use crate::layout::AttributeRefIndexBuilder;
 
     const COUNT: usize = 10;
 

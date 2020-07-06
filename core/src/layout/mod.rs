@@ -1,5 +1,5 @@
 //! ReGRaFiLo's item
 
-pub(crate) use attribute::*;
+pub use attribute::*;
 
 mod attribute;

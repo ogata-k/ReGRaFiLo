@@ -1,4 +1,4 @@
 //! core of ReGRaFiLo
 
-pub mod item;
+pub mod layout;
 pub mod util;
