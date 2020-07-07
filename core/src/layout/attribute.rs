@@ -1,6 +1,6 @@
 //! attribute of ReGRaFiLo's item
 
-use regrafilo_util::log::{KindGroup4Logger, KindKey4Logger, Logger};
+use regrafilo_util::log::{KindBase, KindGroup4Logger, KindKey4Logger, Logger};
 
 use crate::util::item_arena::ItemIndex;
 use crate::util::kind_key::KindKey;
@@ -36,9 +36,21 @@ pub enum AttributeKey {
 
 impl KindGroup4Logger for AttributeKey {
     fn kind_group() -> &'static str {
-        "attribute"
+        "Attribute"
     }
 }
+
+impl KindKey4Logger for AttributeKey {
+    fn get_kind_string(&self) -> &'static str {
+        use AttributeKey::*;
+        match self {
+            Form => "Form",
+            Group => "Group",
+        }
+    }
+}
+
+impl KindBase for AttributeKey {}
 
 /// value of Attribute. but user wouldn't use
 #[derive(Debug, Eq, PartialEq, Clone)]
@@ -47,11 +59,11 @@ enum AttributeValue {
 }
 
 /// builder for reference of Attribute
-pub struct AttributeRefIndexBuilder<ItemKindKey: Ord + Eq + Copy> {
+pub struct AttributeRefIndexBuilder<ItemKindKey: KindBase> {
     ref_index: RefIndex<AttributeRefKey<ItemKindKey>, AttributeValue>,
 }
 
-impl<ItemKindKey: Ord + Eq + Copy> AttributeRefIndexBuilder<ItemKindKey> {
+impl<ItemKindKey: KindBase> AttributeRefIndexBuilder<ItemKindKey> {
     /// initializer
     pub fn new() -> Self {
         Logger::initializer_log(AttributeKey::kind_group());
@@ -68,9 +80,7 @@ impl<ItemKindKey: Ord + Eq + Copy> AttributeRefIndexBuilder<ItemKindKey> {
         Logger::convert_reference_log(AttributeKey::kind_group());
         ari
     }
-}
 
-impl<ItemKindKey: Ord + Eq + Copy + KindKey4Logger> AttributeRefIndexBuilder<ItemKindKey> {
     //
     // helper
     //

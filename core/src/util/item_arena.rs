@@ -26,7 +26,6 @@ pub trait ItemBase {
 #[derive(Debug, Clone)]
 pub struct ItemArena<K: KindBase, T: ItemBase<ItemKind = K>> {
     arena: Vec<T>,
-    count: ItemIndex,
 }
 
 impl<K: KindBase, T: ItemBase<ItemKind = K>> ItemArena<K, T> {
@@ -37,15 +36,13 @@ impl<K: KindBase, T: ItemBase<ItemKind = K>> ItemArena<K, T> {
     }
 
     /// get next index with increment as soon as possible
-    fn next_index_with_increment(&mut self) -> ItemIndex {
-        let index = self.count;
-        self.count += 1;
-        index
+    fn get_push_index(&self) -> ItemIndex {
+        self.arena.len()
     }
 
     /// push item into arena
     pub fn push(&mut self, mut item: T) {
-        let push_index = self.next_index_with_increment();
+        let push_index = self.get_push_index();
         let item_kind = item.get_kind();
         item.set_item_id(push_index);
         self.arena.push(item);
@@ -57,7 +54,7 @@ impl<K: KindBase, T: ItemBase<ItemKind = K>> ItemArena<K, T> {
     where
         F: Fn(K, ItemIndex, ItemIndex),
     {
-        let push_index = self.next_index_with_increment();
+        let push_index = self.get_push_index();
         item.set_item_id(push_index);
         let group_id = item.get_group_id();
         let item_kind = item.get_kind();
@@ -73,7 +70,7 @@ impl<K: KindBase, T: ItemBase<ItemKind = K>> ItemArena<K, T> {
         name: &str,
         mut item: T,
     ) {
-        let push_index = self.next_index_with_increment();
+        let push_index = self.get_push_index();
         let item_kind = item.get_kind();
         item.set_item_id(push_index);
         names.insert(KindKey::new(item_kind, name.to_string()), push_index);
@@ -91,7 +88,7 @@ impl<K: KindBase, T: ItemBase<ItemKind = K>> ItemArena<K, T> {
     ) where
         F: Fn(K, ItemIndex, ItemIndex),
     {
-        let push_index = self.next_index_with_increment();
+        let push_index = self.get_push_index();
         item.set_item_id(push_index);
         let item_kind = item.get_kind();
         let group_id = item.get_group_id();
@@ -127,12 +124,12 @@ impl<K: KindBase, T: ItemBase<ItemKind = K>> ItemArena<K, T> {
 
     /// count of item
     pub fn count(&self) -> usize {
-        self.count as usize
+        self.arena.len()
     }
 
     /// item pool is empty
     pub fn is_empty(&self) -> bool {
-        self.count == 0
+        self.count() == 0
     }
 
     /// to iterator
@@ -157,7 +154,6 @@ impl<K: KindBase, T: ItemBase<ItemKind = K>> Default for ItemArena<K, T> {
     fn default() -> Self {
         ItemArena {
             arena: Vec::default(),
-            count: 0,
         }
     }
 }
