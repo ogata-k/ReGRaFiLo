@@ -54,7 +54,7 @@ pub struct AttributeRefIndexBuilder<ItemKindKey: Ord + Eq + Copy> {
 impl<ItemKindKey: Ord + Eq + Copy> AttributeRefIndexBuilder<ItemKindKey> {
     /// initializer
     pub fn new() -> Self {
-        Logger::builder_start_log(AttributeKey::kind_group());
+        Logger::initializer_log(AttributeKey::kind_group());
         AttributeRefIndexBuilder {
             ref_index: RefIndex::new(),
         }
@@ -65,7 +65,7 @@ impl<ItemKindKey: Ord + Eq + Copy> AttributeRefIndexBuilder<ItemKindKey> {
         let ari = AttributeRefIndex {
             ref_index: self.ref_index,
         };
-        Logger::builder_finish_log(AttributeKey::kind_group());
+        Logger::convert_reference_log(AttributeKey::kind_group());
         ari
     }
 }
@@ -202,13 +202,13 @@ mod test {
     }
 
     impl KindKey4Logger for ItemKindKey {
-        fn get_kind_string(&self) -> String {
+        fn get_kind_string(&self) -> &'static str {
+            use ItemKindKey::*;
             match self {
-                ItemKindKey::Group => "group",
-                ItemKindKey::Node => "node",
-                ItemKindKey::Edge => "edge",
+                Group => "group",
+                Node => "node",
+                Edge => "edge",
             }
-            .to_string()
         }
     }
 

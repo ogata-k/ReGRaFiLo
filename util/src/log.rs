@@ -10,6 +10,9 @@ use log::LevelFilter;
 /// ReGRaFiLo's logger
 pub struct Logger {}
 
+/// Base of Kind
+pub trait KindBase: Ord + Eq + Copy + KindGroup4Logger + KindKey4Logger {}
+
 /// get kind name of the type for Logger
 pub trait KindGroup4Logger {
     fn kind_group() -> &'static str;
@@ -17,7 +20,7 @@ pub trait KindGroup4Logger {
 
 /// get kind name of the instance for Logger
 pub trait KindKey4Logger {
-    fn get_kind_string(&self) -> String;
+    fn get_kind_string(&self) -> &'static str;
 }
 
 /// for Logger
@@ -80,12 +83,10 @@ impl Logger {
             } else {
                 builder.filter_level(LevelFilter::Debug);
             };
+        } else if verbose {
+            builder.filter_level(LevelFilter::Info);
         } else {
-            if verbose {
-                builder.filter_level(LevelFilter::Info);
-            } else {
-                builder.filter_level(LevelFilter::Warn);
-            };
+            builder.filter_level(LevelFilter::Warn);
         }
 
         builder.is_test(true);
@@ -100,8 +101,8 @@ impl Logger {
     //
 
     /// log when create builder
-    pub fn builder_start_log(kind: &str) {
-        debug!("start {} builder", kind);
+    pub fn initializer_log(kind: &str) {
+        debug!("make {} initializer", kind);
     }
 
     /// log when push item
@@ -120,8 +121,8 @@ impl Logger {
     }
 
     /// log when builder have done building action
-    pub fn builder_finish_log(kind: &str) {
-        debug!("build {} builder", kind);
+    pub fn convert_reference_log(kind: &str) {
+        debug!("convert {} to reference", kind);
     }
 
     /// log when push item override

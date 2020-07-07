@@ -1,86 +1,106 @@
 //! item pool
 
-use std::collections::BTreeMap;
 use std::slice::{Iter, SliceIndex};
 
-use regrafilo_util::log::{KindGroup4Logger, Logger};
+use crate::util::kind_key::KindKey;
+use crate::util::RefIndex;
+use regrafilo_util::log::{KindBase, Logger};
 
 /// index of item<br/>
 /// alias of usize because of use as vector index
 pub type ItemIndex = usize;
 
+/// RefIndex for ItemIndex
+pub type RefIndexOfItem<K, T> = RefIndex<KindKey<K, T>, ItemIndex>;
+
 /// Item's base set
-pub trait ItemBase: KindGroup4Logger {
+pub trait ItemBase {
+    type ItemKind: KindBase;
     fn set_item_id(&mut self, index: ItemIndex);
+    fn get_kind(&self) -> Self::ItemKind;
+    fn get_group_id(&self) -> ItemIndex;
     fn get_item_id(&self) -> ItemIndex;
 }
 
-/// Builder for ItemArena
+/// item pool
 #[derive(Debug, Clone)]
-pub struct ItemArenaBuilder<T: ItemBase> {
-    count: ItemIndex,
-    names: BTreeMap<String, ItemIndex>,
+pub struct ItemArena<K: KindBase, T: ItemBase<ItemKind = K>> {
     arena: Vec<T>,
+    count: ItemIndex,
 }
 
-impl<T: ItemBase> ItemArenaBuilder<T> {
+impl<K: KindBase, T: ItemBase<ItemKind = K>> ItemArena<K, T> {
     /// initializer
     pub fn new() -> Self {
-        Logger::builder_start_log(T::kind_group());
-        ItemArenaBuilder {
-            count: 0,
-            names: BTreeMap::default(),
-            arena: Vec::default(),
-        }
+        Logger::initializer_log(K::kind_group());
+        ItemArena::default()
+    }
+
+    /// get next index with increment as soon as possible
+    fn next_index_with_increment(&mut self) -> ItemIndex {
+        let index = self.count;
+        self.count += 1;
+        index
     }
 
     /// push item into arena
-    pub fn push(&mut self, mut item: T) -> ItemIndex {
-        let push_index = self.count;
+    pub fn push(&mut self, mut item: T) {
+        let push_index = self.next_index_with_increment();
+        let item_kind = item.get_kind();
         item.set_item_id(push_index);
         self.arena.push(item);
-        self.count += 1;
-        Logger::push_log(T::kind_group(), push_index);
-        push_index
+        Logger::push_log(item_kind.get_kind_string(), push_index);
+    }
+
+    /// push item into arena with action for conclusion
+    pub fn push_with_action<F>(&mut self, mut item: T, conclusion: F)
+    where
+        F: Fn(K, ItemIndex, ItemIndex),
+    {
+        let push_index = self.next_index_with_increment();
+        item.set_item_id(push_index);
+        let group_id = item.get_group_id();
+        let item_kind = item.get_kind();
+        self.arena.push(item);
+        conclusion(item_kind, group_id, push_index);
+        Logger::push_log(item_kind.get_kind_string(), push_index);
     }
 
     /// push item with name into arena
-    pub fn push_with_name(&mut self, name: &str, mut item: T) -> ItemIndex {
-        let push_index = self.count;
+    pub fn push_with_name(
+        &mut self,
+        names: &mut RefIndexOfItem<K, String>,
+        name: &str,
+        mut item: T,
+    ) {
+        let push_index = self.next_index_with_increment();
+        let item_kind = item.get_kind();
         item.set_item_id(push_index);
-        self.names.insert(name.to_string(), push_index);
+        names.insert(KindKey::new(item_kind, name.to_string()), push_index);
         self.arena.push(item);
-        self.count += 1;
-        Logger::with_name_push_log(T::kind_group(), name, push_index);
-        push_index
+        Logger::with_name_push_log(item_kind.get_kind_string(), name, push_index);
     }
 
-    /// count of items
-    pub fn count(&self) -> usize {
-        self.count
+    /// push item with name into arena with action for conclusion
+    pub fn push_with_name_and_action<F>(
+        &mut self,
+        names: &mut RefIndexOfItem<K, String>,
+        name: &str,
+        mut item: T,
+        conclusion: F,
+    ) where
+        F: Fn(K, ItemIndex, ItemIndex),
+    {
+        let push_index = self.next_index_with_increment();
+        item.set_item_id(push_index);
+        let item_kind = item.get_kind();
+        let group_id = item.get_group_id();
+        names.insert(KindKey::new(item_kind, name.to_string()), push_index);
+        self.arena.push(item);
+        conclusion(item_kind, group_id, push_index);
+        Logger::with_name_push_log(item_kind.get_kind_string(), name, push_index);
     }
 
-    /// convert to ItemArena and name's map with optimize
-    pub fn build(self) -> (ItemArena<T>, BTreeMap<String, ItemIndex>) {
-        let ItemArenaBuilder {
-            count,
-            names,
-            mut arena,
-        } = self;
-        (&mut arena).shrink_to_fit();
-        Logger::builder_finish_log(T::kind_group());
-        (ItemArena { count, arena }, names)
-    }
-}
-
-/// item pool. support reference only.
-#[derive(Debug, Clone)]
-pub struct ItemArena<T: ItemBase> {
-    count: ItemIndex,
-    arena: Vec<T>,
-}
-
-impl<T: ItemBase> ItemArena<T> {
     /// item getter
     pub fn get<I>(&self, index: I) -> Option<&<I as SliceIndex<[T]>>::Output>
     where
@@ -107,7 +127,7 @@ impl<T: ItemBase> ItemArena<T> {
 
     /// count of item
     pub fn count(&self) -> usize {
-        self.count
+        self.count as usize
     }
 
     /// item pool is empty
@@ -124,36 +144,94 @@ impl<T: ItemBase> ItemArena<T> {
     pub fn as_slice(&self) -> &[T] {
         self.arena.as_slice()
     }
+
+    /// to reference without mutable
+    pub fn fix(&mut self) -> &Self {
+        self.arena.shrink_to_fit();
+        Logger::convert_reference_log(K::kind_group());
+        self
+    }
+}
+
+impl<K: KindBase, T: ItemBase<ItemKind = K>> Default for ItemArena<K, T> {
+    fn default() -> Self {
+        ItemArena {
+            arena: Vec::default(),
+            count: 0,
+        }
+    }
 }
 
 #[cfg(test)]
 mod test {
-    use regrafilo_util::log::{KindGroup4Logger, Logger};
+    use regrafilo_util::log::{KindBase, KindGroup4Logger, KindKey4Logger, Logger};
 
-    use crate::util::item_arena::{ItemArenaBuilder, ItemBase, ItemIndex};
+    use crate::util::item_arena::{ItemArena, ItemBase, ItemIndex, RefIndexOfItem};
+    use crate::util::kind_key::KindKey;
 
     const COUNT: usize = 10;
+
+    #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone)]
+    enum Kind {
+        Group,
+        Node,
+        Edge,
+    }
+
+    impl KindGroup4Logger for Kind {
+        fn kind_group() -> &'static str {
+            "GraphItem"
+        }
+    }
+
+    impl KindKey4Logger for Kind {
+        fn get_kind_string(&self) -> &'static str {
+            use Kind::*;
+            match self {
+                Group => "Group",
+                Node => "Node",
+                Edge => "Edge",
+            }
+        }
+    }
+
+    impl KindBase for Kind {}
+
+    fn check_list() -> Vec<Kind> {
+        use Kind::*;
+        vec![Group, Node, Edge]
+    }
+
+    const CHECKER: Kind = Kind::Group;
 
     #[derive(Debug, Eq, PartialEq, Clone)]
     struct Item {
         id: ItemIndex,
+        kind: Kind,
     }
 
     impl Item {
         fn new() -> Self {
-            Item { id: 0 }
-        }
-    }
-
-    impl KindGroup4Logger for Item {
-        fn kind_group() -> &'static str {
-            "example"
+            Item {
+                id: 0,
+                kind: CHECKER,
+            }
         }
     }
 
     impl ItemBase for Item {
+        type ItemKind = Kind;
+
         fn set_item_id(&mut self, index: usize) {
             self.id = index;
+        }
+
+        fn get_kind(&self) -> Kind {
+            self.kind
+        }
+
+        fn get_group_id(&self) -> usize {
+            0
         }
 
         fn get_item_id(&self) -> usize {
@@ -164,29 +242,28 @@ mod test {
     #[test]
     fn is_empty() {
         Logger::init(true);
-        assert!(ItemArenaBuilder::<Item>::new().build().0.is_empty());
+        assert!(ItemArena::<Kind, Item>::new().is_empty());
     }
 
     #[test]
     fn no_name_count() {
         Logger::init(true);
-        let mut builder = ItemArenaBuilder::<Item>::new();
+        let mut builder = ItemArena::<Kind, Item>::new();
         for _ in 0..COUNT {
             builder.push(Item::new());
         }
-        let (arena, names) = builder.build();
+        let arena = builder;
         assert_eq!(arena.count(), COUNT);
-        assert_eq!(names.len(), 0);
     }
 
     #[test]
     fn no_name_each_eq() {
         Logger::init(true);
-        let mut builder = ItemArenaBuilder::<Item>::new();
+        let mut builder = ItemArena::<Kind, Item>::new();
         for _ in 0..COUNT {
             builder.push(Item::new());
         }
-        let (arena, _) = builder.build();
+        let arena = builder;
         let mut index: usize = 0;
         for item in (&arena).iter() {
             assert_eq!(item.get_item_id(), index);
@@ -198,11 +275,12 @@ mod test {
     #[test]
     fn with_name_count() {
         Logger::init(true);
-        let mut builder = ItemArenaBuilder::<Item>::new();
+        let mut builder = ItemArena::<Kind, Item>::new();
+        let mut names = RefIndexOfItem::<Kind, String>::new();
         for i in 0..COUNT {
-            builder.push_with_name(&format!("{}", i), Item::new());
+            builder.push_with_name(&mut names, &format!("{}", i), Item::new());
         }
-        let (arena, names) = builder.build();
+        let arena = builder;
         assert_eq!(arena.count(), COUNT);
         assert_eq!(names.len(), COUNT);
     }
@@ -210,15 +288,21 @@ mod test {
     #[test]
     fn with_name_each_eq() {
         Logger::init(true);
-        let mut builder = ItemArenaBuilder::<Item>::new();
+        let mut builder = ItemArena::<Kind, Item>::new();
+        let mut names = RefIndexOfItem::<Kind, String>::new();
         for i in 0..COUNT {
-            builder.push_with_name(&format!("{}", i), Item::new());
+            builder.push_with_name(&mut names, &format!("{}", i), Item::new());
         }
-        let (arena, names) = builder.build();
+        let arena = builder;
         let mut index: usize = 0;
         for item in (&arena).iter() {
             assert_eq!(item.get_item_id(), index);
-            assert_eq!(names.get(&format!("{}", index)), Some(&index));
+            for kind in check_list() {
+                assert_eq!(
+                    names.get(&KindKey::new(kind, format!("{}", index))),
+                    if kind == CHECKER { Some(&index) } else { None }
+                );
+            }
             index += 1;
         }
         assert_eq!(index, COUNT);
@@ -227,14 +311,15 @@ mod test {
     #[test]
     fn mixed_count() {
         Logger::init(true);
-        let mut builder = ItemArenaBuilder::<Item>::new();
+        let mut builder = ItemArena::<Kind, Item>::new();
+        let mut names = RefIndexOfItem::<Kind, String>::new();
         for i in 0..COUNT {
-            builder.push_with_name(&format!("{}", i), Item::new());
+            builder.push_with_name(&mut names, &format!("{}", i), Item::new());
         }
         for _ in 0..COUNT {
             builder.push(Item::new());
         }
-        let (arena, names) = builder.build();
+        let arena = builder;
         assert_eq!(arena.count(), 2 * COUNT);
         assert_eq!(names.len(), COUNT);
     }
@@ -242,21 +327,28 @@ mod test {
     #[test]
     fn mixed_each_eq() {
         Logger::init(true);
-        let mut builder = ItemArenaBuilder::<Item>::new();
+        let mut builder = ItemArena::<Kind, Item>::new();
+        let mut names = RefIndexOfItem::<Kind, String>::new();
         for i in 0..COUNT {
-            builder.push_with_name(&format!("{}", i), Item::new());
+            builder.push_with_name(&mut names, &format!("{}", i), Item::new());
         }
         for _ in 0..COUNT {
             builder.push(Item::new());
         }
-        let (arena, names) = builder.build();
+        let arena = builder;
         let mut index: usize = 0;
         for item in (&arena).iter() {
             assert_eq!(item.get_item_id(), index);
-            assert_eq!(
-                names.get(&format!("{}", index)),
-                if index < COUNT { Some(&index) } else { None }
-            );
+            for kind in check_list() {
+                assert_eq!(
+                    names.get(&KindKey::new(kind, format!("{}", index))),
+                    if index < COUNT && kind == CHECKER {
+                        Some(&index)
+                    } else {
+                        None
+                    }
+                );
+            }
             index += 1;
         }
         assert_eq!(index, 2 * COUNT);
