@@ -29,9 +29,9 @@ pub struct ItemArena<K: KindBase, T: ItemBase<ItemKind = K>> {
 }
 
 impl<K: KindBase, T: ItemBase<ItemKind = K>> ItemArena<K, T> {
-    /// initializer
+    /// initialize
     pub fn new() -> Self {
-        Logger::initializer_log(K::kind_group());
+        Logger::initializer_log(K::group_kind_string(), None);
         ItemArena::default()
     }
 
@@ -39,7 +39,7 @@ impl<K: KindBase, T: ItemBase<ItemKind = K>> ItemArena<K, T> {
     // helper
     //
 
-    /// get next index with increment as soon as possible
+    /// get the next index with increment as soon as possible
     fn get_push_index(&self) -> ItemIndex {
         self.arena.len()
     }
@@ -48,16 +48,20 @@ impl<K: KindBase, T: ItemBase<ItemKind = K>> ItemArena<K, T> {
     // setter
     //
 
-    /// push item into arena
+    /// push the item into arena
     pub fn push(&mut self, mut item: T) {
         let push_index = self.get_push_index();
         let item_kind = item.get_kind();
         item.set_item_id(push_index);
         self.arena.push(item);
-        Logger::push_log(item_kind.get_kind_string(), push_index);
+        Logger::push_log(
+            K::group_kind_string(),
+            item_kind.key_kind_string(),
+            push_index,
+        );
     }
 
-    /// push item into arena with action for conclusion
+    /// push the item into arena with action for conclusion
     pub fn push_with_action<F>(&mut self, mut item: T, conclusion: F)
     where
         F: Fn(K, ItemIndex, ItemIndex),
@@ -68,10 +72,14 @@ impl<K: KindBase, T: ItemBase<ItemKind = K>> ItemArena<K, T> {
         let item_kind = item.get_kind();
         self.arena.push(item);
         conclusion(item_kind, group_id, push_index);
-        Logger::push_log(item_kind.get_kind_string(), push_index);
+        Logger::push_log(
+            K::group_kind_string(),
+            item_kind.key_kind_string(),
+            push_index,
+        );
     }
 
-    /// push item with name into arena
+    /// push item with the name into arena
     pub fn push_with_name(
         &mut self,
         names: &mut RefIndexOfItem<K, String>,
@@ -83,10 +91,15 @@ impl<K: KindBase, T: ItemBase<ItemKind = K>> ItemArena<K, T> {
         item.set_item_id(push_index);
         names.insert(KindKey::new(item_kind, name.to_string()), push_index);
         self.arena.push(item);
-        Logger::with_name_push_log(item_kind.get_kind_string(), name, push_index);
+        Logger::with_name_push_log(
+            K::group_kind_string(),
+            item_kind.key_kind_string(),
+            name,
+            push_index,
+        );
     }
 
-    /// push item with name into arena with action for conclusion
+    /// push item with the name into arena with action for conclusion
     pub fn push_with_name_and_action<F>(
         &mut self,
         names: &mut RefIndexOfItem<K, String>,
@@ -103,7 +116,12 @@ impl<K: KindBase, T: ItemBase<ItemKind = K>> ItemArena<K, T> {
         names.insert(KindKey::new(item_kind, name.to_string()), push_index);
         self.arena.push(item);
         conclusion(item_kind, group_id, push_index);
-        Logger::with_name_push_log(item_kind.get_kind_string(), name, push_index);
+        Logger::with_name_push_log(
+            K::group_kind_string(),
+            item_kind.key_kind_string(),
+            name,
+            push_index,
+        );
     }
 
     /// item getter
@@ -160,6 +178,7 @@ impl<K: KindBase, T: ItemBase<ItemKind = K>> ItemArena<K, T> {
 }
 
 impl<K: KindBase, T: ItemBase<ItemKind = K>> Default for ItemArena<K, T> {
+    /// initialize without log
     fn default() -> Self {
         ItemArena {
             arena: Vec::default(),
@@ -169,7 +188,7 @@ impl<K: KindBase, T: ItemBase<ItemKind = K>> Default for ItemArena<K, T> {
 
 #[cfg(test)]
 mod test {
-    use regrafilo_util::log::{KindBase, KindGroup4Logger, KindKey4Logger, Logger};
+    use regrafilo_util::log::{GroupKind4Logger, KeyKind4Logger, KindBase, Logger};
 
     use crate::util::item_arena::{ItemArena, ItemBase, ItemIndex, RefIndexOfItem};
     use crate::util::kind_key::KindKey;
@@ -183,14 +202,14 @@ mod test {
         Edge,
     }
 
-    impl KindGroup4Logger for Kind {
-        fn kind_group() -> &'static str {
-            "GraphItem"
+    impl GroupKind4Logger for Kind {
+        fn group_kind_string() -> &'static str {
+            "Graph"
         }
     }
 
-    impl KindKey4Logger for Kind {
-        fn get_kind_string(&self) -> &'static str {
+    impl KeyKind4Logger for Kind {
+        fn key_kind_string(&self) -> &'static str {
             use Kind::*;
             match self {
                 Group => "Group",

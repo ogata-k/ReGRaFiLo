@@ -11,16 +11,16 @@ use log::LevelFilter;
 pub struct Logger {}
 
 /// Base of Kind
-pub trait KindBase: Ord + Eq + Copy + KindGroup4Logger + KindKey4Logger {}
+pub trait KindBase: Ord + Eq + Copy + GroupKind4Logger + KeyKind4Logger {}
 
-/// get kind name of the type for Logger
-pub trait KindGroup4Logger {
-    fn kind_group() -> &'static str;
+/// get the kind name of the type for Logger
+pub trait GroupKind4Logger {
+    fn group_kind_string() -> &'static str;
 }
 
-/// get kind name of the instance for Logger
-pub trait KindKey4Logger {
-    fn get_kind_string(&self) -> &'static str;
+/// get the kind name of the instance for Logger
+pub trait KeyKind4Logger {
+    fn key_kind_string(&self) -> &'static str;
 }
 
 /// for Logger
@@ -101,36 +101,58 @@ impl Logger {
     //
 
     /// log when create builder
-    pub fn initializer_log(kind: &str) {
-        debug!("make {} initializer", kind);
+    pub fn initializer_log(store_group_kind: &str, item_group_kind: Option<&str>) {
+        if let Some(item_kind_str) = item_group_kind {
+            debug!(
+                "initialize {} store for {} item",
+                store_group_kind, item_kind_str
+            );
+        } else {
+            debug!("initialize {} store", store_group_kind);
+        }
     }
 
     /// log when push item
-    pub fn push_log(kind: &str, index: usize) {
-        trace!("push item of {} with the id {}", kind, index);
+    pub fn push_log(store_group_kind: &str, item_key_kind: &str, index: usize) {
+        trace!(
+            "push {} item into {} store with the id {}",
+            item_key_kind,
+            store_group_kind,
+            index
+        );
     }
 
     /// log when push item with name
-    pub fn with_name_push_log(kind: &str, name: &str, index: usize) {
+    pub fn with_name_push_log(
+        store_group_kind: &str,
+        item_key_kind: &str,
+        name: &str,
+        index: usize,
+    ) {
         trace!(
-            "push item of {} with the id {} with the name \"{}\"",
-            kind,
+            "push {} item into {} store with the id {} with the name \"{}\"",
+            item_key_kind,
+            store_group_kind,
             index,
             name
         );
     }
 
-    /// log when builder have done building action
-    pub fn convert_reference_log(kind: &str) {
-        debug!("convert {} to reference", kind);
-    }
-
     /// log when push item override
-    pub fn override_log<S: ToString>(kind: &str, item: S) {
-        warn!("item of {} override from {}", kind, item.to_string());
+    pub fn override_value_log<S: ToString>(store_group_kind: &str, item_key_kind: &str, value: S) {
+        warn!(
+            "{}'s item in {} store override a value to {}",
+            item_key_kind,
+            store_group_kind,
+            value.to_string()
+        );
     }
 
-    pub fn inconsistent<D: Debug>(kind: &str, value: D) {
-        error!("item of {} is inconsistent: {:?}", kind, value);
+    /// log when occurred inconsistent action
+    pub fn inconsistent<D: Debug>(store_group_kind: &str, item_key_kind: &str, value: D) {
+        error!(
+            "{}'s item of {} store is inconsistent: {:?}",
+            item_key_kind, store_group_kind, value
+        );
     }
 }
