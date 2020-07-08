@@ -35,10 +35,18 @@ impl<K: KindBase, T: ItemBase<ItemKind = K>> ItemArena<K, T> {
         ItemArena::default()
     }
 
+    //
+    // helper
+    //
+
     /// get next index with increment as soon as possible
     fn get_push_index(&self) -> ItemIndex {
         self.arena.len()
     }
+
+    //
+    // setter
+    //
 
     /// push item into arena
     pub fn push(&mut self, mut item: T) {
@@ -117,10 +125,9 @@ impl<K: KindBase, T: ItemBase<ItemKind = K>> ItemArena<K, T> {
         })
     }
 
-    /// get all items
-    pub fn all(&self) -> &[T] {
-        self.as_slice()
-    }
+    //
+    // reference
+    //
 
     /// count of item
     pub fn count(&self) -> usize {
@@ -132,21 +139,23 @@ impl<K: KindBase, T: ItemBase<ItemKind = K>> ItemArena<K, T> {
         self.count() == 0
     }
 
+    //
+    // iter or slice
+    //
+
     /// to iterator
     pub fn iter(&self) -> Iter<'_, T> {
         self.arena.iter()
     }
 
+    /// get all items
+    pub fn all(&self) -> &[T] {
+        self.as_slice()
+    }
+
     /// to slice
     pub fn as_slice(&self) -> &[T] {
         self.arena.as_slice()
-    }
-
-    /// to reference without mutable
-    pub fn fix(&mut self) -> &Self {
-        self.arena.shrink_to_fit();
-        Logger::convert_reference_log(K::kind_group());
-        self
     }
 }
 
@@ -244,22 +253,22 @@ mod test {
     #[test]
     fn no_name_count() {
         Logger::init(true);
-        let mut builder = ItemArena::<Kind, Item>::new();
+        let mut arena_mut = ItemArena::<Kind, Item>::new();
         for _ in 0..COUNT {
-            builder.push(Item::new());
+            arena_mut.push(Item::new());
         }
-        let arena = builder;
+        let arena = arena_mut;
         assert_eq!(arena.count(), COUNT);
     }
 
     #[test]
     fn no_name_each_eq() {
         Logger::init(true);
-        let mut builder = ItemArena::<Kind, Item>::new();
+        let mut arena_mut = ItemArena::<Kind, Item>::new();
         for _ in 0..COUNT {
-            builder.push(Item::new());
+            arena_mut.push(Item::new());
         }
-        let arena = builder;
+        let arena = arena_mut;
         let mut index: usize = 0;
         for item in (&arena).iter() {
             assert_eq!(item.get_item_id(), index);
@@ -271,12 +280,12 @@ mod test {
     #[test]
     fn with_name_count() {
         Logger::init(true);
-        let mut builder = ItemArena::<Kind, Item>::new();
+        let mut arena_mut = ItemArena::<Kind, Item>::new();
         let mut names = RefIndexOfItem::<Kind, String>::new();
         for i in 0..COUNT {
-            builder.push_with_name(&mut names, &format!("{}", i), Item::new());
+            arena_mut.push_with_name(&mut names, &format!("{}", i), Item::new());
         }
-        let arena = builder;
+        let arena = arena_mut;
         assert_eq!(arena.count(), COUNT);
         assert_eq!(names.len(), COUNT);
     }
@@ -284,12 +293,12 @@ mod test {
     #[test]
     fn with_name_each_eq() {
         Logger::init(true);
-        let mut builder = ItemArena::<Kind, Item>::new();
+        let mut arena_mut = ItemArena::<Kind, Item>::new();
         let mut names = RefIndexOfItem::<Kind, String>::new();
         for i in 0..COUNT {
-            builder.push_with_name(&mut names, &format!("{}", i), Item::new());
+            arena_mut.push_with_name(&mut names, &format!("{}", i), Item::new());
         }
-        let arena = builder;
+        let arena = arena_mut;
         let mut index: usize = 0;
         for item in (&arena).iter() {
             assert_eq!(item.get_item_id(), index);
@@ -307,15 +316,15 @@ mod test {
     #[test]
     fn mixed_count() {
         Logger::init(true);
-        let mut builder = ItemArena::<Kind, Item>::new();
+        let mut arena_mut = ItemArena::<Kind, Item>::new();
         let mut names = RefIndexOfItem::<Kind, String>::new();
         for i in 0..COUNT {
-            builder.push_with_name(&mut names, &format!("{}", i), Item::new());
+            arena_mut.push_with_name(&mut names, &format!("{}", i), Item::new());
         }
         for _ in 0..COUNT {
-            builder.push(Item::new());
+            arena_mut.push(Item::new());
         }
-        let arena = builder;
+        let arena = arena_mut;
         assert_eq!(arena.count(), 2 * COUNT);
         assert_eq!(names.len(), COUNT);
     }
@@ -323,15 +332,15 @@ mod test {
     #[test]
     fn mixed_each_eq() {
         Logger::init(true);
-        let mut builder = ItemArena::<Kind, Item>::new();
+        let mut arena_mut = ItemArena::<Kind, Item>::new();
         let mut names = RefIndexOfItem::<Kind, String>::new();
         for i in 0..COUNT {
-            builder.push_with_name(&mut names, &format!("{}", i), Item::new());
+            arena_mut.push_with_name(&mut names, &format!("{}", i), Item::new());
         }
         for _ in 0..COUNT {
-            builder.push(Item::new());
+            arena_mut.push(Item::new());
         }
-        let arena = builder;
+        let arena = arena_mut;
         let mut index: usize = 0;
         for item in (&arena).iter() {
             assert_eq!(item.get_item_id(), index);
