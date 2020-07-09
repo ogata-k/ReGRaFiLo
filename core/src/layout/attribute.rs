@@ -2,9 +2,9 @@
 
 use regrafilo_util::log::{GroupKind4Logger, KeyKind4Logger, KindBase, Logger};
 
-use crate::util::item_arena::ItemIndex;
 use crate::util::kind_key::KindKey;
 use crate::util::RefIndex;
+use crate::util::item_base::ItemIndex;
 
 /// triple of ItemKind, Index, Key
 pub type AttributeRefKey<ItemKindKey> = KindKey<ItemKindKey, KindKey<ItemIndex, AttributeKey>>;
