@@ -2,12 +2,12 @@
 
 use regrafilo_util::log::{GroupKind4Logger, KeyKind4Logger, KindBase, Logger};
 
-use crate::util::kind_key::KindKey;
+use crate::util::kind_key::KeyWithKind;
 use crate::util::RefIndex;
 use crate::util::item_base::ItemIndex;
 
 /// triple of ItemKind, Index, Key
-pub type AttributeRefKey<ItemKindKey> = KindKey<ItemKindKey, KindKey<ItemIndex, AttributeKey>>;
+pub type AttributeRefKey<ItemKindKey> = KeyWithKind<ItemKindKey, KeyWithKind<ItemIndex, AttributeKey>>;
 
 /// helper for make reference key
 fn create_ref_key<ItemKindKey: Copy>(
@@ -15,7 +15,7 @@ fn create_ref_key<ItemKindKey: Copy>(
     key: AttributeKey,
     index: ItemIndex,
 ) -> AttributeRefKey<ItemKindKey> {
-    KindKey::new(item_kind, KindKey::new(index, key))
+    KeyWithKind::new(item_kind, KeyWithKind::new(index, key))
 }
 
 /// key of Attribute

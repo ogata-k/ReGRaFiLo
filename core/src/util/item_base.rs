@@ -1,6 +1,6 @@
 //! base of item and item builder
 
-use crate::util::kind_key::KindKey;
+use crate::util::kind_key::KeyWithKind;
 use crate::util::RefIndex;
 use regrafilo_util::log::KindBase;
 
@@ -9,7 +9,7 @@ use regrafilo_util::log::KindBase;
 pub type ItemIndex = usize;
 
 /// RefIndex for ItemIndex
-pub type RefIndexOfItem<K, T> = RefIndex<KindKey<K, T>, ItemIndex>;
+pub type RefIndexOfItem<K, T> = RefIndex<KeyWithKind<K, T>, ItemIndex>;
 
 /// Item Builder's base set
 pub trait ItemBuilderBase {

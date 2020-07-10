@@ -177,7 +177,7 @@ mod test {
 
     use crate::util::item_arena::ItemArena;
     use crate::util::item_base::{ItemBase, ItemBuilderBase, ItemIndex, RefIndexOfItem};
-    use crate::util::kind_key::KindKey;
+    use crate::util::kind_key::KeyWithKind;
     use std::fmt::{Display, Formatter};
 
     const COUNT: usize = 10;
@@ -359,7 +359,7 @@ mod test {
                         name: Some(name),
                     }) = result
                     {
-                        names.insert(KindKey::new(kind, name), item_index);
+                        names.insert(KeyWithKind::new(kind, name), item_index);
                     }
                 },
             );
@@ -384,7 +384,7 @@ mod test {
                     name: Some(name),
                 }) = result
                 {
-                    names.insert(KindKey::new(kind, name), item_index);
+                    names.insert(KeyWithKind::new(kind, name), item_index);
                 }
             });
         }
@@ -394,7 +394,7 @@ mod test {
             assert_eq!(item.get_item_id(), index);
             for kind in check_list() {
                 assert_eq!(
-                    names.get(&KindKey::new(kind, format!("{}", index))),
+                    names.get(&KeyWithKind::new(kind, format!("{}", index))),
                     if kind == Kind::Node {
                         Some(&index)
                     } else {
@@ -425,7 +425,7 @@ mod test {
                     name: Some(name),
                 }) = result
                 {
-                    names.insert(KindKey::new(kind, name), item_index);
+                    names.insert(KeyWithKind::new(kind, name), item_index);
                 }
             });
         }
@@ -452,7 +452,7 @@ mod test {
                     name: Some(name),
                 }) = result
                 {
-                    names.insert(KindKey::new(kind, name), item_index);
+                    names.insert(KeyWithKind::new(kind, name), item_index);
                 }
             });
         }
@@ -462,7 +462,7 @@ mod test {
             assert_eq!(item.get_item_id(), index);
             for kind in check_list() {
                 assert_eq!(
-                    names.get(&KindKey::new(kind, format!("{}", index))),
+                    names.get(&KeyWithKind::new(kind, format!("{}", index))),
                     if index < COUNT && kind == Kind::Node {
                         Some(&index)
                     } else {
