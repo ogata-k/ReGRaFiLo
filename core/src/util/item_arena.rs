@@ -5,6 +5,7 @@ use std::slice::{Iter, SliceIndex};
 use regrafilo_util::log::{KindBase, Logger};
 
 use crate::util::item_base::{ItemBase, ItemBuilderBase, ItemIndex};
+use std::fmt::Display;
 
 /// item pool
 #[derive(Debug, Clone)]
@@ -36,42 +37,74 @@ impl<K: KindBase, I: ItemBase<ItemKind = K>> ItemArena<I> {
 
     /// push the item into arena with action for conclusion<br/>
     /// F: fn(item_kind, group_id, item_id, extension)
-    pub fn push_with_action<F, Ext, IB: ItemBuilderBase<Ext, ItemKind = K, Item = I>>(
+    pub fn push_with_action<
+        F,
+        IO,
+        BFE: Display,
+        IB: ItemBuilderBase<ItemKind = K, Item = I, ItemOption = IO, BuildFailErr = BFE>,
+    >(
         &mut self,
-        // TODO 適切なmutの設定とライフタイムの指定
         item_builder: IB,
-        conclusion: F,
+        action: F,
     ) where
-        F: Fn(K, ItemIndex, ItemIndex, Ext),
+        F: FnOnce(K, ItemIndex, ItemIndex, Result<IB::ItemOption, IB::BuildFailErr>),
     {
         let push_index = self.get_push_index();
         let group_id = item_builder.get_group_id();
         let item_kind = IB::kind();
-        let (item, ext) = item_builder.build(push_index);
-        self.arena.push(item);
-        conclusion(item_kind, group_id, push_index, ext);
-        Logger::push_log(
-            K::group_kind_string(),
-            item_kind.key_kind_string(),
-            push_index,
-        );
+        let result = item_builder.build(push_index);
+        match result {
+            Ok((item, option)) => {
+                Logger::push_log(
+                    K::group_kind_string(),
+                    item_kind.key_kind_string(),
+                    push_index,
+                );
+                self.arena.push(item);
+                action(item_kind, group_id, push_index, Ok(option));
+            }
+            Err(err) => {
+                Logger::push_err_log(
+                    K::group_kind_string(),
+                    item_kind.key_kind_string(),
+                    push_index,
+                    &err,
+                );
+                action(item_kind, group_id, push_index, Err(err));
+            }
+        }
     }
 
     /// push the item into arena without action for conclusion
-    pub fn push<Ext, IB: ItemBuilderBase<Ext, ItemKind = K, Item = I>>(
+    pub fn push<
+        IO,
+        BFE: Display,
+        IB: ItemBuilderBase<ItemKind = K, Item = I, ItemOption = IO, BuildFailErr = BFE>,
+    >(
         &mut self,
-        // TODO 適切なmutの設定とライフタイムの指定
         item_builder: IB,
     ) {
         let push_index = self.get_push_index();
         let item_kind = IB::kind();
-        let (item, _) = item_builder.build(push_index);
-        self.arena.push(item);
-        Logger::push_log(
-            K::group_kind_string(),
-            item_kind.key_kind_string(),
-            push_index,
-        );
+        let result = item_builder.build(push_index);
+        match result {
+            Ok((item, _)) => {
+                self.arena.push(item);
+                Logger::push_log(
+                    K::group_kind_string(),
+                    item_kind.key_kind_string(),
+                    push_index,
+                );
+            }
+            Err(err) => {
+                Logger::push_err_log(
+                    K::group_kind_string(),
+                    item_kind.key_kind_string(),
+                    push_index,
+                    &err,
+                );
+            }
+        }
     }
 }
 
@@ -145,6 +178,7 @@ mod test {
     use crate::util::item_arena::ItemArena;
     use crate::util::item_base::{ItemBase, ItemBuilderBase, ItemIndex, RefIndexOfItem};
     use crate::util::kind_key::KindKey;
+    use std::fmt::{Display, Formatter};
 
     const COUNT: usize = 10;
 
@@ -186,10 +220,25 @@ mod test {
     }
 
     #[derive(Debug, Eq, PartialEq, Clone)]
-    struct NodeItemExtension {
+    struct NodeItemOption {
         group_id: ItemIndex,
         item_id: ItemIndex,
         name: Option<String>,
+    }
+
+    #[derive(Debug)]
+    enum NodeBuildError {
+        #[allow(dead_code)]
+        BuildFail,
+    }
+
+    impl Display for NodeBuildError {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            use NodeBuildError::*;
+            match &self {
+                BuildFail => write!(f, "fail build item"),
+            }
+        }
     }
 
     impl NodeItemBuilder {
@@ -206,9 +255,11 @@ mod test {
         }
     }
 
-    impl ItemBuilderBase<NodeItemExtension> for NodeItemBuilder {
+    impl ItemBuilderBase for NodeItemBuilder {
         type ItemKind = Kind;
         type Item = NodeItem;
+        type ItemOption = NodeItemOption;
+        type BuildFailErr = NodeBuildError;
 
         fn kind() -> Self::ItemKind {
             Kind::Node
@@ -223,16 +274,16 @@ mod test {
             self.group_id
         }
 
-        fn build(self, item_id: usize) -> (Self::Item, NodeItemExtension) {
+        fn build(self, item_id: usize) -> Result<(Self::Item, NodeItemOption), NodeBuildError> {
             let NodeItemBuilder { group_id, name } = self;
-            (
+            Ok((
                 NodeItem { group_id, item_id },
-                NodeItemExtension {
+                NodeItemOption {
                     group_id,
                     item_id,
                     name,
                 },
-            )
+            ))
         }
     }
 
@@ -297,14 +348,21 @@ mod test {
         let mut arena_mut = ItemArena::<NodeItem>::new();
         let mut names = RefIndexOfItem::<Kind, String>::new();
         for i in 0..COUNT {
-            let builder = NodeItemBuilder::new()
-                .set_group_id(0)
-                .set_name(format!("{}", i));
-            arena_mut.push_with_action(builder, |kind, group_index, item_index, ext| {
-                if let Some(name) = ext {
-                    names.insert(KindKey::new(kind, name), item_index);
-                }
-            });
+            let mut builder = NodeItemBuilder::new();
+            builder.set_group_id(0).set_name(format!("{}", i));
+            arena_mut.push_with_action(
+                builder,
+                |kind, _group_index, item_index, result: Result<NodeItemOption, NodeBuildError>| {
+                    if let Ok(NodeItemOption {
+                        group_id: _,
+                        item_id: _,
+                        name: Some(name),
+                    }) = result
+                    {
+                        names.insert(KindKey::new(kind, name), item_index);
+                    }
+                },
+            );
         }
         let arena = arena_mut;
         assert_eq!(arena.count(), COUNT);
@@ -317,11 +375,15 @@ mod test {
         let mut arena_mut = ItemArena::<NodeItem>::new();
         let mut names = RefIndexOfItem::<Kind, String>::new();
         for i in 0..COUNT {
-            let builder = NodeItemBuilder::new()
-                .set_group_id(0)
-                .set_name(format!("{}", i));
-            arena_mut.push_with_action(builder, |kind, group_index, item_index, ext| {
-                if let Some(name) = ext {
+            let mut builder = NodeItemBuilder::new();
+            builder.set_group_id(0).set_name(format!("{}", i));
+            arena_mut.push_with_action(builder, |kind, _group_index, item_index, result| {
+                if let Ok(NodeItemOption {
+                    group_id: _,
+                    item_id: _,
+                    name: Some(name),
+                }) = result
+                {
                     names.insert(KindKey::new(kind, name), item_index);
                 }
             });
@@ -351,12 +413,18 @@ mod test {
         let mut arena_mut = ItemArena::<NodeItem>::new();
         let mut names = RefIndexOfItem::<Kind, String>::new();
         for i in 0..2 * COUNT {
-            let mut builder = NodeItemBuilder::new().set_group_id(0);
+            let mut builder = NodeItemBuilder::new();
+            builder.set_group_id(0);
             if i < COUNT {
                 builder.set_name(format!("{}", i));
             }
-            arena_mut.push_with_action(builder, |kind, group_index, item_index, ext| {
-                if let Some(name) = ext {
+            arena_mut.push_with_action(builder, |kind, _group_index, item_index, result| {
+                if let Ok(NodeItemOption {
+                    group_id: _,
+                    item_id: _,
+                    name: Some(name),
+                }) = result
+                {
                     names.insert(KindKey::new(kind, name), item_index);
                 }
             });
@@ -372,12 +440,18 @@ mod test {
         let mut arena_mut = ItemArena::<NodeItem>::new();
         let mut names = RefIndexOfItem::<Kind, String>::new();
         for i in 0..2 * COUNT {
-            let mut builder = NodeItemBuilder::new().set_group_id(0);
+            let mut builder = NodeItemBuilder::new();
+            builder.set_group_id(0);
             if i < COUNT {
                 builder.set_name(format!("{}", i));
             }
-            arena_mut.push_with_action(builder, |kind, group_index, item_index, ext| {
-                if let Some(name) = ext {
+            arena_mut.push_with_action(builder, |kind, _group_index, item_index, result| {
+                if let Ok(NodeItemOption {
+                    group_id: _,
+                    item_id: _,
+                    name: Some(name),
+                }) = result
+                {
                     names.insert(KindKey::new(kind, name), item_index);
                 }
             });

@@ -12,13 +12,19 @@ pub type ItemIndex = usize;
 pub type RefIndexOfItem<K, T> = RefIndex<KindKey<K, T>, ItemIndex>;
 
 /// Item Builder's base set
-pub trait ItemBuilderBase<Ext> {
+pub trait ItemBuilderBase {
     type ItemKind: KindBase;
     type Item: ItemBase<ItemKind = Self::ItemKind>;
+    type ItemOption;
+    type BuildFailErr;
+
     fn kind() -> Self::ItemKind;
     fn set_group_id(&mut self, group_id: ItemIndex) -> &mut Self;
     fn get_group_id(&self) -> ItemIndex;
-    fn build(self, item_index: ItemIndex) -> (Self::Item, Ext);
+    fn build(
+        self,
+        item_index: ItemIndex,
+    ) -> Result<(Self::Item, Self::ItemOption), Self::BuildFailErr>;
 }
 
 /// Item's base set
