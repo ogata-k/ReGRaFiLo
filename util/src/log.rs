@@ -129,7 +129,7 @@ impl Logger {
         index: usize,
         err: &S,
     ) {
-        error!(
+        warn!(
             "push {} item into {} store with the id {} with error: {}",
             item_key_kind, store_group_kind, index, err
         );
