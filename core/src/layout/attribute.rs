@@ -1,9 +1,10 @@
 //! attribute of ReGRaFiLo's item
 
-use regrafilo_util::log::{GroupKind4Logger, KeyKind4Logger, KindBase, Logger};
-
-use crate::util::kind_key::KeyWithKind;
+use crate::event::Event::{OverrideAttribute, PushAttribute};
+use crate::event::{Event, ItemEventKind, Visitor};
 use crate::util::alias::{ItemIndex, RefIndex};
+use crate::util::kind_key::KeyWithKind;
+use crate::util::util_trait::KindBase;
 
 /// triple of ItemKind, Index, Key
 type AttributeRefKey<ItemKindKey> = KeyWithKind<ItemKindKey, KeyWithKind<ItemIndex, AttributeKey>>;
@@ -24,22 +25,6 @@ pub enum AttributeKey {
     Group,
 }
 
-impl GroupKind4Logger for AttributeKey {
-    fn group_kind_string() -> &'static str {
-        "Attribute"
-    }
-}
-
-impl KeyKind4Logger for AttributeKey {
-    fn key_kind_string(&self) -> &'static str {
-        use AttributeKey::*;
-        match self {
-            Form => "Form",
-            Group => "Group",
-        }
-    }
-}
-
 impl KindBase for AttributeKey {}
 
 /// value of Attribute. but user wouldn't use
@@ -50,16 +35,13 @@ enum AttributeValue {
 
 /// reference of Attribute
 pub struct AttributeRefIndex<ItemKindKey: KindBase> {
-    ref_index: RefIndex<AttributeRefKey<ItemKindKey>, AttributeValue>,
+    reference_index: RefIndex<AttributeRefKey<ItemKindKey>, AttributeValue>,
 }
 
-impl<ItemKindKey: KindBase> AttributeRefIndex<ItemKindKey> {
+impl<ItemKindKey: KindBase + Into<ItemEventKind>> AttributeRefIndex<ItemKindKey> {
     /// initialize
-    pub fn new() -> Self {
-        Logger::initializer_log(
-            AttributeKey::group_kind_string(),
-            Some(ItemKindKey::group_kind_string()),
-        );
+    pub fn new<V: Visitor>(visitor: &mut V) -> Self {
+        visitor.visit(&Event::InitializeAttribute);
         AttributeRefIndex::default()
     }
 
@@ -68,39 +50,30 @@ impl<ItemKindKey: KindBase> AttributeRefIndex<ItemKindKey> {
     //
 
     /// helper for a setter of string attribute
-    fn push_attribute_string(
+    fn push_attribute_string<V: Visitor>(
         &mut self,
+        visitor: &mut V,
         key: AttributeKey,
         item_kind: ItemKindKey,
         index: ItemIndex,
         value: String,
     ) -> Option<String> {
-        Logger::with_name_push_log(
-            AttributeKey::group_kind_string(),
-            item_kind.key_kind_string(),
-            &value,
-            index,
-        );
-        let result = self.ref_index.insert(
+        visitor.visit(&PushAttribute(item_kind.into(), index, &value));
+        let result = self.reference_index.insert(
             create_ref_key(item_kind, key, index),
             AttributeValue::String(value),
         );
         result.map(|v| {
-            #[allow(irrefutable_let_patterns)]
             if let AttributeValue::String(s) = v {
-                Logger::override_value_log(
-                    AttributeKey::group_kind_string(),
-                    item_kind.key_kind_string(),
-                    &s,
-                );
+                visitor.visit(&OverrideAttribute(item_kind.into(), index, &s));
                 return s;
             }
-            Logger::inconsistent(
-                AttributeKey::group_kind_string(),
-                item_kind.key_kind_string(),
-                v,
+            unreachable!(
+                "inconsistent attribute value: ({:?},{},{:?})",
+                item_kind.into(),
+                index,
+                v
             );
-            unreachable!();
         })
     }
 
@@ -111,24 +84,25 @@ impl<ItemKindKey: KindBase> AttributeRefIndex<ItemKindKey> {
         item_kind: ItemKindKey,
         index: ItemIndex,
     ) -> Option<&str> {
-        let result = self.ref_index.get(&create_ref_key(item_kind, key, index));
+        let result = self
+            .reference_index
+            .get(&create_ref_key(item_kind, key, index));
         result.map(|v| {
-            #[allow(irrefutable_let_patterns)]
             if let AttributeValue::String(s) = v {
                 return s.as_str();
             }
-            Logger::inconsistent(
-                AttributeKey::group_kind_string(),
-                item_kind.key_kind_string(),
-                v,
+            unreachable!(
+                "inconsistent attribute value: ({:?},{},{:?})",
+                item_kind.into(),
+                index,
+                v
             );
-            unreachable!();
         })
     }
 
     /// helper for count by kind
     fn count_by(&self, item_kind: ItemKindKey, key: AttributeKey) -> usize {
-        self.ref_index
+        self.reference_index
             .iter()
             .filter(|(k, _)| k.is_kind(item_kind) && k.key.key == key)
             .count()
@@ -139,23 +113,25 @@ impl<ItemKindKey: KindBase> AttributeRefIndex<ItemKindKey> {
     //
 
     /// set form attribute
-    pub fn push_form_name(
+    pub fn push_form_name<V: Visitor>(
         &mut self,
+        visitor: &mut V,
         item_kind: ItemKindKey,
         index: ItemIndex,
         name: String,
     ) -> Option<String> {
-        self.push_attribute_string(AttributeKey::Form, item_kind, index, name)
+        self.push_attribute_string(visitor, AttributeKey::Form, item_kind, index, name)
     }
 
     /// set group attribute
-    pub fn push_group_name(
+    pub fn push_group_name<V: Visitor>(
         &mut self,
+        visitor: &mut V,
         item_kind: ItemKindKey,
         index: ItemIndex,
         name: String,
     ) -> Option<String> {
-        self.push_attribute_string(AttributeKey::Group, item_kind, index, name)
+        self.push_attribute_string(visitor, AttributeKey::Group, item_kind, index, name)
     }
 
     //
@@ -191,54 +167,21 @@ impl<ItemKindKey: KindBase> Default for AttributeRefIndex<ItemKindKey> {
     /// initialize without log
     fn default() -> Self {
         AttributeRefIndex {
-            ref_index: RefIndex::new(),
+            reference_index: RefIndex::new(),
         }
     }
 }
 
 #[cfg(test)]
 mod test {
-    use regrafilo_util::log::{GroupKind4Logger, KeyKind4Logger, KindBase, Logger};
+    use crate::event::test::{check_list, Kind, Visitor, ITERATE_COUNT};
     use crate::layout::attribute::AttributeRefIndex;
-
-    const COUNT: usize = 10;
-
-    #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone)]
-    enum ItemKindKey {
-        Group,
-        Node,
-        Edge,
-    }
-
-    impl GroupKind4Logger for ItemKindKey {
-        fn group_kind_string() -> &'static str {
-            "Attribute"
-        }
-    }
-
-    impl KeyKind4Logger for ItemKindKey {
-        fn key_kind_string(&self) -> &'static str {
-            use ItemKindKey::*;
-            match self {
-                Group => "Group",
-                Node => "Node",
-                Edge => "Edge",
-            }
-        }
-    }
-
-    impl KindBase for ItemKindKey {}
-
-    fn check_key_list() -> Vec<ItemKindKey> {
-        use ItemKindKey::*;
-        vec![Group, Node, Edge]
-    }
 
     #[test]
     fn is_empty() {
-        Logger::init(true);
-        let ref_index = AttributeRefIndex::<ItemKindKey>::new();
-        for key in check_key_list().iter() {
+        let mut v = Visitor::new();
+        let ref_index = AttributeRefIndex::<Kind>::new(&mut v);
+        for key in check_list().iter() {
             assert_eq!(ref_index.count_form(*key), 0);
             assert_eq!(ref_index.count_group(*key), 0);
         }
@@ -246,17 +189,17 @@ mod test {
 
     #[test]
     fn form_count() {
-        Logger::init(true);
-        let mut ref_index_mut = AttributeRefIndex::<ItemKindKey>::new();
-        let checker = ItemKindKey::Node;
-        for i in 0..COUNT {
-            ref_index_mut.push_form_name(checker, i, format!("{}", i));
+        let mut v = Visitor::new();
+        let mut ref_index_mut = AttributeRefIndex::<Kind>::new(&mut v);
+        let checker = Kind::Node;
+        for i in 0..ITERATE_COUNT {
+            ref_index_mut.push_form_name(&mut v, checker, i, format!("{}", i));
         }
         let ref_index = ref_index_mut;
-        for key in check_key_list().iter() {
+        for key in check_list().iter() {
             assert_eq!(
                 ref_index.count_form(*key),
-                if *key == checker { COUNT } else { 0 }
+                if *key == checker { ITERATE_COUNT } else { 0 }
             );
             assert_eq!(ref_index.count_group(*key), 0);
         }
@@ -264,15 +207,15 @@ mod test {
 
     #[test]
     fn form_each_eq() {
-        Logger::init(true);
-        let mut ref_index_mut = AttributeRefIndex::<ItemKindKey>::new();
-        let checker = ItemKindKey::Node;
-        for i in 0..COUNT {
-            ref_index_mut.push_form_name(checker, i, format!("{}", i));
+        let mut v = Visitor::new();
+        let mut ref_index_mut = AttributeRefIndex::<Kind>::new(&mut v);
+        let checker = Kind::Node;
+        for i in 0..ITERATE_COUNT {
+            ref_index_mut.push_form_name(&mut v, checker, i, format!("{}", i));
         }
         let ref_index = ref_index_mut;
-        for key in check_key_list().iter() {
-            for i in 0..COUNT {
+        for key in check_list().iter() {
+            for i in 0..ITERATE_COUNT {
                 if *key == checker {
                     let result = ref_index.get_form_name(*key, i);
                     assert!(result.is_some());

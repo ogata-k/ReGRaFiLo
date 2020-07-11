@@ -2,12 +2,14 @@
 
 use std::collections::btree_map::{Iter, Range};
 use std::collections::BTreeMap;
+use std::error::Error;
 use std::ops::RangeBounds;
 use std::sync::{Arc, Mutex};
 
+use crate::event::{Event, ItemEventKind, Visitor};
 use crate::graph::item::{ItemBase, ItemBuilderBase};
 use crate::util::alias::ItemIndex;
-use regrafilo_util::log::{KindBase, Logger};
+use crate::util::util_trait::KindBase;
 
 /// item pool
 #[derive(Debug, Clone)]
@@ -16,15 +18,15 @@ pub struct ItemArena<I> {
     arena: BTreeMap<ItemIndex, I>,
 }
 
-impl<K: KindBase, I: ItemBase<ItemKind = K>> ItemArena<I> {
+impl<K: KindBase + Into<ItemEventKind>, I: ItemBase<ItemKind = K>> ItemArena<I> {
     /// initialize
-    pub fn new() -> Self {
-        Logger::initializer_log(K::group_kind_string(), None);
+    pub fn new<V: Visitor>(visitor: &mut V) -> Self {
+        visitor.visit(&Event::InitializeStore(I::kind().into()));
         ItemArena::default()
     }
 }
 
-impl<K: KindBase, I: ItemBase<ItemKind = K>> ItemArena<I> {
+impl<K: KindBase + Into<ItemEventKind>, I: ItemBase<ItemKind = K>> ItemArena<I> {
     //
     // helper
     //
@@ -49,54 +51,34 @@ impl<K: KindBase, I: ItemBase<ItemKind = K>> ItemArena<I> {
 
     /// push the item into arena with action for conclusion<br/>
     /// F: fn(item_kind, group_id, Result<(item_id, extension), err>)
-    pub fn push_with_action<
+    pub fn push<
+        V: Visitor,
         F,
         O,
-        E,
+        E: Error,
         B: ItemBuilderBase<ItemKind = K, Item = I, ItemOption = O, BuildFailErr = E>,
     >(
         &mut self,
+        visitor: &mut V,
         item_builder: B,
         action: F,
     ) where
-        F: FnOnce(K, ItemIndex, Result<(ItemIndex, B::ItemOption), B::BuildFailErr>),
+        F: FnOnce(&mut V, K, ItemIndex, Result<(ItemIndex, B::ItemOption), &B::BuildFailErr>),
     {
-        let push_index = self.arena.len();
-        let group_id = item_builder.get_group_id();
         let item_kind = B::kind();
-        let result = item_builder.build();
-        match result {
+        let group_id = item_builder.get_group_id();
+        let push_index = self.get_push_index();
+        match item_builder.build() {
             Ok((item, option)) => {
-                Logger::push_log(
-                    K::group_kind_string(),
-                    item_kind.key_kind_string(),
-                    push_index,
-                );
-                let push_index = self.get_push_index();
                 self.arena.insert(push_index, item);
-                action(item_kind, group_id, Ok((push_index, option)));
+                action(visitor, item_kind, group_id, Ok((push_index, option)));
+                visitor.visit(&Event::SucceededPush(B::kind().into(), push_index));
             }
             Err(err) => {
-                Logger::push_err_log(
-                    K::group_kind_string(),
-                    item_kind.key_kind_string(),
-                    push_index,
-                );
-                action(item_kind, group_id, Err(err));
+                visitor.visit(&Event::FailPush(B::kind().into(), push_index, &err));
+                action(visitor, item_kind, group_id, Err(&err));
             }
         }
-    }
-
-    /// push the item into arena without action for conclusion
-    pub fn push<
-        O,
-        E,
-        B: ItemBuilderBase<ItemKind = K, Item = I, ItemOption = O, BuildFailErr = E>,
-    >(
-        &mut self,
-        item_builder: B,
-    ) {
-        self.push_with_action(item_builder, |_, _, _| {});
     }
 }
 
@@ -160,43 +142,11 @@ impl<I> Default for ItemArena<I> {
 mod test {
     use std::fmt::{Display, Formatter};
 
+    use crate::event::test::{check_list, Kind, Visitor, ITERATE_COUNT};
     use crate::graph::item::{ItemArena, ItemBase, ItemBuilderBase, RefIndexOfItem};
     use crate::util::alias::ItemIndex;
     use crate::util::kind_key::KeyWithKind;
-    use regrafilo_util::log::{GroupKind4Logger, KeyKind4Logger, KindBase, Logger};
-
-    const COUNT: usize = 10;
-
-    #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone)]
-    enum Kind {
-        Group,
-        Node,
-        Edge,
-    }
-
-    impl GroupKind4Logger for Kind {
-        fn group_kind_string() -> &'static str {
-            "Graph"
-        }
-    }
-
-    impl KeyKind4Logger for Kind {
-        fn key_kind_string(&self) -> &'static str {
-            use Kind::*;
-            match self {
-                Group => "Group",
-                Node => "Node",
-                Edge => "Edge",
-            }
-        }
-    }
-
-    impl KindBase for Kind {}
-
-    fn check_list() -> Vec<Kind> {
-        use Kind::*;
-        vec![Group, Node, Edge]
-    }
+    use std::error::Error;
 
     #[derive(Debug, Eq, PartialEq, Clone)]
     struct NodeItemBuilder {
@@ -265,6 +215,10 @@ mod test {
             self.name = Some(name);
             self
         }
+
+        fn get_name(&self) -> Option<&str> {
+            self.name.as_deref()
+        }
     }
 
     impl ItemBase for NodeItem {
@@ -292,48 +246,23 @@ mod test {
         }
     }
 
+    impl Error for NodeBuildError {}
+
     #[test]
     fn is_empty() {
-        Logger::init(true);
-        assert!(ItemArena::<NodeItem>::new().is_empty());
-    }
-
-    #[test]
-    fn count() {
-        Logger::init(true);
-        let mut arena_mut = ItemArena::<NodeItem>::new();
-        for _ in 0..COUNT {
-            arena_mut.push(NodeItemBuilder::new());
-        }
-        let arena = arena_mut;
-        assert_eq!(arena.count(), COUNT);
-    }
-
-    #[test]
-    fn each_eq() {
-        Logger::init(true);
-        let mut arena_mut = ItemArena::<NodeItem>::new();
-        for _ in 0..COUNT {
-            arena_mut.push(NodeItemBuilder::new());
-        }
-        let arena = arena_mut;
-        let mut index: usize = 0;
-        for item in (&arena).iter() {
-            assert_eq!(index, *item.0);
-            index += 1;
-        }
-        assert_eq!(index, COUNT);
+        let mut v = Visitor::new();
+        assert!(ItemArena::<NodeItem>::new(&mut v).is_empty());
     }
 
     #[test]
     fn with_action_count() {
-        Logger::init(true);
-        let mut arena_mut = ItemArena::<NodeItem>::new();
+        let mut v = Visitor::new();
+        let mut arena_mut = ItemArena::<NodeItem>::new(&mut v);
         let mut names = RefIndexOfItem::<Kind, String>::new();
-        for i in 0..COUNT {
+        for i in 0..ITERATE_COUNT {
             let mut builder = NodeItemBuilder::new();
             builder.set_group_id(0).set_name(format!("{}", i));
-            arena_mut.push_with_action(builder, |kind, _group_id, result| {
+            arena_mut.push(&mut v, builder, |_visitor, kind, _group_id, result| {
                 if let Ok((
                     item_id,
                     NodeItemOption {
@@ -347,19 +276,19 @@ mod test {
             });
         }
         let arena = arena_mut;
-        assert_eq!(arena.count(), COUNT);
-        assert_eq!(names.len(), COUNT);
+        assert_eq!(arena.count(), ITERATE_COUNT);
+        assert_eq!(names.len(), ITERATE_COUNT);
     }
 
     #[test]
     fn with_action_each_eq() {
-        Logger::init(true);
-        let mut arena_mut = ItemArena::<NodeItem>::new();
+        let mut v = Visitor::new();
+        let mut arena_mut = ItemArena::<NodeItem>::new(&mut v);
         let mut names = RefIndexOfItem::<Kind, String>::new();
-        for i in 0..COUNT {
+        for i in 0..ITERATE_COUNT {
             let mut builder = NodeItemBuilder::new();
             builder.set_group_id(0).set_name(format!("{}", i));
-            arena_mut.push_with_action(builder, |kind, _group_id, result| {
+            arena_mut.push(&mut v, builder, |_visitor, kind, _group_id, result| {
                 if let Ok((
                     item_id,
                     NodeItemOption {
@@ -388,21 +317,21 @@ mod test {
             }
             index += 1;
         }
-        assert_eq!(index, COUNT);
+        assert_eq!(index, ITERATE_COUNT);
     }
 
     #[test]
     fn mixed_count() {
-        Logger::init(true);
-        let mut arena_mut = ItemArena::<NodeItem>::new();
+        let mut v = Visitor::new();
+        let mut arena_mut = ItemArena::<NodeItem>::new(&mut v);
         let mut names = RefIndexOfItem::<Kind, String>::new();
-        for i in 0..2 * COUNT {
+        for i in 0..2 * ITERATE_COUNT {
             let mut builder = NodeItemBuilder::new();
             builder.set_group_id(0);
-            if i < COUNT {
+            if i < ITERATE_COUNT {
                 builder.set_name(format!("{}", i));
             }
-            arena_mut.push_with_action(builder, |kind, _group_id, result| {
+            arena_mut.push(&mut v, builder, |_visitor, kind, _group_id, result| {
                 if let Ok((
                     item_id,
                     NodeItemOption {
@@ -416,22 +345,22 @@ mod test {
             });
         }
         let arena = arena_mut;
-        assert_eq!(arena.count(), 2 * COUNT);
-        assert_eq!(names.len(), COUNT);
+        assert_eq!(arena.count(), 2 * ITERATE_COUNT);
+        assert_eq!(names.len(), ITERATE_COUNT);
     }
 
     #[test]
     fn mixed_each_eq() {
-        Logger::init(true);
-        let mut arena_mut = ItemArena::<NodeItem>::new();
+        let mut v = Visitor::new();
+        let mut arena_mut = ItemArena::<NodeItem>::new(&mut v);
         let mut names = RefIndexOfItem::<Kind, String>::new();
-        for i in 0..2 * COUNT {
+        for i in 0..2 * ITERATE_COUNT {
             let mut builder = NodeItemBuilder::new();
             builder.set_group_id(0);
-            if i < COUNT {
+            if i < ITERATE_COUNT {
                 builder.set_name(format!("{}", i));
             }
-            arena_mut.push_with_action(builder, |kind, _group_id, result| {
+            arena_mut.push(&mut v, builder, |_visitor, kind, _group_id, result| {
                 if let Ok((
                     item_id,
                     NodeItemOption {
@@ -451,7 +380,7 @@ mod test {
             for kind in check_list() {
                 assert_eq!(
                     names.get(&KeyWithKind::new(kind, format!("{}", index))),
-                    if index < COUNT && kind == Kind::Node {
+                    if index < ITERATE_COUNT && kind == Kind::Node {
                         Some(&index)
                     } else {
                         None
@@ -460,6 +389,6 @@ mod test {
             }
             index += 1;
         }
-        assert_eq!(index, 2 * COUNT);
+        assert_eq!(index, 2 * ITERATE_COUNT);
     }
 }

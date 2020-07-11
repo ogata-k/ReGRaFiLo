@@ -10,9 +10,6 @@ use log::LevelFilter;
 /// ReGRaFiLo's logger
 pub struct Logger {}
 
-/// Base of Kind
-pub trait KindBase: Ord + Eq + Copy + GroupKind4Logger + KeyKind4Logger {}
-
 /// get the kind name of the type for Logger
 pub trait GroupKind4Logger {
     fn group_kind_string() -> &'static str;

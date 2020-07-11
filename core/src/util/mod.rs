@@ -2,3 +2,4 @@
 
 pub mod alias;
 pub(crate) mod kind_key;
+pub mod util_trait;

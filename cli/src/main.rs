@@ -1,4 +1,4 @@
-use regrafilo_util::log::Logger;
+use regrafilo_cli::logger::Logger;
 
 fn main() {
     Logger::init(true);

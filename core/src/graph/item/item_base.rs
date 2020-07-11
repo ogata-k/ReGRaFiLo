@@ -1,7 +1,7 @@
 //! base of item and item builder
 
 use crate::util::alias::ItemIndex;
-use regrafilo_util::log::KindBase;
+use crate::util::util_trait::KindBase;
 
 /// Item Builder's base set
 pub trait ItemBuilderBase {
