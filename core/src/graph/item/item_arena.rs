@@ -67,15 +67,19 @@ impl<K: KindBase + Into<ItemEventKind>, I: ItemBase<ItemKind = K>> ItemArena<I> 
     {
         let item_kind = B::kind();
         let group_id = item_builder.get_group_id();
-        let push_index = self.get_push_index();
         match item_builder.build() {
             Ok((item, option)) => {
+                let push_index = self.get_push_index();
                 self.arena.insert(push_index, item);
                 action(visitor, item_kind, group_id, Ok((push_index, option)));
-                visitor.visit(&Event::SucceededPush(B::kind().into(), push_index));
+                visitor.visit(&Event::SucceededPushItem(
+                    B::kind().into(),
+                    group_id,
+                    push_index,
+                ));
             }
             Err(err) => {
-                visitor.visit(&Event::FailPush(B::kind().into(), push_index, &err));
+                visitor.visit(&Event::FailPushItem(B::kind().into(), group_id, &err));
                 action(visitor, item_kind, group_id, Err(&err));
             }
         }

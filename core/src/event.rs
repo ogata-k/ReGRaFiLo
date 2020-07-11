@@ -3,6 +3,7 @@
 use std::error::Error;
 
 use crate::util::alias::ItemIndex;
+use std::fmt::{Debug, Display};
 
 /// Visitor pattern for event
 pub trait Visitor {
@@ -20,16 +21,21 @@ pub enum ItemEventKind {
     Edge,
 }
 
+pub trait DisplayWithDebug: Display + Debug {}
+impl<T: Display + Debug> DisplayWithDebug for T {}
+
 /// event information when do action<br/>
 /// past verb is event after action. another is event before action.
 #[derive(Debug)]
 pub enum Event<'a> {
     InitializeStore(ItemEventKind),
-    SucceededPush(ItemEventKind, ItemIndex),
-    FailPush(ItemEventKind, ItemIndex, &'a dyn Error),
     InitializeAttribute,
-    PushAttribute(ItemEventKind, ItemIndex, &'a str),
-    OverrideAttribute(ItemEventKind, ItemIndex, &'a str),
+    /// Kind, GroupId, ItemId
+    SucceededPushItem(ItemEventKind, ItemIndex, ItemIndex),
+    /// Kind, GroupId, Err
+    FailPushItem(ItemEventKind, ItemIndex, &'a dyn Error),
+    PushValue(ItemEventKind, ItemIndex, &'a dyn DisplayWithDebug),
+    OverrideValue(ItemEventKind, ItemIndex, &'a dyn DisplayWithDebug),
 }
 
 #[cfg(test)]

@@ -1,24 +1,15 @@
 //! ReGRaFiLo's log module
 //! usual message for item's log is "item of <item kind> (with <option>)+ ..."
 
-use std::fmt::Debug;
 use std::io::Write;
 
 use env_logger::Builder;
 use log::LevelFilter;
 
+use regrafilo_core::event::{Event, ItemEventKind, Visitor};
+
 /// ReGRaFiLo's logger
 pub struct Logger {}
-
-/// get the kind name of the type for Logger
-pub trait GroupKind4Logger {
-    fn group_kind_string() -> &'static str;
-}
-
-/// get the kind name of the instance for Logger
-pub trait KeyKind4Logger {
-    fn key_kind_string(&self) -> &'static str;
-}
 
 /// for Logger
 #[allow(unused_macros)]
@@ -61,9 +52,62 @@ macro_rules! error {
     )
 }
 
+fn item_kind_to_str(item_kind: &ItemEventKind) -> &str {
+    match item_kind {
+        ItemEventKind::Group => "Group",
+        ItemEventKind::Node => "Node",
+        ItemEventKind::Edge => "Edge",
+    }
+}
+
+impl Visitor for Logger {
+    fn visit(&mut self, event: &Event<'_>) {
+        match event {
+            Event::InitializeStore(item_kind) => {
+                debug!("initialize {} item store", item_kind_to_str(item_kind));
+            }
+            Event::SucceededPushItem(item_kind, group_id, item_id) => {
+                trace!(
+                    "push {} item with the id {} at group {}",
+                    item_kind_to_str(item_kind),
+                    item_id,
+                    group_id,
+                );
+            }
+            Event::FailPushItem(item_kind, group_id, err) => {
+                warn!(
+                    "fail push {} item at group {} with error: {}",
+                    item_kind_to_str(item_kind),
+                    group_id,
+                    err,
+                );
+            }
+            Event::InitializeAttribute => {
+                debug!("initialize attribute reference indexes");
+            }
+            Event::PushValue(item_kind, item_id, value) => {
+                trace!(
+                    "push {} item with the id {} for the value {}",
+                    item_kind_to_str(item_kind),
+                    item_id,
+                    value,
+                );
+            }
+            Event::OverrideValue(item_kind, item_id, value) => {
+                warn!(
+                    "override {} item with the id {} for the value {}",
+                    item_kind_to_str(item_kind),
+                    item_id,
+                    value
+                );
+            }
+        }
+    }
+}
+
 impl Logger {
-    /// initialize for this Logger
-    pub fn init(verbose: bool) {
+    /// initializer with logger
+    pub fn new(verbose: bool) -> Self {
         let mut builder = Builder::new();
         builder
             .format_timestamp_secs()
@@ -74,6 +118,7 @@ impl Logger {
                 let ts = buf.timestamp();
                 writeln!(buf, "{}  [{}]\t{}", ts, record.level(), record.args())
             });
+
         if cfg!(debug_assertions) || cfg!(test) {
             if verbose {
                 builder.filter_level(LevelFilter::Trace);
@@ -91,73 +136,7 @@ impl Logger {
         if let Err(e) = builder.try_init() {
             log::error!("fail init for ReGRaFiLo: {}", e);
         }
-    }
 
-    //
-    // 各種表示用ラッパ
-    //
-
-    /// log when create builder
-    pub fn initializer_log(store_group_kind: &str, item_group_kind: Option<&str>) {
-        if let Some(item_kind_str) = item_group_kind {
-            debug!(
-                "initialize {} store for {} item",
-                store_group_kind, item_kind_str
-            );
-        } else {
-            debug!("initialize {} store", store_group_kind);
-        }
-    }
-
-    /// log when push item
-    pub fn push_log(store_group_kind: &str, item_key_kind: &str, index: usize) {
-        trace!(
-            "push {} item into {} store with the id {}",
-            item_key_kind,
-            store_group_kind,
-            index
-        );
-    }
-
-    /// err log when push item
-    pub fn push_err_log(store_group_kind: &str, item_key_kind: &str, index: usize) {
-        warn!(
-            "push {} item into {} store with the id {} with error",
-            item_key_kind, store_group_kind, index
-        );
-    }
-
-    /// log when push item with name
-    pub fn with_name_push_log(
-        store_group_kind: &str,
-        item_key_kind: &str,
-        name: &str,
-        index: usize,
-    ) {
-        trace!(
-            "push {} item into {} store with the id {} with the name \"{}\"",
-            item_key_kind,
-            store_group_kind,
-            index,
-            name
-        );
-    }
-
-    /// log when push item override
-    pub fn override_value_log<S: ToString>(store_group_kind: &str, item_key_kind: &str, value: S) {
-        warn!(
-            "{}'s item in {} store override a value to {}",
-            item_key_kind,
-            store_group_kind,
-            value.to_string()
-        );
-    }
-
-    /// log when occurred inconsistent action
-    pub fn inconsistent<D: Debug>(store_group_kind: &str, item_key_kind: &str, value: D) {
-        error!(
-            "{}'s item of {} store is inconsistent: {:?}",
-            item_key_kind, store_group_kind, value
-        );
+        Self {}
     }
 }

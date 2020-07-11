@@ -1,6 +1,6 @@
 //! attribute of ReGRaFiLo's item
 
-use crate::event::Event::{OverrideAttribute, PushAttribute};
+use crate::event::Event::{OverrideValue, PushValue};
 use crate::event::{Event, ItemEventKind, Visitor};
 use crate::util::alias::{ItemIndex, RefIndex};
 use crate::util::kind_key::KeyWithKind;
@@ -58,14 +58,14 @@ impl<ItemKindKey: KindBase + Into<ItemEventKind>> AttributeRefIndex<ItemKindKey>
         index: ItemIndex,
         value: String,
     ) -> Option<String> {
-        visitor.visit(&PushAttribute(item_kind.into(), index, &value));
+        visitor.visit(&PushValue(item_kind.into(), index, &value));
         let result = self.reference_index.insert(
             create_ref_key(item_kind, key, index),
             AttributeValue::String(value),
         );
         result.map(|v| {
             if let AttributeValue::String(s) = v {
-                visitor.visit(&OverrideAttribute(item_kind.into(), index, &s));
+                visitor.visit(&OverrideValue(item_kind.into(), index, &s));
                 return s;
             }
             unreachable!(
