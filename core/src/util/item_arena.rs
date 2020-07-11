@@ -1,16 +1,19 @@
 //! item pool
 
-use std::slice::{Iter, SliceIndex};
+use std::collections::btree_map::{Iter, Range};
+use std::collections::BTreeMap;
+use std::ops::RangeBounds;
+use std::sync::{Arc, Mutex};
 
 use regrafilo_util::log::{KindBase, Logger};
 
 use crate::util::item_base::{ItemBase, ItemBuilderBase, ItemIndex};
-use std::fmt::Display;
 
 /// item pool
 #[derive(Debug, Clone)]
 pub struct ItemArena<I> {
-    arena: Vec<I>,
+    pushed_index: Arc<Mutex<ItemIndex>>,
+    arena: BTreeMap<ItemIndex, I>,
 }
 
 impl<K: KindBase, I: ItemBase<ItemKind = K>> ItemArena<I> {
@@ -27,8 +30,17 @@ impl<K: KindBase, I: ItemBase<ItemKind = K>> ItemArena<I> {
     //
 
     /// get the next index with increment as soon as possible
-    fn get_push_index(&self) -> ItemIndex {
-        self.arena.len()
+    fn get_push_index(&mut self) -> ItemIndex {
+        match self.pushed_index.lock() {
+            Ok(mut pushed_index) => {
+                let next_index: ItemIndex = *pushed_index;
+                *pushed_index += 1;
+                next_index
+            }
+            Err(e) => {
+                panic!("fail lock error: {}", e);
+            }
+        }
     }
 
     //
@@ -36,23 +48,23 @@ impl<K: KindBase, I: ItemBase<ItemKind = K>> ItemArena<I> {
     //
 
     /// push the item into arena with action for conclusion<br/>
-    /// F: fn(item_kind, group_id, item_id, extension)
+    /// F: fn(item_kind, group_id, Result<(item_id, extension), err>)
     pub fn push_with_action<
         F,
-        IO,
-        BFE: Display,
-        IB: ItemBuilderBase<ItemKind = K, Item = I, ItemOption = IO, BuildFailErr = BFE>,
+        O,
+        E,
+        B: ItemBuilderBase<ItemKind = K, Item = I, ItemOption = O, BuildFailErr = E>,
     >(
         &mut self,
-        item_builder: IB,
+        item_builder: B,
         action: F,
     ) where
-        F: FnOnce(K, ItemIndex, ItemIndex, Result<IB::ItemOption, IB::BuildFailErr>),
+        F: FnOnce(K, ItemIndex, Result<(ItemIndex, B::ItemOption), B::BuildFailErr>),
     {
-        let push_index = self.get_push_index();
+        let push_index = self.arena.len();
         let group_id = item_builder.get_group_id();
-        let item_kind = IB::kind();
-        let result = item_builder.build(push_index);
+        let item_kind = B::kind();
+        let result = item_builder.build();
         match result {
             Ok((item, option)) => {
                 Logger::push_log(
@@ -60,67 +72,49 @@ impl<K: KindBase, I: ItemBase<ItemKind = K>> ItemArena<I> {
                     item_kind.key_kind_string(),
                     push_index,
                 );
-                self.arena.push(item);
-                action(item_kind, group_id, push_index, Ok(option));
+                let push_index = self.get_push_index();
+                self.arena.insert(push_index, item);
+                action(item_kind, group_id, Ok((push_index, option)));
             }
             Err(err) => {
                 Logger::push_err_log(
                     K::group_kind_string(),
                     item_kind.key_kind_string(),
                     push_index,
-                    &err,
                 );
-                action(item_kind, group_id, push_index, Err(err));
+                action(item_kind, group_id, Err(err));
             }
         }
     }
 
     /// push the item into arena without action for conclusion
     pub fn push<
-        IO,
-        BFE: Display,
-        IB: ItemBuilderBase<ItemKind = K, Item = I, ItemOption = IO, BuildFailErr = BFE>,
+        O,
+        E,
+        B: ItemBuilderBase<ItemKind = K, Item = I, ItemOption = O, BuildFailErr = E>,
     >(
         &mut self,
-        item_builder: IB,
+        item_builder: B,
     ) {
-        let push_index = self.get_push_index();
-        let item_kind = IB::kind();
-        let result = item_builder.build(push_index);
-        match result {
-            Ok((item, _)) => {
-                self.arena.push(item);
-                Logger::push_log(
-                    K::group_kind_string(),
-                    item_kind.key_kind_string(),
-                    push_index,
-                );
-            }
-            Err(err) => {
-                Logger::push_err_log(
-                    K::group_kind_string(),
-                    item_kind.key_kind_string(),
-                    push_index,
-                    &err,
-                );
-            }
-        }
+        self.push_with_action(item_builder, |_, _, _| {});
     }
 }
 
 impl<K: KindBase, I: ItemBase<ItemKind = K>> ItemArena<I> {
     /// item getter
-    pub fn get<SI>(&self, index: SI) -> Option<&<SI as SliceIndex<[I]>>::Output>
-    where
-        SI: SliceIndex<[I]>,
-    {
-        self.arena.get(index)
+    pub fn get(&self, index: ItemIndex) -> Option<&I> {
+        self.arena.get(&index)
+    }
+
+    /// item getter by range
+    pub fn range<R: RangeBounds<ItemIndex>>(&self, range: R) -> Range<ItemIndex, I> {
+        self.arena.range(range)
     }
 
     /// iter with specified indices
     pub fn select_indices<'a>(&'a self, indices: &'a [ItemIndex]) -> impl Iterator + 'a {
-        self.iter().enumerate().filter_map(move |(index, item)| {
-            if indices.contains(&index) {
+        self.iter().filter_map(move |(index, item)| {
+            if indices.contains(index) {
                 Some(item)
             } else {
                 None
@@ -147,18 +141,8 @@ impl<K: KindBase, I: ItemBase<ItemKind = K>> ItemArena<I> {
     //
 
     /// to iterator
-    pub fn iter(&self) -> Iter<'_, I> {
+    pub fn iter(&self) -> Iter<ItemIndex, I> {
         self.arena.iter()
-    }
-
-    /// get all items
-    pub fn all(&self) -> &[I] {
-        self.as_slice()
-    }
-
-    /// to slice
-    pub fn as_slice(&self) -> &[I] {
-        self.arena.as_slice()
     }
 }
 
@@ -166,19 +150,21 @@ impl<I> Default for ItemArena<I> {
     /// initialize without log
     fn default() -> Self {
         ItemArena {
-            arena: Vec::default(),
+            pushed_index: Default::default(),
+            arena: Default::default(),
         }
     }
 }
 
 #[cfg(test)]
 mod test {
+    use std::fmt::{Display, Formatter};
+
     use regrafilo_util::log::{GroupKind4Logger, KeyKind4Logger, KindBase, Logger};
 
     use crate::util::item_arena::ItemArena;
     use crate::util::item_base::{ItemBase, ItemBuilderBase, ItemIndex, RefIndexOfItem};
     use crate::util::kind_key::KeyWithKind;
-    use std::fmt::{Display, Formatter};
 
     const COUNT: usize = 10;
 
@@ -220,9 +206,14 @@ mod test {
     }
 
     #[derive(Debug, Eq, PartialEq, Clone)]
-    struct NodeItemOption {
+    struct NodeItem {
         group_id: ItemIndex,
         item_id: ItemIndex,
+    }
+
+    #[derive(Debug, Eq, PartialEq, Clone)]
+    struct NodeItemOption {
+        group_id: ItemIndex,
         name: Option<String>,
     }
 
@@ -230,29 +221,6 @@ mod test {
     enum NodeBuildError {
         #[allow(dead_code)]
         BuildFail,
-    }
-
-    impl Display for NodeBuildError {
-        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-            use NodeBuildError::*;
-            match &self {
-                BuildFail => write!(f, "fail build item"),
-            }
-        }
-    }
-
-    impl NodeItemBuilder {
-        fn new() -> Self {
-            NodeItemBuilder {
-                group_id: 0,
-                name: None,
-            }
-        }
-
-        fn set_name(&mut self, name: String) -> &mut Self {
-            self.name = Some(name);
-            self
-        }
     }
 
     impl ItemBuilderBase for NodeItemBuilder {
@@ -274,23 +242,30 @@ mod test {
             self.group_id
         }
 
-        fn build(self, item_id: usize) -> Result<(Self::Item, NodeItemOption), NodeBuildError> {
+        fn build(self) -> Result<(Self::Item, NodeItemOption), NodeBuildError> {
             let NodeItemBuilder { group_id, name } = self;
             Ok((
-                NodeItem { group_id, item_id },
-                NodeItemOption {
+                NodeItem {
                     group_id,
-                    item_id,
-                    name,
+                    item_id: 0,
                 },
+                NodeItemOption { group_id, name },
             ))
         }
     }
 
-    #[derive(Debug, Eq, PartialEq, Clone)]
-    struct NodeItem {
-        group_id: ItemIndex,
-        item_id: ItemIndex,
+    impl NodeItemBuilder {
+        fn new() -> Self {
+            NodeItemBuilder {
+                group_id: 0,
+                name: None,
+            }
+        }
+
+        fn set_name(&mut self, name: String) -> &mut Self {
+            self.name = Some(name);
+            self
+        }
     }
 
     impl ItemBase for NodeItem {
@@ -306,6 +281,15 @@ mod test {
 
         fn get_item_id(&self) -> usize {
             self.item_id
+        }
+    }
+
+    impl Display for NodeBuildError {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            use NodeBuildError::*;
+            match &self {
+                BuildFail => write!(f, "fail build item"),
+            }
         }
     }
 
@@ -336,7 +320,7 @@ mod test {
         let arena = arena_mut;
         let mut index: usize = 0;
         for item in (&arena).iter() {
-            assert_eq!(item.get_item_id(), index);
+            assert_eq!(index, *item.0);
             index += 1;
         }
         assert_eq!(index, COUNT);
@@ -350,19 +334,18 @@ mod test {
         for i in 0..COUNT {
             let mut builder = NodeItemBuilder::new();
             builder.set_group_id(0).set_name(format!("{}", i));
-            arena_mut.push_with_action(
-                builder,
-                |kind, _group_index, item_index, result: Result<NodeItemOption, NodeBuildError>| {
-                    if let Ok(NodeItemOption {
+            arena_mut.push_with_action(builder, |kind, _group_id, result| {
+                if let Ok((
+                    item_id,
+                    NodeItemOption {
                         group_id: _,
-                        item_id: _,
                         name: Some(name),
-                    }) = result
-                    {
-                        names.insert(KeyWithKind::new(kind, name), item_index);
-                    }
-                },
-            );
+                    },
+                )) = result
+                {
+                    names.insert(KeyWithKind::new(kind, name), item_id);
+                }
+            });
         }
         let arena = arena_mut;
         assert_eq!(arena.count(), COUNT);
@@ -377,21 +360,23 @@ mod test {
         for i in 0..COUNT {
             let mut builder = NodeItemBuilder::new();
             builder.set_group_id(0).set_name(format!("{}", i));
-            arena_mut.push_with_action(builder, |kind, _group_index, item_index, result| {
-                if let Ok(NodeItemOption {
-                    group_id: _,
-                    item_id: _,
-                    name: Some(name),
-                }) = result
+            arena_mut.push_with_action(builder, |kind, _group_id, result| {
+                if let Ok((
+                    item_id,
+                    NodeItemOption {
+                        group_id: _,
+                        name: Some(name),
+                    },
+                )) = result
                 {
-                    names.insert(KeyWithKind::new(kind, name), item_index);
+                    names.insert(KeyWithKind::new(kind, name), item_id);
                 }
             });
         }
         let arena = arena_mut;
         let mut index: usize = 0;
         for item in (&arena).iter() {
-            assert_eq!(item.get_item_id(), index);
+            assert_eq!(index, *item.0);
             for kind in check_list() {
                 assert_eq!(
                     names.get(&KeyWithKind::new(kind, format!("{}", index))),
@@ -418,14 +403,16 @@ mod test {
             if i < COUNT {
                 builder.set_name(format!("{}", i));
             }
-            arena_mut.push_with_action(builder, |kind, _group_index, item_index, result| {
-                if let Ok(NodeItemOption {
-                    group_id: _,
-                    item_id: _,
-                    name: Some(name),
-                }) = result
+            arena_mut.push_with_action(builder, |kind, _group_id, result| {
+                if let Ok((
+                    item_id,
+                    NodeItemOption {
+                        group_id: _,
+                        name: Some(name),
+                    },
+                )) = result
                 {
-                    names.insert(KeyWithKind::new(kind, name), item_index);
+                    names.insert(KeyWithKind::new(kind, name), item_id);
                 }
             });
         }
@@ -445,21 +432,23 @@ mod test {
             if i < COUNT {
                 builder.set_name(format!("{}", i));
             }
-            arena_mut.push_with_action(builder, |kind, _group_index, item_index, result| {
-                if let Ok(NodeItemOption {
-                    group_id: _,
-                    item_id: _,
-                    name: Some(name),
-                }) = result
+            arena_mut.push_with_action(builder, |kind, _group_id, result| {
+                if let Ok((
+                    item_id,
+                    NodeItemOption {
+                        group_id: _,
+                        name: Some(name),
+                    },
+                )) = result
                 {
-                    names.insert(KeyWithKind::new(kind, name), item_index);
+                    names.insert(KeyWithKind::new(kind, name), item_id);
                 }
             });
         }
         let arena = arena_mut;
         let mut index: usize = 0;
         for item in (&arena).iter() {
-            assert_eq!(item.get_item_id(), index);
+            assert_eq!(index, *item.0);
             for kind in check_list() {
                 assert_eq!(
                     names.get(&KeyWithKind::new(kind, format!("{}", index))),

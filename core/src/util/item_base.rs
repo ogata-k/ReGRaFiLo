@@ -23,7 +23,6 @@ pub trait ItemBuilderBase {
     fn get_group_id(&self) -> ItemIndex;
     fn build(
         self,
-        item_index: ItemIndex,
     ) -> Result<(Self::Item, Self::ItemOption), Self::BuildFailErr>;
 }
 

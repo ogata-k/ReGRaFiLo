@@ -1,7 +1,7 @@
 //! ReGRaFiLo's log module
 //! usual message for item's log is "item of <item kind> (with <option>)+ ..."
 
-use std::fmt::{Debug, Display};
+use std::fmt::Debug;
 use std::io::Write;
 
 use env_logger::Builder;
@@ -123,15 +123,10 @@ impl Logger {
     }
 
     /// err log when push item
-    pub fn push_err_log<S: Display>(
-        store_group_kind: &str,
-        item_key_kind: &str,
-        index: usize,
-        err: &S,
-    ) {
+    pub fn push_err_log(store_group_kind: &str, item_key_kind: &str, index: usize) {
         warn!(
-            "push {} item into {} store with the id {} with error: {}",
-            item_key_kind, store_group_kind, index, err
+            "push {} item into {} store with the id {} with error",
+            item_key_kind, store_group_kind, index
         );
     }
 
