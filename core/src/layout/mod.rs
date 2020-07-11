@@ -1,5 +1,3 @@
 //! ReGRaFiLo's item
 
-pub use attribute::*;
-
-mod attribute;
+pub mod attribute;

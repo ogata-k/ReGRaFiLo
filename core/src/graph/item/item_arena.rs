@@ -5,9 +5,9 @@ use std::collections::BTreeMap;
 use std::ops::RangeBounds;
 use std::sync::{Arc, Mutex};
 
+use crate::graph::item::{ItemBase, ItemBuilderBase};
+use crate::util::alias::ItemIndex;
 use regrafilo_util::log::{KindBase, Logger};
-
-use crate::util::item_base::{ItemBase, ItemBuilderBase, ItemIndex};
 
 /// item pool
 #[derive(Debug, Clone)]
@@ -160,11 +160,10 @@ impl<I> Default for ItemArena<I> {
 mod test {
     use std::fmt::{Display, Formatter};
 
-    use regrafilo_util::log::{GroupKind4Logger, KeyKind4Logger, KindBase, Logger};
-
-    use crate::util::item_arena::ItemArena;
-    use crate::util::item_base::{ItemBase, ItemBuilderBase, ItemIndex, RefIndexOfItem};
+    use crate::graph::item::{ItemArena, ItemBase, ItemBuilderBase, RefIndexOfItem};
+    use crate::util::alias::ItemIndex;
     use crate::util::kind_key::KeyWithKind;
+    use regrafilo_util::log::{GroupKind4Logger, KeyKind4Logger, KindBase, Logger};
 
     const COUNT: usize = 10;
 

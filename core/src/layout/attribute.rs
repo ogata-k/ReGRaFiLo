@@ -3,14 +3,13 @@
 use regrafilo_util::log::{GroupKind4Logger, KeyKind4Logger, KindBase, Logger};
 
 use crate::util::kind_key::KeyWithKind;
-use crate::util::RefIndex;
-use crate::util::item_base::ItemIndex;
+use crate::util::alias::{ItemIndex, RefIndex};
 
 /// triple of ItemKind, Index, Key
-pub type AttributeRefKey<ItemKindKey> = KeyWithKind<ItemKindKey, KeyWithKind<ItemIndex, AttributeKey>>;
+type AttributeRefKey<ItemKindKey> = KeyWithKind<ItemKindKey, KeyWithKind<ItemIndex, AttributeKey>>;
 
 /// helper for make reference key
-fn create_ref_key<ItemKindKey: Copy>(
+fn create_ref_key<ItemKindKey: KindBase>(
     item_kind: ItemKindKey,
     key: AttributeKey,
     index: ItemIndex,
@@ -199,8 +198,8 @@ impl<ItemKindKey: KindBase> Default for AttributeRefIndex<ItemKindKey> {
 
 #[cfg(test)]
 mod test {
-    use crate::layout::AttributeRefIndex;
     use regrafilo_util::log::{GroupKind4Logger, KeyKind4Logger, KindBase, Logger};
+    use crate::layout::attribute::AttributeRefIndex;
 
     const COUNT: usize = 10;
 
