@@ -2,15 +2,18 @@
 
 use crate::util::alias::ItemIndex;
 use crate::util::kind_key::KeyWithKind;
-use crate::util::util_trait::KindBase;
 
 pub(crate) mod attribute;
+mod reference;
+
+use crate::util::item_kind::ItemKind;
+pub use reference::*;
 
 /// helper for make reference key for layout
-fn create_layout_key<LayoutKey: KindBase, ItemKindKey: KindBase>(
-    item_kind: ItemKindKey,
+fn create_layout_key<LayoutKey>(
+    item_kind: ItemKind,
     key: LayoutKey,
     index: ItemIndex,
-) -> KeyWithKind<ItemKindKey, KeyWithKind<ItemIndex, LayoutKey>> {
+) -> KeyWithKind<ItemKind, KeyWithKind<ItemIndex, LayoutKey>> {
     KeyWithKind::new(item_kind, KeyWithKind::new(index, key))
 }

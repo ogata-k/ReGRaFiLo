@@ -6,10 +6,10 @@ use std::error::Error;
 use std::ops::RangeBounds;
 use std::sync::{Arc, Mutex};
 
-use crate::event::{Event, ItemEventKind, Visitor};
+use crate::event::{Event, Visitor};
 use crate::grafo::core::item::{ItemBase, ItemBuilderBase};
 use crate::util::alias::ItemIndex;
-use crate::util::util_trait::KindBase;
+use crate::util::item_kind::ItemKind;
 
 /// item pool
 #[derive(Debug, Clone)]
@@ -18,15 +18,15 @@ pub(crate) struct ItemArena<I> {
     arena: BTreeMap<ItemIndex, I>,
 }
 
-impl<K: KindBase + Into<ItemEventKind>, I: ItemBase<ItemKind = K>> ItemArena<I> {
+impl<I: ItemBase> ItemArena<I> {
     /// initialize
     pub(crate) fn new<V: Visitor>(visitor: &mut V) -> Self {
-        visitor.visit(&Event::InitializeStore(I::kind().into()));
+        visitor.visit(&Event::InitializeStore(I::kind()));
         ItemArena::default()
     }
 }
 
-impl<K: KindBase + Into<ItemEventKind>, I: ItemBase<ItemKind = K>> ItemArena<I> {
+impl<I: ItemBase> ItemArena<I> {
     //
     // helper
     //
@@ -56,14 +56,19 @@ impl<K: KindBase + Into<ItemEventKind>, I: ItemBase<ItemKind = K>> ItemArena<I> 
         F,
         O,
         E: Error,
-        B: ItemBuilderBase<ItemKind = K, Item = I, ItemOption = O, BuildFailErr = E>,
+        B: ItemBuilderBase<Item = I, ItemOption = O, BuildFailErr = E>,
     >(
         &mut self,
         visitor: &mut V,
         item_builder: B,
         action: F,
     ) where
-        F: FnOnce(&mut V, K, ItemIndex, Result<(ItemIndex, B::ItemOption), &B::BuildFailErr>),
+        F: FnOnce(
+            &mut V,
+            ItemKind,
+            ItemIndex,
+            Result<(ItemIndex, B::ItemOption), &B::BuildFailErr>,
+        ),
     {
         let item_kind = B::kind();
         let group_id = item_builder.get_group_id();
@@ -72,21 +77,17 @@ impl<K: KindBase + Into<ItemEventKind>, I: ItemBase<ItemKind = K>> ItemArena<I> 
                 let push_index = self.get_push_index();
                 self.arena.insert(push_index, item);
                 action(visitor, item_kind, group_id, Ok((push_index, option)));
-                visitor.visit(&Event::SucceededPushItem(
-                    B::kind().into(),
-                    group_id,
-                    push_index,
-                ));
+                visitor.visit(&Event::SucceededPushItem(B::kind(), group_id, push_index));
             }
             Err(err) => {
-                visitor.visit(&Event::FailPushItem(B::kind().into(), group_id, &err));
+                visitor.visit(&Event::FailPushItem(B::kind(), group_id, &err));
                 action(visitor, item_kind, group_id, Err(&err));
             }
         }
     }
 }
 
-impl<K: KindBase, I: ItemBase<ItemKind = K>> ItemArena<I> {
+impl<I: ItemBase> ItemArena<I> {
     /// item getter
     pub(crate) fn get(&self, index: ItemIndex) -> Option<&I> {
         self.arena.get(&index)
@@ -146,9 +147,11 @@ impl<I> Default for ItemArena<I> {
 mod test {
     use std::fmt::{Display, Formatter};
 
-    use crate::event::test::{check_list, Kind, Visitor, ITERATE_COUNT};
+    use crate::event::test::{Visitor, ITERATE_COUNT};
     use crate::grafo::core::item::{ItemArena, ItemBase, ItemBuilderBase};
     use crate::util::alias::{ItemIndex, RefIndexOfItem};
+    use crate::util::item_kind::test::check_list;
+    use crate::util::item_kind::ItemKind;
     use crate::util::kind_key::KeyWithKind;
     use std::error::Error;
 
@@ -172,18 +175,16 @@ mod test {
 
     #[derive(Debug)]
     enum NodeBuildError {
-        #[allow(dead_code)]
         BuildFail,
     }
 
     impl ItemBuilderBase for NodeItemBuilder {
-        type ItemKind = Kind;
         type Item = NodeItem;
         type ItemOption = NodeItemOption;
         type BuildFailErr = NodeBuildError;
 
-        fn kind() -> Self::ItemKind {
-            Kind::Node
+        fn kind() -> ItemKind {
+            ItemKind::Node
         }
 
         fn set_group_id(&mut self, group_id: ItemIndex) -> &mut Self {
@@ -222,10 +223,8 @@ mod test {
     }
 
     impl ItemBase for NodeItem {
-        type ItemKind = Kind;
-
-        fn kind() -> Kind {
-            Kind::Node
+        fn kind() -> ItemKind {
+            ItemKind::Node
         }
 
         fn get_group_id(&self) -> usize {
@@ -258,7 +257,7 @@ mod test {
     fn with_action_count() {
         let mut v = Visitor::new();
         let mut arena_mut = ItemArena::<NodeItem>::new(&mut v);
-        let mut names = RefIndexOfItem::<Kind, String>::new();
+        let mut names = RefIndexOfItem::<ItemKind, String>::new();
         for i in 0..ITERATE_COUNT {
             let mut builder = NodeItemBuilder::new();
             builder.set_group_id(0).set_name(format!("{}", i));
@@ -284,7 +283,7 @@ mod test {
     fn with_action_each_eq() {
         let mut v = Visitor::new();
         let mut arena_mut = ItemArena::<NodeItem>::new(&mut v);
-        let mut names = RefIndexOfItem::<Kind, String>::new();
+        let mut names = RefIndexOfItem::<ItemKind, String>::new();
         for i in 0..ITERATE_COUNT {
             let mut builder = NodeItemBuilder::new();
             builder.set_group_id(0).set_name(format!("{}", i));
@@ -308,7 +307,7 @@ mod test {
             for kind in check_list() {
                 assert_eq!(
                     names.get(&KeyWithKind::new(kind, format!("{}", index))),
-                    if kind == Kind::Node {
+                    if kind == ItemKind::Node {
                         Some(&index)
                     } else {
                         None
@@ -324,7 +323,7 @@ mod test {
     fn mixed_count() {
         let mut v = Visitor::new();
         let mut arena_mut = ItemArena::<NodeItem>::new(&mut v);
-        let mut names = RefIndexOfItem::<Kind, String>::new();
+        let mut names = RefIndexOfItem::<ItemKind, String>::new();
         for i in 0..2 * ITERATE_COUNT {
             let mut builder = NodeItemBuilder::new();
             builder.set_group_id(0);
@@ -353,7 +352,7 @@ mod test {
     fn mixed_each_eq() {
         let mut v = Visitor::new();
         let mut arena_mut = ItemArena::<NodeItem>::new(&mut v);
-        let mut names = RefIndexOfItem::<Kind, String>::new();
+        let mut names = RefIndexOfItem::<ItemKind, String>::new();
         for i in 0..2 * ITERATE_COUNT {
             let mut builder = NodeItemBuilder::new();
             builder.set_group_id(0);
@@ -380,7 +379,7 @@ mod test {
             for kind in check_list() {
                 assert_eq!(
                     names.get(&KeyWithKind::new(kind, format!("{}", index))),
-                    if index < ITERATE_COUNT && kind == Kind::Node {
+                    if index < ITERATE_COUNT && kind == ItemKind::Node {
                         Some(&index)
                     } else {
                         None

@@ -1,11 +1,11 @@
 //! attribute of ReGRaFiLo's item
 
 use crate::event::Event::{OverrideValue, PushValue};
-use crate::event::{Event, ItemEventKind, Visitor};
+use crate::event::{Event, Visitor};
 use crate::grafo::core::layout::create_layout_key;
 use crate::util::alias::{ItemIndex, RefIndex};
+use crate::util::item_kind::ItemKind;
 use crate::util::kind_key::KeyWithKind;
-use crate::util::util_trait::KindBase;
 
 /// triple of ItemKind, Index, Key
 type AttributeRefKey<ItemKindKey> = KeyWithKind<ItemKindKey, KeyWithKind<ItemIndex, AttributeKey>>;
@@ -17,8 +17,6 @@ pub enum AttributeKey {
     Group,
 }
 
-impl KindBase for AttributeKey {}
-
 /// value of Attribute. but user wouldn't use
 #[derive(Debug, Eq, PartialEq, Clone)]
 enum AttributeValue {
@@ -26,11 +24,12 @@ enum AttributeValue {
 }
 
 /// reference of Attribute
-pub struct AttributeRefIndex<ItemKindKey: KindBase> {
-    reference_index: RefIndex<AttributeRefKey<ItemKindKey>, AttributeValue>,
+#[derive(Debug, Clone)]
+pub struct AttributeRefIndex {
+    reference_index: RefIndex<AttributeRefKey<ItemKind>, AttributeValue>,
 }
 
-impl<ItemKindKey: KindBase + Into<ItemEventKind>> AttributeRefIndex<ItemKindKey> {
+impl AttributeRefIndex {
     /// initialize
     pub fn new<V: Visitor>(visitor: &mut V) -> Self {
         visitor.visit(&Event::InitializeAttribute);
@@ -46,25 +45,23 @@ impl<ItemKindKey: KindBase + Into<ItemEventKind>> AttributeRefIndex<ItemKindKey>
         &mut self,
         visitor: &mut V,
         key: AttributeKey,
-        item_kind: ItemKindKey,
+        item_kind: ItemKind,
         index: ItemIndex,
         value: String,
     ) -> Option<String> {
-        visitor.visit(&PushValue(item_kind.into(), index, &value));
+        visitor.visit(&PushValue(item_kind, index, &value));
         let result = self.reference_index.insert(
             create_layout_key(item_kind, key, index),
             AttributeValue::String(value),
         );
         result.map(|v| {
             if let AttributeValue::String(s) = v {
-                visitor.visit(&OverrideValue(item_kind.into(), index, &s));
+                visitor.visit(&OverrideValue(item_kind, index, &s));
                 return s;
             }
             unreachable!(
-                "inconsistent attribute value: ({:?},{},{:?})",
-                item_kind.into(),
-                index,
-                v
+                "when push, inconsistent attribute value: ({:?},{},{:?})",
+                item_kind, index, v
             );
         })
     }
@@ -73,7 +70,7 @@ impl<ItemKindKey: KindBase + Into<ItemEventKind>> AttributeRefIndex<ItemKindKey>
     fn get_attribute_string(
         &self,
         key: AttributeKey,
-        item_kind: ItemKindKey,
+        item_kind: ItemKind,
         index: ItemIndex,
     ) -> Option<&str> {
         let result = self
@@ -84,16 +81,14 @@ impl<ItemKindKey: KindBase + Into<ItemEventKind>> AttributeRefIndex<ItemKindKey>
                 return s.as_str();
             }
             unreachable!(
-                "inconsistent attribute value: ({:?},{},{:?})",
-                item_kind.into(),
-                index,
-                v
+                "when get, inconsistent attribute value: ({:?},{},{:?})",
+                item_kind, index, v
             );
         })
     }
 
     /// helper for count by kind
-    fn count_by(&self, item_kind: ItemKindKey, key: AttributeKey) -> usize {
+    fn count_by(&self, item_kind: ItemKind, key: AttributeKey) -> usize {
         self.reference_index
             .iter()
             .filter(|(k, _)| k.is_kind(item_kind) && k.key.key == key)
@@ -108,7 +103,7 @@ impl<ItemKindKey: KindBase + Into<ItemEventKind>> AttributeRefIndex<ItemKindKey>
     pub fn push_form_name<V: Visitor>(
         &mut self,
         visitor: &mut V,
-        item_kind: ItemKindKey,
+        item_kind: ItemKind,
         index: ItemIndex,
         name: String,
     ) -> Option<String> {
@@ -119,7 +114,7 @@ impl<ItemKindKey: KindBase + Into<ItemEventKind>> AttributeRefIndex<ItemKindKey>
     pub fn push_group_name<V: Visitor>(
         &mut self,
         visitor: &mut V,
-        item_kind: ItemKindKey,
+        item_kind: ItemKind,
         index: ItemIndex,
         name: String,
     ) -> Option<String> {
@@ -131,12 +126,12 @@ impl<ItemKindKey: KindBase + Into<ItemEventKind>> AttributeRefIndex<ItemKindKey>
     //
 
     /// get form attribute
-    pub fn get_form_name(&self, item_kind: ItemKindKey, index: ItemIndex) -> Option<&str> {
+    pub fn get_form_name(&self, item_kind: ItemKind, index: ItemIndex) -> Option<&str> {
         self.get_attribute_string(AttributeKey::Form, item_kind, index)
     }
 
     /// get group attribute
-    pub fn get_group_name(&self, item_kind: ItemKindKey, index: ItemIndex) -> Option<&str> {
+    pub fn get_group_name(&self, item_kind: ItemKind, index: ItemIndex) -> Option<&str> {
         self.get_attribute_string(AttributeKey::Group, item_kind, index)
     }
 
@@ -145,17 +140,17 @@ impl<ItemKindKey: KindBase + Into<ItemEventKind>> AttributeRefIndex<ItemKindKey>
     //
 
     /// count for Form value
-    pub fn count_form(&self, item_kind: ItemKindKey) -> usize {
+    pub fn count_form(&self, item_kind: ItemKind) -> usize {
         self.count_by(item_kind, AttributeKey::Form)
     }
 
     /// count for Group value
-    pub fn count_group(&self, item_kind: ItemKindKey) -> usize {
+    pub fn count_group(&self, item_kind: ItemKind) -> usize {
         self.count_by(item_kind, AttributeKey::Group)
     }
 }
 
-impl<ItemKindKey: KindBase> Default for AttributeRefIndex<ItemKindKey> {
+impl Default for AttributeRefIndex {
     /// initialize without log
     fn default() -> Self {
         AttributeRefIndex {
@@ -166,13 +161,15 @@ impl<ItemKindKey: KindBase> Default for AttributeRefIndex<ItemKindKey> {
 
 #[cfg(test)]
 mod test {
-    use crate::event::test::{check_list, Kind, Visitor, ITERATE_COUNT};
+    use crate::event::test::{Visitor, ITERATE_COUNT};
     use crate::grafo::core::layout::attribute::AttributeRefIndex;
+    use crate::util::item_kind::test::check_list;
+    use crate::util::item_kind::ItemKind;
 
     #[test]
     fn is_empty() {
         let mut v = Visitor::new();
-        let ref_index = AttributeRefIndex::<Kind>::new(&mut v);
+        let ref_index = AttributeRefIndex::new(&mut v);
         for key in check_list().iter() {
             assert_eq!(ref_index.count_form(*key), 0);
             assert_eq!(ref_index.count_group(*key), 0);
@@ -182,8 +179,8 @@ mod test {
     #[test]
     fn form_count() {
         let mut v = Visitor::new();
-        let mut ref_index_mut = AttributeRefIndex::<Kind>::new(&mut v);
-        let checker = Kind::Node;
+        let mut ref_index_mut = AttributeRefIndex::new(&mut v);
+        let checker = ItemKind::Node;
         for i in 0..ITERATE_COUNT {
             ref_index_mut.push_form_name(&mut v, checker, i, format!("{}", i));
         }
@@ -200,8 +197,8 @@ mod test {
     #[test]
     fn form_each_eq() {
         let mut v = Visitor::new();
-        let mut ref_index_mut = AttributeRefIndex::<Kind>::new(&mut v);
-        let checker = Kind::Node;
+        let mut ref_index_mut = AttributeRefIndex::new(&mut v);
+        let checker = ItemKind::Node;
         for i in 0..ITERATE_COUNT {
             ref_index_mut.push_form_name(&mut v, checker, i, format!("{}", i));
         }

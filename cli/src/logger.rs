@@ -6,7 +6,7 @@ use std::io::Write;
 use env_logger::Builder;
 use log::LevelFilter;
 
-use regrafilo_core::event::{Event, ItemEventKind, Visitor};
+use regrafilo_core::event::{Event, Visitor};
 
 /// ReGRaFiLo's logger
 pub struct Logger {}
@@ -52,24 +52,16 @@ macro_rules! error {
     )
 }
 
-fn item_kind_to_str(item_kind: &ItemEventKind) -> &str {
-    match item_kind {
-        ItemEventKind::Group => "Group",
-        ItemEventKind::Node => "Node",
-        ItemEventKind::Edge => "Edge",
-    }
-}
-
 impl Visitor for Logger {
     fn visit(&mut self, event: &Event<'_>) {
         match event {
             Event::InitializeStore(item_kind) => {
-                debug!("initialize {} item store", item_kind_to_str(item_kind));
+                debug!("initialize {} item store", item_kind);
             }
             Event::SucceededPushItem(item_kind, group_id, item_id) => {
                 trace!(
                     "push {} item with the id {} at group {}",
-                    item_kind_to_str(item_kind),
+                    item_kind,
                     item_id,
                     group_id,
                 );
@@ -77,9 +69,7 @@ impl Visitor for Logger {
             Event::FailPushItem(item_kind, group_id, err) => {
                 warn!(
                     "fail push {} item at group {} with error: {}",
-                    item_kind_to_str(item_kind),
-                    group_id,
-                    err,
+                    item_kind, group_id, err,
                 );
             }
             Event::InitializeAttribute => {
@@ -88,7 +78,7 @@ impl Visitor for Logger {
             Event::PushValue(item_kind, item_id, value) => {
                 trace!(
                     "push {} item with the id {} for the value {}",
-                    item_kind_to_str(item_kind),
+                    item_kind,
                     item_id,
                     value,
                 );
@@ -96,9 +86,7 @@ impl Visitor for Logger {
             Event::OverrideValue(item_kind, item_id, value) => {
                 warn!(
                     "override {} item with the id {} for the value {}",
-                    item_kind_to_str(item_kind),
-                    item_id,
-                    value
+                    item_kind, item_id, value
                 );
             }
         }

@@ -1,16 +1,16 @@
 //! base of item and item builder
 
 use crate::util::alias::ItemIndex;
-use crate::util::util_trait::KindBase;
+use crate::util::item_kind::ItemKind;
+use std::error::Error;
 
 /// Item Builder's base set
 pub trait ItemBuilderBase {
-    type ItemKind: KindBase;
-    type Item: ItemBase<ItemKind = Self::ItemKind>;
+    type Item: ItemBase;
     type ItemOption;
-    type BuildFailErr;
+    type BuildFailErr: Error;
 
-    fn kind() -> Self::ItemKind;
+    fn kind() -> ItemKind;
     fn set_group_id(&mut self, group_id: ItemIndex) -> &mut Self;
     fn get_group_id(&self) -> ItemIndex;
     fn build(self) -> Result<(Self::Item, Self::ItemOption), Self::BuildFailErr>;
@@ -18,8 +18,7 @@ pub trait ItemBuilderBase {
 
 /// Item's base set
 pub trait ItemBase {
-    type ItemKind: KindBase;
-    fn kind() -> Self::ItemKind;
+    fn kind() -> ItemKind;
     fn get_group_id(&self) -> ItemIndex;
     fn get_item_id(&self) -> ItemIndex;
 }

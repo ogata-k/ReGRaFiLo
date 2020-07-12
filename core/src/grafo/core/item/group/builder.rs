@@ -1,1 +1,1 @@
-//! Group's builder
+//! module for Group item builder

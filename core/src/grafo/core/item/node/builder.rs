@@ -1,1 +1,1 @@
-//! Node's builder
+//! module for Node builder

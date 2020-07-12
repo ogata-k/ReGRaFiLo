@@ -1,1 +1,1 @@
-//! Edge's builder
+//! module for Edge item builder
