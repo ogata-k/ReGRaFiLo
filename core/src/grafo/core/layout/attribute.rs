@@ -2,21 +2,13 @@
 
 use crate::event::Event::{OverrideValue, PushValue};
 use crate::event::{Event, ItemEventKind, Visitor};
+use crate::grafo::core::layout::create_layout_key;
 use crate::util::alias::{ItemIndex, RefIndex};
 use crate::util::kind_key::KeyWithKind;
 use crate::util::util_trait::KindBase;
 
 /// triple of ItemKind, Index, Key
 type AttributeRefKey<ItemKindKey> = KeyWithKind<ItemKindKey, KeyWithKind<ItemIndex, AttributeKey>>;
-
-/// helper for make reference key
-fn create_ref_key<ItemKindKey: KindBase>(
-    item_kind: ItemKindKey,
-    key: AttributeKey,
-    index: ItemIndex,
-) -> AttributeRefKey<ItemKindKey> {
-    KeyWithKind::new(item_kind, KeyWithKind::new(index, key))
-}
 
 /// key of Attribute
 #[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Copy, Clone)]
@@ -60,7 +52,7 @@ impl<ItemKindKey: KindBase + Into<ItemEventKind>> AttributeRefIndex<ItemKindKey>
     ) -> Option<String> {
         visitor.visit(&PushValue(item_kind.into(), index, &value));
         let result = self.reference_index.insert(
-            create_ref_key(item_kind, key, index),
+            create_layout_key(item_kind, key, index),
             AttributeValue::String(value),
         );
         result.map(|v| {
@@ -86,7 +78,7 @@ impl<ItemKindKey: KindBase + Into<ItemEventKind>> AttributeRefIndex<ItemKindKey>
     ) -> Option<&str> {
         let result = self
             .reference_index
-            .get(&create_ref_key(item_kind, key, index));
+            .get(&create_layout_key(item_kind, key, index));
         result.map(|v| {
             if let AttributeValue::String(s) = v {
                 return s.as_str();
@@ -175,7 +167,7 @@ impl<ItemKindKey: KindBase> Default for AttributeRefIndex<ItemKindKey> {
 #[cfg(test)]
 mod test {
     use crate::event::test::{check_list, Kind, Visitor, ITERATE_COUNT};
-    use crate::layout::attribute::AttributeRefIndex;
+    use crate::grafo::core::layout::attribute::AttributeRefIndex;
 
     #[test]
     fn is_empty() {

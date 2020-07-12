@@ -7,20 +7,20 @@ use std::ops::RangeBounds;
 use std::sync::{Arc, Mutex};
 
 use crate::event::{Event, ItemEventKind, Visitor};
-use crate::graph::item::{ItemBase, ItemBuilderBase};
+use crate::grafo::core::item::{ItemBase, ItemBuilderBase};
 use crate::util::alias::ItemIndex;
 use crate::util::util_trait::KindBase;
 
 /// item pool
 #[derive(Debug, Clone)]
-pub struct ItemArena<I> {
+pub(crate) struct ItemArena<I> {
     pushed_index: Arc<Mutex<ItemIndex>>,
     arena: BTreeMap<ItemIndex, I>,
 }
 
 impl<K: KindBase + Into<ItemEventKind>, I: ItemBase<ItemKind = K>> ItemArena<I> {
     /// initialize
-    pub fn new<V: Visitor>(visitor: &mut V) -> Self {
+    pub(crate) fn new<V: Visitor>(visitor: &mut V) -> Self {
         visitor.visit(&Event::InitializeStore(I::kind().into()));
         ItemArena::default()
     }
@@ -51,7 +51,7 @@ impl<K: KindBase + Into<ItemEventKind>, I: ItemBase<ItemKind = K>> ItemArena<I> 
 
     /// push the item into arena with action for conclusion<br/>
     /// F: fn(item_kind, group_id, Result<(item_id, extension), err>)
-    pub fn push<
+    pub(crate) fn push<
         V: Visitor,
         F,
         O,
@@ -88,17 +88,17 @@ impl<K: KindBase + Into<ItemEventKind>, I: ItemBase<ItemKind = K>> ItemArena<I> 
 
 impl<K: KindBase, I: ItemBase<ItemKind = K>> ItemArena<I> {
     /// item getter
-    pub fn get(&self, index: ItemIndex) -> Option<&I> {
+    pub(crate) fn get(&self, index: ItemIndex) -> Option<&I> {
         self.arena.get(&index)
     }
 
     /// item getter by range
-    pub fn range<R: RangeBounds<ItemIndex>>(&self, range: R) -> Range<ItemIndex, I> {
+    pub(crate) fn range<R: RangeBounds<ItemIndex>>(&self, range: R) -> Range<ItemIndex, I> {
         self.arena.range(range)
     }
 
     /// iter with specified indices
-    pub fn select_indices<'a>(&'a self, indices: &'a [ItemIndex]) -> impl Iterator + 'a {
+    pub(crate) fn select_indices<'a>(&'a self, indices: &'a [ItemIndex]) -> impl Iterator + 'a {
         self.iter().filter_map(move |(index, item)| {
             if indices.contains(index) {
                 Some(item)
@@ -113,12 +113,12 @@ impl<K: KindBase, I: ItemBase<ItemKind = K>> ItemArena<I> {
     //
 
     /// count of item
-    pub fn count(&self) -> usize {
+    pub(crate) fn count(&self) -> usize {
         self.arena.len()
     }
 
     /// item pool is empty
-    pub fn is_empty(&self) -> bool {
+    pub(crate) fn is_empty(&self) -> bool {
         self.count() == 0
     }
 
@@ -127,7 +127,7 @@ impl<K: KindBase, I: ItemBase<ItemKind = K>> ItemArena<I> {
     //
 
     /// to iterator
-    pub fn iter(&self) -> Iter<ItemIndex, I> {
+    pub(crate) fn iter(&self) -> Iter<ItemIndex, I> {
         self.arena.iter()
     }
 }
@@ -147,8 +147,8 @@ mod test {
     use std::fmt::{Display, Formatter};
 
     use crate::event::test::{check_list, Kind, Visitor, ITERATE_COUNT};
-    use crate::graph::item::{ItemArena, ItemBase, ItemBuilderBase, RefIndexOfItem};
-    use crate::util::alias::ItemIndex;
+    use crate::grafo::core::item::{ItemArena, ItemBase, ItemBuilderBase};
+    use crate::util::alias::{ItemIndex, RefIndexOfItem};
     use crate::util::kind_key::KeyWithKind;
     use std::error::Error;
 
@@ -218,10 +218,6 @@ mod test {
         fn set_name(&mut self, name: String) -> &mut Self {
             self.name = Some(name);
             self
-        }
-
-        fn get_name(&self) -> Option<&str> {
-            self.name.as_deref()
         }
     }
 

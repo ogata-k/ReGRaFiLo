@@ -4,6 +4,9 @@
 // 基本的に正しいかどうかはLayoutGraph構築時に判断し、LayoutGraphからの変換時は正しいかの判定をしない。
 // 指定がなければエラーではなくデフォルトを使用するようにしする。そのためすべての属性にはデフォルトを追加する。この対応のためにログ表示をきちんとさせる必要がある。
 
+// ストア系は基本的に非公開でビルダーなし
+// ストアに入れるアイテム系は公開かつビルダーあり
+
 - IdIndex = usize
 - RefIndex<K, V> = BTreeMap<K, V>  // private in crate
 
@@ -38,7 +41,7 @@
 
 // newするときはLayoutGraphBuilderを使うようにする
 - LayoutGraphBuilder
-    - ...  // TODO ルートグループの各種設定
+    - ...  // ルートグループの各種設定
     // 以下で各種ビルダーを登録していく。ビルド時には登録順にビルドしていく。
     - register_group_builder(self, group_builder: GroupBuilder)
     - register_node_builder(self, node_builder: NodeBuilder)
@@ -69,10 +72,10 @@
     |- BackGroundColor
     |- Shape
         |- None
-        |- Circle{}    // TODO
-        |- Rect{}    // TODO 角丸半径
-        |- Diamond{}  // TODO
-        |- Custom{}    // TODO
+        |- Circle{}  
+        |- Rect{}  
+        |- Diamond{} 
+        |- Custom{}  
 
 - AngleShape
     |- Arrow
