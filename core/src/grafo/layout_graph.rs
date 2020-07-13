@@ -20,5 +20,5 @@ pub struct Grafo {
 }
 
 impl Grafo {
-    // TODO もちろんnewはVisitorを使う（保持せずに毎回与えるようにする）
+    // TODO
 }

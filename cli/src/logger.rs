@@ -6,8 +6,6 @@ use std::io::Write;
 use env_logger::Builder;
 use log::LevelFilter;
 
-use regrafilo_core::event::{Event, Visitor};
-
 /// ReGRaFiLo's logger
 pub struct Logger {}
 
@@ -52,50 +50,9 @@ macro_rules! error {
     )
 }
 
-impl Visitor for Logger {
-    fn visit(&mut self, event: &Event<'_>) {
-        match event {
-            Event::InitializeStore(item_kind) => {
-                debug!("initialize {} item store", item_kind);
-            }
-            Event::SucceededPushItem(item_kind, group_id, item_id) => {
-                trace!(
-                    "push {} item with the id {} at group {}",
-                    item_kind,
-                    item_id,
-                    group_id,
-                );
-            }
-            Event::FailPushItem(item_kind, group_id, err) => {
-                warn!(
-                    "fail push {} item at group {} with error: {}",
-                    item_kind, group_id, err,
-                );
-            }
-            Event::InitializeAttribute => {
-                debug!("initialize attribute reference indexes");
-            }
-            Event::PushValue(item_kind, item_id, value) => {
-                trace!(
-                    "push {} item with the id {} for the value {}",
-                    item_kind,
-                    item_id,
-                    value,
-                );
-            }
-            Event::OverrideValue(item_kind, item_id, value) => {
-                warn!(
-                    "override {} item with the id {} for the value {}",
-                    item_kind, item_id, value
-                );
-            }
-        }
-    }
-}
-
 impl Logger {
     /// initializer with logger
-    pub fn new(verbose: bool) -> Self {
+    pub fn init(verbose: bool) {
         let mut builder = Builder::new();
         builder
             .format_timestamp_secs()
@@ -124,7 +81,5 @@ impl Logger {
         if let Err(e) = builder.try_init() {
             log::error!("fail init for ReGRaFiLo: {}", e);
         }
-
-        Self {}
     }
 }

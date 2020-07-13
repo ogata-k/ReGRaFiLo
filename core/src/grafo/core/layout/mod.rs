@@ -3,6 +3,7 @@
 use crate::util::alias::ItemIndex;
 use crate::util::kind_key::KeyWithKind;
 
+pub mod error;
 pub(crate) mod attribute;
 mod reference;
 

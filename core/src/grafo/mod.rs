@@ -2,5 +2,7 @@
 
 pub mod core;
 mod layout_graph;
+mod error;
 
 pub use layout_graph::*;
+pub use error::*;
