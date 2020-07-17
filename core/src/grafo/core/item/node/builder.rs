@@ -3,6 +3,7 @@
 use crate::grafo::core::item::node::{NodeItem, NodeItemError};
 use crate::grafo::core::item::{HasItemKind, ItemBuilderBase, ItemBuilderBaseBuilderMethod};
 use crate::grafo::core::layout::LayoutReference;
+use crate::grafo::core::refindex::NameReference;
 use crate::util::item_kind::ItemKind;
 
 #[derive(Debug, Clone)]
@@ -34,7 +35,7 @@ impl ItemBuilderBase for NodeItemBuilder {
 impl ItemBuilderBaseBuilderMethod for NodeItemBuilder {
     fn build(
         self,
-        layout: &LayoutReference,
+        layout: &NameReference,
     ) -> Result<(Self::Item, Self::ItemOption), Vec<Self::BuildFailError>> {
         unimplemented!()
     }

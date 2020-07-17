@@ -5,20 +5,24 @@ use crate::grafo::core::item::group::GroupItem;
 use crate::grafo::core::item::node::NodeItem;
 use crate::grafo::core::item::ItemArena;
 use crate::grafo::core::layout::LayoutReference;
+use crate::grafo::core::refindex::NameReference;
 
 /// Grafo is Graph with Layout
 #[allow(dead_code)]
 #[derive(Debug, Clone)]
-pub struct Grafo {
+pub struct Grafo<'a> {
     // item arena
     group_arena: ItemArena<GroupItem>,
     node_arena: ItemArena<NodeItem>,
     edge_arena: ItemArena<EdgeItem>,
 
+    // name to id
+    item_names: NameReference<'a>,
+
     // layout
-    reference: LayoutReference,
+    layout: LayoutReference,
 }
 
-impl Grafo {
+impl<'a> Grafo<'a> {
     // TODO
 }

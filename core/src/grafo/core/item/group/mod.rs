@@ -1,9 +1,9 @@
 //! ReGRaFiLo's Grouping for other item
 
 mod builder;
-mod item;
 mod error;
+mod item;
 
 pub use builder::*;
-pub use item::*;
 pub use error::*;
+pub use item::*;

@@ -1,7 +1,7 @@
 //! module for type of item
 
 /// type of item
-#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone)]
+#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone, Hash)]
 pub enum ItemKind {
     Group,
     Node,

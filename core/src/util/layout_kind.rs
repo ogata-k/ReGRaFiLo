@@ -1,7 +1,7 @@
 //! kind for layout
 
 /// kind of Attribute
-#[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Copy, Clone)]
+#[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Hash)]
 pub enum AttributeKind {
     Form,
     Group,
