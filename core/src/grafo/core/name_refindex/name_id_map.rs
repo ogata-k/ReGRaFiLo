@@ -1,7 +1,7 @@
-use crate::grafo::core::refindex::error::NameRefWarning;
-use crate::util::alias::RefIndex;
+use crate::grafo::core::name_refindex::error::NameRefWarning;
 use crate::util::kind_key::KeyWithKind;
 use std::borrow::Cow;
+use std::collections::HashMap;
 use std::fmt::{Debug, Display};
 use std::hash::Hash;
 use std::ops::Deref;
@@ -19,6 +19,9 @@ fn key_to_str<'a, 'b: 'a, Kind: Eq + Copy + Hash>(
 ) -> &'b str {
     key.key.deref()
 }
+
+/// references indexes
+type RefIndex<K, V> = HashMap<K, V>;
 
 #[derive(Debug, Clone)]
 pub struct NameRefIndex<'a, Kind: Eq + Copy + Hash, Value: Eq + Copy> {

@@ -1,19 +1,18 @@
-use crate::grafo::core::item::{HasItemKind, ItemErrorBase};
+use crate::grafo::core::graph_item::GraphItemErrorBase;
 use crate::grafo::GrafoError;
-use crate::util::item_kind::ItemKind;
+use crate::util::item_base::ItemErrorBase;
+use crate::util::kind::{GraphItemKind, HasGraphItemKind};
 use std::error::Error;
 use std::fmt::{Display, Formatter};
-
-// TODO doc commentや実装などのリファクタリングとbuilderメソッドをエンドユーザーから隠す
 
 #[derive(Debug, Clone)]
 pub enum EdgeItemError {
     // TODO
 }
 
-impl HasItemKind for EdgeItemError {
-    fn kind() -> ItemKind {
-        ItemKind::Edge
+impl HasGraphItemKind for EdgeItemError {
+    fn kind() -> GraphItemKind {
+        GraphItemKind::Edge
     }
 }
 
@@ -30,5 +29,5 @@ impl Into<GrafoError> for EdgeItemError {
 }
 
 impl Error for EdgeItemError {}
-
 impl ItemErrorBase for EdgeItemError {}
+impl GraphItemErrorBase for EdgeItemError {}

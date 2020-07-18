@@ -1,6 +1,6 @@
 //! utility of ReGRaFiLo's core
 
 pub mod alias;
-pub mod item_kind;
+pub mod item_base;
+pub mod kind;
 pub(crate) mod kind_key;
-pub mod layout_kind;

@@ -5,11 +5,12 @@ use std::collections::BTreeMap;
 use std::ops::{Bound, RangeBounds};
 use std::sync::{Arc, Mutex};
 
-use crate::grafo::core::item::{ItemBase, ItemBuilderBaseBuilderMethod, ItemErrorBase};
-use crate::grafo::core::refindex::NameReference;
+use crate::grafo::core::graph_item::{GraphItemBase, GraphItemBuilderBase, GraphItemErrorBase};
+use crate::grafo::core::name_refindex::NameReference;
 use crate::grafo::GrafoError;
 use crate::util::alias::{GraphItemId, GroupId};
-use crate::util::item_kind::ItemKind;
+use crate::util::item_base::HasItemBuilderMethod;
+use crate::util::kind::GraphItemKind;
 
 /// item pool
 #[derive(Debug, Clone)]
@@ -30,7 +31,7 @@ fn range_with_group(
     }
 }
 
-impl<I: ItemBase> ItemArena<I> {
+impl<I: GraphItemBase> ItemArena<I> {
     /// initialize
     pub fn new() -> Self {
         ItemArena::default()
@@ -63,8 +64,8 @@ impl<I: ItemBase> ItemArena<I> {
     pub(crate) fn push<
         F,
         O,
-        E: ItemErrorBase,
-        B: ItemBuilderBaseBuilderMethod<Item = I, ItemOption = O, BuildFailError = E>,
+        E: GraphItemErrorBase,
+        B: GraphItemBuilderBase + HasItemBuilderMethod<Item = I, ItemOption = O, BuildFailError = E>,
     >(
         &mut self,
         name_ref: &mut NameReference,
@@ -74,7 +75,7 @@ impl<I: ItemBase> ItemArena<I> {
     where
         F: FnOnce(
             &mut NameReference,
-            ItemKind,
+            GraphItemKind,
             GroupId,
             GraphItemId,
             B::ItemOption,
@@ -158,19 +159,19 @@ impl<I> Default for ItemArena<I> {
 mod test {
     use std::fmt::{Display, Formatter};
 
-    use crate::grafo::core::item::{
-        HasItemKind, ItemArena, ItemBase, ItemBuilderBase, ItemBuilderBaseBuilderMethod,
-        ItemErrorBase,
+    use crate::grafo::core::graph_item::{
+        GraphItemBase, GraphItemBuilderBase, GraphItemErrorBase, ItemArena,
     };
-    use crate::grafo::core::refindex::{NameRefWarning, NameReference};
+    use crate::grafo::core::name_refindex::{NameRefWarning, NameReference};
     use crate::grafo::GrafoError;
-    use crate::util::alias::{GraphItemId, GroupId, RefIndex};
-    use crate::util::item_kind::test::check_list;
-    use crate::util::item_kind::ItemKind;
+    use crate::util::alias::GraphItemId;
+    use crate::util::item_base::{HasItemBuilderMethod, ItemBase, ItemBuilderBase, ItemErrorBase};
+    use crate::util::kind::test::graph_item_check_list;
+    use crate::util::kind::{GraphItemKind, HasGraphItemKind};
     use std::error::Error;
 
     const ITERATE_COUNT: usize = 10;
-    const TARGET_KIND: ItemKind = ItemKind::Node;
+    const TARGET_KIND: GraphItemKind = GraphItemKind::Node;
 
     #[derive(Debug, Eq, PartialEq, Clone)]
     struct TargetItemBuilder {
@@ -181,7 +182,6 @@ mod test {
     #[derive(Debug, Eq, PartialEq, Clone)]
     struct TargetItem {
         group_id: GraphItemId,
-        item_id: GraphItemId,
     }
 
     #[derive(Debug, Eq, PartialEq, Clone)]
@@ -201,20 +201,20 @@ mod test {
         }
     }
 
-    impl HasItemKind for TargetItem {
-        fn kind() -> ItemKind {
+    impl HasGraphItemKind for TargetItem {
+        fn kind() -> GraphItemKind {
             TARGET_KIND
         }
     }
 
-    impl HasItemKind for TargetItemBuilder {
-        fn kind() -> ItemKind {
+    impl HasGraphItemKind for TargetItemBuilder {
+        fn kind() -> GraphItemKind {
             TARGET_KIND
         }
     }
 
-    impl HasItemKind for TargetBuildError {
-        fn kind() -> ItemKind {
+    impl HasGraphItemKind for TargetBuildError {
+        fn kind() -> GraphItemKind {
             TARGET_KIND
         }
     }
@@ -223,7 +223,9 @@ mod test {
         type Item = TargetItem;
         type ItemOption = TargetItemOption;
         type BuildFailError = TargetBuildError;
+    }
 
+    impl GraphItemBuilderBase for TargetItemBuilder {
         fn set_group_id(&mut self, group_id: GraphItemId) -> &mut Self {
             self.group_id = group_id;
             self
@@ -234,19 +236,13 @@ mod test {
         }
     }
 
-    impl ItemBuilderBaseBuilderMethod for TargetItemBuilder {
+    impl HasItemBuilderMethod for TargetItemBuilder {
         fn build(
             self,
             name_ref: &NameReference,
         ) -> Result<(TargetItem, TargetItemOption), Vec<TargetBuildError>> {
             let TargetItemBuilder { group_id, name } = self;
-            Ok((
-                TargetItem {
-                    group_id,
-                    item_id: 0,
-                },
-                TargetItemOption { group_id, name },
-            ))
+            Ok((TargetItem { group_id }, TargetItemOption { group_id, name }))
         }
     }
 
@@ -264,13 +260,11 @@ mod test {
         }
     }
 
-    impl ItemBase for TargetItem {
+    impl ItemBase for TargetItem {}
+
+    impl GraphItemBase for TargetItem {
         fn get_group_id(&self) -> usize {
             self.group_id
-        }
-
-        fn get_item_id(&self) -> usize {
-            self.item_id
         }
     }
 
@@ -286,6 +280,8 @@ mod test {
     impl Error for TargetBuildError {}
 
     impl ItemErrorBase for TargetBuildError {}
+
+    impl GraphItemErrorBase for TargetBuildError {}
 
     #[test]
     fn is_empty() {
@@ -325,7 +321,7 @@ mod test {
         }
         let arena = arena_mut;
         assert_eq!(arena.count(), ITERATE_COUNT);
-        for target in check_list() {
+        for target in graph_item_check_list() {
             assert_eq!(
                 reference.item_name_count_by(target),
                 if target == TARGET_KIND {
@@ -372,7 +368,7 @@ mod test {
         for (index, item) in (&arena).iter().enumerate() {
             let result: (usize, usize) = (0, index);
             assert_eq!(result, *item.0);
-            for kind in check_list() {
+            for kind in graph_item_check_list() {
                 let name = format!("{}", index);
                 let ref_result = reference.get_item_id_pair(kind, &name);
                 if let Ok(success) = ref_result {
@@ -425,7 +421,7 @@ mod test {
         }
         let arena = arena_mut;
         assert_eq!(arena.count(), 2 * ITERATE_COUNT);
-        for target in check_list() {
+        for target in graph_item_check_list() {
             assert_eq!(
                 reference.item_name_count_by(target),
                 if target == TARGET_KIND {
@@ -475,7 +471,7 @@ mod test {
         for (index, item) in (&arena).iter().enumerate() {
             let result: (usize, usize) = (0, index);
             assert_eq!(result, *item.0);
-            for kind in check_list() {
+            for kind in graph_item_check_list() {
                 let name = format!("{}", index);
                 let ref_result = reference.get_item_id_pair(kind, &name);
                 if index < ITERATE_COUNT && kind == TARGET_KIND {

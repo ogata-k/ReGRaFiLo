@@ -1,6 +1,5 @@
 use crate::grafo::GrafoError;
-use crate::util::item_kind::ItemKind;
-use crate::util::layout_kind::LayoutKind;
+use crate::util::kind::{GraphItemKind, LayoutItemKind};
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 
@@ -18,13 +17,13 @@ impl<Kind: Display> Display for NameRefWarning<Kind> {
 
 impl<Kind: Debug + Display> Error for NameRefWarning<Kind> {}
 
-impl Into<GrafoError> for NameRefWarning<ItemKind> {
+impl Into<GrafoError> for NameRefWarning<GraphItemKind> {
     fn into(self) -> GrafoError {
         GrafoError::ItemNameRefWarning(self)
     }
 }
 
-impl Into<GrafoError> for NameRefWarning<LayoutKind> {
+impl Into<GrafoError> for NameRefWarning<LayoutItemKind> {
     fn into(self) -> GrafoError {
         GrafoError::AttributeNameRefWarning(self)
     }

@@ -1,6 +1,7 @@
-use crate::grafo::core::item::{HasItemKind, ItemErrorBase};
+use crate::grafo::core::graph_item::GraphItemErrorBase;
 use crate::grafo::GrafoError;
-use crate::util::item_kind::ItemKind;
+use crate::util::item_base::ItemErrorBase;
+use crate::util::kind::{GraphItemKind, HasGraphItemKind};
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 
@@ -9,9 +10,9 @@ pub enum NodeItemError {
     // TODO
 }
 
-impl HasItemKind for NodeItemError {
-    fn kind() -> ItemKind {
-        ItemKind::Node
+impl HasGraphItemKind for NodeItemError {
+    fn kind() -> GraphItemKind {
+        GraphItemKind::Node
     }
 }
 
@@ -28,5 +29,5 @@ impl Into<GrafoError> for NodeItemError {
 }
 
 impl Error for NodeItemError {}
-
 impl ItemErrorBase for NodeItemError {}
+impl GraphItemErrorBase for NodeItemError {}
