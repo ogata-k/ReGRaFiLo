@@ -2,6 +2,7 @@
 
 use std::error::Error;
 
+use crate::grafo::core::refindex::NameReference;
 use crate::grafo::GrafoError;
 use crate::util::alias::GroupId;
 use crate::util::item_kind::ItemKind;
@@ -22,7 +23,10 @@ pub trait ItemBuilderBase: HasItemKind {
 
 pub(crate) type ItemBuildResult<Item, Option, BuildError> = Result<(Item, Option), Vec<BuildError>>;
 pub(crate) trait ItemBuilderBaseBuilderMethod: ItemBuilderBase {
-    fn build(self) -> ItemBuildResult<Self::Item, Self::ItemOption, Self::BuildFailError>;
+    fn build(
+        self,
+        name_ref: &NameReference,
+    ) -> ItemBuildResult<Self::Item, Self::ItemOption, Self::BuildFailError>;
 }
 
 /// Item's base set

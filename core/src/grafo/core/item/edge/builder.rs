@@ -4,6 +4,7 @@ use crate::grafo::core::item::edge::{EdgeItem, EdgeItemError};
 use crate::grafo::core::item::{
     HasItemKind, ItemBuildResult, ItemBuilderBase, ItemBuilderBaseBuilderMethod,
 };
+use crate::grafo::core::refindex::NameReference;
 use crate::util::item_kind::ItemKind;
 
 #[derive(Debug, Clone)]
@@ -33,7 +34,10 @@ impl ItemBuilderBase for EdgeItemBuilder {
 }
 
 impl ItemBuilderBaseBuilderMethod for EdgeItemBuilder {
-    fn build(self) -> ItemBuildResult<Self::Item, Self::ItemOption, Self::BuildFailError> {
+    fn build(
+        self,
+        name_ref: &NameReference,
+    ) -> ItemBuildResult<Self::Item, Self::ItemOption, Self::BuildFailError> {
         unimplemented!()
     }
 }

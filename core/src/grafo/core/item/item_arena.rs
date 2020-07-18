@@ -82,7 +82,7 @@ impl<I: ItemBase> ItemArena<I> {
     {
         let item_kind = B::kind();
         let group_id = item_builder.get_group_id();
-        match item_builder.build() {
+        match item_builder.build(name_ref) {
             Ok((item, option)) => {
                 let push_index = self.get_push_index();
                 self.arena.insert((group_id, push_index), item);
@@ -235,7 +235,10 @@ mod test {
     }
 
     impl ItemBuilderBaseBuilderMethod for TargetItemBuilder {
-        fn build(self) -> Result<(TargetItem, TargetItemOption), Vec<TargetBuildError>> {
+        fn build(
+            self,
+            name_ref: &NameReference,
+        ) -> Result<(TargetItem, TargetItemOption), Vec<TargetBuildError>> {
             let TargetItemBuilder { group_id, name } = self;
             Ok((
                 TargetItem {

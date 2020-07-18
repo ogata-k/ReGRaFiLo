@@ -2,6 +2,7 @@
 
 use crate::grafo::core::item::group::{GroupItem, GroupItemError};
 use crate::grafo::core::item::{HasItemKind, ItemBuilderBase, ItemBuilderBaseBuilderMethod};
+use crate::grafo::core::refindex::NameReference;
 use crate::util::item_kind::ItemKind;
 
 #[derive(Debug, Clone)]
@@ -31,7 +32,10 @@ impl ItemBuilderBase for GroupItemBuilder {
 }
 
 impl ItemBuilderBaseBuilderMethod for GroupItemBuilder {
-    fn build(self) -> Result<(Self::Item, Self::ItemOption), Vec<Self::BuildFailError>> {
+    fn build(
+        self,
+        name_ref: &NameReference,
+    ) -> Result<(Self::Item, Self::ItemOption), Vec<Self::BuildFailError>> {
         unimplemented!()
     }
 }
