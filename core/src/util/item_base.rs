@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use crate::grafo::core::name_refindex::NameReference;
+use crate::grafo::name_refindex::NameReference;
 use crate::grafo::GrafoError;
 
 pub trait ItemBuilderBase {
