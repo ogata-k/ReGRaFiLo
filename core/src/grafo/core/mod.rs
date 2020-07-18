@@ -1,5 +1,5 @@
 //! ReGRaFiLo's graph core
 
 pub mod graph_item;
-pub mod layout;
+pub mod layout_item;
 pub mod name_refindex;

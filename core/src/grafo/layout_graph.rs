@@ -4,7 +4,7 @@ use crate::grafo::core::graph_item::edge::EdgeItem;
 use crate::grafo::core::graph_item::group::GroupItem;
 use crate::grafo::core::graph_item::node::NodeItem;
 use crate::grafo::core::graph_item::ItemArena;
-use crate::grafo::core::layout::Layout;
+use crate::grafo::core::layout_item::Layout;
 use crate::grafo::core::name_refindex::NameReference;
 
 /// Grafo is Graph with Layout
