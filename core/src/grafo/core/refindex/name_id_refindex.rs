@@ -38,19 +38,19 @@ impl<'a, Kind: Debug + Display + Eq + Copy + Hash, Value: Eq + Copy> NameRefInde
     //
 
     /// helper for a setter of string attribute
-    pub fn push_name<S: Into<Cow<'a, str>> + Clone>(
+    pub fn push_value<S: Into<Cow<'a, str>> + Clone>(
         &mut self,
         kind: Kind,
         name: S,
-        item_id: Value,
+        value: Value,
     ) -> Result<(), NameRefWarning<Kind>> {
         let key = create_layout_key(kind, name);
         if self.reference_index.contains_key(&key) {
             let s = key_to_str(&key).to_string();
-            self.reference_index.insert(key, item_id);
+            self.reference_index.insert(key, value);
             return Err(NameRefWarning::Override(kind, s));
         }
-        self.reference_index.insert(key, item_id);
+        self.reference_index.insert(key, value);
         Ok(())
     }
 }
