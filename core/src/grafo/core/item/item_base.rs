@@ -21,8 +21,9 @@ pub trait ItemBuilderBase: HasItemKind {
     fn get_group_id(&self) -> GroupId;
 }
 
+pub(crate) type ItemBuildResult<Item, Option, BuildError> = Result<(Item, Option), Vec<BuildError>>;
 pub(crate) trait ItemBuilderBaseBuilderMethod: ItemBuilderBase {
-    fn build(self) -> Result<(Self::Item, Self::ItemOption), Vec<Self::BuildFailError>>;
+    fn build(self) -> ItemBuildResult<Self::Item, Self::ItemOption, Self::BuildFailError>;
 }
 
 /// Item's base set

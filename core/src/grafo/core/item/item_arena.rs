@@ -162,7 +162,7 @@ mod test {
         HasItemKind, ItemArena, ItemBase, ItemBuilderBase, ItemBuilderBaseBuilderMethod,
         ItemErrorBase,
     };
-    use crate::grafo::core::refindex::NameReference;
+    use crate::grafo::core::refindex::{NameRefWarning, NameReference};
     use crate::grafo::GrafoError;
     use crate::util::alias::{GraphItemId, GroupId, RefIndex};
     use crate::util::item_kind::test::check_list;
@@ -171,58 +171,59 @@ mod test {
     use std::error::Error;
 
     const ITERATE_COUNT: usize = 10;
+    const TARGET_KIND: ItemKind = ItemKind::Node;
 
     #[derive(Debug, Eq, PartialEq, Clone)]
-    struct NodeItemBuilder {
+    struct TargetItemBuilder {
         group_id: GraphItemId,
         name: Option<String>,
     }
 
     #[derive(Debug, Eq, PartialEq, Clone)]
-    struct NodeItem {
+    struct TargetItem {
         group_id: GraphItemId,
         item_id: GraphItemId,
     }
 
     #[derive(Debug, Eq, PartialEq, Clone)]
-    struct NodeItemOption {
+    struct TargetItemOption {
         group_id: GraphItemId,
         name: Option<String>,
     }
 
     #[derive(Debug)]
-    enum NodeBuildError {
+    enum TargetBuildError {
         BuildFail,
     }
 
-    impl Into<GrafoError> for NodeBuildError {
+    impl Into<GrafoError> for TargetBuildError {
         fn into(self) -> GrafoError {
             unimplemented!()
         }
     }
 
-    impl HasItemKind for NodeItem {
+    impl HasItemKind for TargetItem {
         fn kind() -> ItemKind {
-            ItemKind::Node
+            TARGET_KIND
         }
     }
 
-    impl HasItemKind for NodeItemBuilder {
+    impl HasItemKind for TargetItemBuilder {
         fn kind() -> ItemKind {
-            ItemKind::Node
+            TARGET_KIND
         }
     }
 
-    impl HasItemKind for NodeBuildError {
+    impl HasItemKind for TargetBuildError {
         fn kind() -> ItemKind {
-            ItemKind::Node
+            TARGET_KIND
         }
     }
 
-    impl ItemBuilderBase for NodeItemBuilder {
-        type Item = NodeItem;
-        type ItemOption = NodeItemOption;
-        type BuildFailError = NodeBuildError;
+    impl ItemBuilderBase for TargetItemBuilder {
+        type Item = TargetItem;
+        type ItemOption = TargetItemOption;
+        type BuildFailError = TargetBuildError;
 
         fn set_group_id(&mut self, group_id: GraphItemId) -> &mut Self {
             self.group_id = group_id;
@@ -234,22 +235,22 @@ mod test {
         }
     }
 
-    impl ItemBuilderBaseBuilderMethod for NodeItemBuilder {
-        fn build(self) -> Result<(NodeItem, NodeItemOption), Vec<NodeBuildError>> {
-            let NodeItemBuilder { group_id, name } = self;
+    impl ItemBuilderBaseBuilderMethod for TargetItemBuilder {
+        fn build(self) -> Result<(TargetItem, TargetItemOption), Vec<TargetBuildError>> {
+            let TargetItemBuilder { group_id, name } = self;
             Ok((
-                NodeItem {
+                TargetItem {
                     group_id,
                     item_id: 0,
                 },
-                NodeItemOption { group_id, name },
+                TargetItemOption { group_id, name },
             ))
         }
     }
 
-    impl NodeItemBuilder {
+    impl TargetItemBuilder {
         fn new() -> Self {
-            NodeItemBuilder {
+            TargetItemBuilder {
                 group_id: 0,
                 name: None,
             }
@@ -261,7 +262,7 @@ mod test {
         }
     }
 
-    impl ItemBase for NodeItem {
+    impl ItemBase for TargetItem {
         fn get_group_id(&self) -> usize {
             self.group_id
         }
@@ -271,167 +272,225 @@ mod test {
         }
     }
 
-    impl Display for NodeBuildError {
+    impl Display for TargetBuildError {
         fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-            use NodeBuildError::*;
+            use TargetBuildError::*;
             match &self {
                 BuildFail => write!(f, "fail build item"),
             }
         }
     }
 
-    impl Error for NodeBuildError {}
+    impl Error for TargetBuildError {}
 
-    impl ItemErrorBase for NodeBuildError {}
-
-    type NameRefIndex = RefIndex<KeyWithKind<ItemKind, String>, (GroupId, GraphItemId)>;
+    impl ItemErrorBase for TargetBuildError {}
 
     #[test]
     fn is_empty() {
-        assert!(ItemArena::<NodeItem>::new().is_empty());
+        assert!(ItemArena::<TargetItem>::new().is_empty());
     }
 
     #[test]
-    fn with_action_count() {
-        let mut arena_mut = ItemArena::<NodeItem>::new();
-        let mut names = NameReference::default();
+    fn with_name_count() {
+        let mut arena_mut = ItemArena::<TargetItem>::new();
+        let mut reference = NameReference::default();
         for i in 0..ITERATE_COUNT {
-            let mut builder = NodeItemBuilder::new();
+            let mut builder = TargetItemBuilder::new();
             builder.set_group_id(0).set_name(format!("{}", i));
-            arena_mut.push(
-                &mut names,
+            let push_result = arena_mut.push(
+                &mut reference,
                 builder,
-                |_layout, kind, group_id, item_id, option| {
-                    if let NodeItemOption {
+                |name_ref, kind, group_id, item_id, option| {
+                    if let TargetItemOption {
                         group_id: _,
                         name: Some(name),
                     } = option
                     {
-                        names.insert(KeyWithKind::new(kind, name), (group_id, item_id));
+                        let mut errors: Vec<GrafoError> = Vec::new();
+                        if let Err(err) = name_ref.push_item_name(kind, name, group_id, item_id) {
+                            errors.push(err.into());
+                        }
+                        return if errors.is_empty() {
+                            None
+                        } else {
+                            Some(errors)
+                        };
                     }
                     None
                 },
             );
+            assert!(push_result.is_none());
         }
         let arena = arena_mut;
         assert_eq!(arena.count(), ITERATE_COUNT);
-        assert_eq!(names.len(), ITERATE_COUNT);
+        for target in check_list() {
+            assert_eq!(
+                reference.item_name_count_by(target),
+                if target == TARGET_KIND {
+                    ITERATE_COUNT
+                } else {
+                    0
+                }
+            );
+        }
     }
 
     #[test]
-    fn with_action_each_eq() {
-        let mut arena_mut = ItemArena::<NodeItem>::new();
-        let mut names = NameReference::default();
+    fn with_name_each_eq() {
+        let mut arena_mut = ItemArena::<TargetItem>::new();
+        let mut reference = NameReference::default();
         for i in 0..ITERATE_COUNT {
-            let mut builder = NodeItemBuilder::new();
+            let mut builder = TargetItemBuilder::new();
             builder.set_group_id(0).set_name(format!("{}", i));
-            arena_mut.push(
-                &mut names,
+            let push_result = arena_mut.push(
+                &mut reference,
                 builder,
-                |_layout, kind, group_id, item_id, option| {
-                    if let NodeItemOption {
+                |name_ref, kind, group_id, item_id, option| {
+                    if let TargetItemOption {
                         group_id: _,
                         name: Some(name),
                     } = option
                     {
-                        names.insert(KeyWithKind::new(kind, name), (group_id, item_id));
+                        let mut errors: Vec<GrafoError> = Vec::new();
+                        if let Err(err) = name_ref.push_item_name(kind, name, group_id, item_id) {
+                            errors.push(err.into());
+                        }
+                        return if errors.is_empty() {
+                            None
+                        } else {
+                            Some(errors)
+                        };
                     }
                     None
                 },
             );
+            assert!(push_result.is_none());
         }
         let arena = arena_mut;
-        let mut index: usize = 0;
-        for item in (&arena).iter() {
+        for (index, item) in (&arena).iter().enumerate() {
             let result: (usize, usize) = (0, index);
             assert_eq!(result, *item.0);
             for kind in check_list() {
-                assert_eq!(
-                    names.get(&KeyWithKind::new(kind, format!("{}", index))),
-                    if kind == ItemKind::Node {
-                        Some(&result)
-                    } else {
-                        None
-                    }
-                );
+                let name = format!("{}", index);
+                let ref_result = reference.get_item_id_pair(kind, &name);
+                if let Ok(success) = ref_result {
+                    assert_eq!(success, &result);
+                } else {
+                    let err = ref_result.err();
+                    assert!(err.is_some());
+                    assert_eq!(
+                        err.unwrap(),
+                        NameRefWarning::NotExist(kind, format!("{}", index))
+                    );
+                }
             }
-            index += 1;
         }
-        assert_eq!(index, ITERATE_COUNT);
     }
 
     #[test]
     fn mixed_count() {
-        let mut arena_mut = ItemArena::<NodeItem>::new();
-        let mut names = NameReference::default();
+        let mut arena_mut = ItemArena::<TargetItem>::new();
+        let mut reference = NameReference::default();
         for i in 0..2 * ITERATE_COUNT {
-            let mut builder = NodeItemBuilder::new();
+            let mut builder = TargetItemBuilder::new();
             builder.set_group_id(0);
             if i < ITERATE_COUNT {
                 builder.set_name(format!("{}", i));
             }
-            arena_mut.push(
-                &mut names,
+            let push_result = arena_mut.push(
+                &mut reference,
                 builder,
-                |_layout, kind, group_id, item_id, option| {
-                    if let NodeItemOption {
+                |name_ref, kind, group_id, item_id, option| {
+                    if let TargetItemOption {
                         group_id: _,
                         name: Some(name),
                     } = option
                     {
-                        names.insert(KeyWithKind::new(kind, name), (group_id, item_id));
+                        let mut errors: Vec<GrafoError> = Vec::new();
+                        if let Err(err) = name_ref.push_item_name(kind, name, group_id, item_id) {
+                            errors.push(err.into());
+                        }
+                        return if errors.is_empty() {
+                            None
+                        } else {
+                            Some(errors)
+                        };
                     }
                     None
                 },
             );
+            assert!(push_result.is_none());
         }
         let arena = arena_mut;
         assert_eq!(arena.count(), 2 * ITERATE_COUNT);
-        assert_eq!(names.len(), ITERATE_COUNT);
+        for target in check_list() {
+            assert_eq!(
+                reference.item_name_count_by(target),
+                if target == TARGET_KIND {
+                    ITERATE_COUNT
+                } else {
+                    0
+                }
+            );
+        }
     }
 
     #[test]
     fn mixed_each_eq() {
-        let mut arena_mut = ItemArena::<NodeItem>::new();
-        let mut names = NameReference::default();
+        let mut arena_mut = ItemArena::<TargetItem>::new();
+        let mut reference = NameReference::default();
         for i in 0..2 * ITERATE_COUNT {
-            let mut builder = NodeItemBuilder::new();
+            let mut builder = TargetItemBuilder::new();
             builder.set_group_id(0);
             if i < ITERATE_COUNT {
                 builder.set_name(format!("{}", i));
             }
-            arena_mut.push(
-                &mut names,
+            let push_result = arena_mut.push(
+                &mut reference,
                 builder,
-                |_layout, kind, group_id, item_id, option| {
-                    if let NodeItemOption {
+                |name_ref, kind, group_id, item_id, option| {
+                    if let TargetItemOption {
                         group_id: _,
                         name: Some(name),
                     } = option
                     {
-                        names.insert(KeyWithKind::new(kind, name), (group_id, item_id));
+                        let mut errors: Vec<GrafoError> = Vec::new();
+                        if let Err(err) = name_ref.push_item_name(kind, name, group_id, item_id) {
+                            errors.push(err.into());
+                        }
+                        return if errors.is_empty() {
+                            None
+                        } else {
+                            Some(errors)
+                        };
                     }
                     None
                 },
             );
+            assert!(push_result.is_none());
         }
         let arena = arena_mut;
-        let mut index: usize = 0;
-        for item in (&arena).iter() {
+        for (index, item) in (&arena).iter().enumerate() {
             let result: (usize, usize) = (0, index);
             assert_eq!(result, *item.0);
             for kind in check_list() {
-                assert_eq!(
-                    names.get(&KeyWithKind::new(kind, format!("{}", index))),
-                    if index < ITERATE_COUNT && kind == ItemKind::Node {
-                        Some(&result)
+                let name = format!("{}", index);
+                let ref_result = reference.get_item_id_pair(kind, &name);
+                if index < ITERATE_COUNT && kind == TARGET_KIND {
+                    if let Ok(success) = &ref_result {
+                        assert_eq!(success, &&result);
                     } else {
-                        None
+                        unreachable!("over count and not exist the name \"{}\"", name)
                     }
-                );
+                } else {
+                    let err = &ref_result.err();
+                    assert!(err.is_some());
+                    assert_eq!(
+                        err.clone().unwrap(),
+                        NameRefWarning::NotExist(kind, format!("{}", index))
+                    );
+                }
             }
-            index += 1;
         }
-        assert_eq!(index, 2 * ITERATE_COUNT);
     }
 }

@@ -4,7 +4,7 @@ use crate::grafo::core::item::node::NodeItemError;
 use crate::grafo::core::refindex::NameRefWarning;
 use crate::util::alias::{GraphItemId, GroupId};
 use crate::util::item_kind::ItemKind;
-use crate::util::layout_kind::AttributeKind;
+use crate::util::layout_kind::{AttributeKind, LayoutKind};
 use std::error::Error;
 use std::fmt::Formatter;
 
@@ -14,7 +14,7 @@ pub enum GrafoError {
     NodeItemError(NodeItemError),
     EdgeItemError(EdgeItemError),
     ItemNameRefWarning(NameRefWarning<ItemKind>),
-    AttributeNameRefWarning(NameRefWarning<(ItemKind, AttributeKind)>),
+    AttributeNameRefWarning(NameRefWarning<LayoutKind>),
 }
 
 impl std::fmt::Display for GrafoError {

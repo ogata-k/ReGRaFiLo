@@ -57,16 +57,26 @@ impl<'a, Kind: Debug + Display + Eq + Copy + Hash, Value: Eq + Copy> NameRefInde
 
 impl<'a, Kind: Eq + Copy + Hash, Value: Eq + Copy> NameRefIndex<'a, Kind, Value> {
     /// helper for getter of string attribute
-    pub fn get_value<S: Into<Cow<'a, str>>>(&self, kind: Kind, name: S) -> Option<&Value> {
+    pub fn get_value<'b: 'a>(
+        &'a self,
+        kind: Kind,
+        name: &'b str,
+    ) -> Result<&'a Value, NameRefWarning<Kind>> {
         self.reference_index
-            .get(&create_layout_key(kind, name.into()))
+            .get(&create_layout_key(kind, name))
+            .ok_or_else(|| NameRefWarning::NotExist(kind, name.to_string()))
+    }
+
+    pub fn exist_key(&self, kind: Kind, name: &str) -> bool {
+        self.reference_index
+            .contains_key(&create_layout_key(kind, name))
     }
 
     /// helper for count by kind
     pub fn count_by(&self, kind: Kind) -> usize {
         self.reference_index
-            .iter()
-            .filter(|(k, _)| k.is_kind(kind))
+            .keys()
+            .filter(|k| k.is_kind(kind))
             .count()
     }
 }
