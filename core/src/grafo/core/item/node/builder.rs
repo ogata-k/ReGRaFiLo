@@ -33,10 +33,7 @@ impl ItemBuilderBase for NodeItemBuilder {
 }
 
 impl ItemBuilderBaseBuilderMethod for NodeItemBuilder {
-    fn build(
-        self,
-        layout: &NameReference,
-    ) -> Result<(Self::Item, Self::ItemOption), Vec<Self::BuildFailError>> {
+    fn build(self) -> Result<(Self::Item, Self::ItemOption), Vec<Self::BuildFailError>> {
         unimplemented!()
     }
 }

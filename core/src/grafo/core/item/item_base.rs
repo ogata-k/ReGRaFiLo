@@ -22,10 +22,7 @@ pub trait ItemBuilderBase: HasItemKind {
 }
 
 pub(crate) trait ItemBuilderBaseBuilderMethod: ItemBuilderBase {
-    fn build(
-        self,
-        layout: &NameReference,
-    ) -> Result<(Self::Item, Self::ItemOption), Vec<Self::BuildFailError>>;
+    fn build(self) -> Result<(Self::Item, Self::ItemOption), Vec<Self::BuildFailError>>;
 }
 
 /// Item's base set

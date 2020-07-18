@@ -3,8 +3,8 @@
 use crate::grafo::core::item::edge::{EdgeItem, EdgeItemError};
 use crate::grafo::core::item::{HasItemKind, ItemBuilderBase, ItemBuilderBaseBuilderMethod};
 use crate::grafo::core::layout::LayoutReference;
-use crate::util::item_kind::ItemKind;
 use crate::grafo::core::refindex::NameReference;
+use crate::util::item_kind::ItemKind;
 
 #[derive(Debug, Clone)]
 pub struct EdgeItemBuilder {
@@ -31,11 +31,9 @@ impl ItemBuilderBase for EdgeItemBuilder {
         unimplemented!()
     }
 }
+
 impl ItemBuilderBaseBuilderMethod for EdgeItemBuilder {
-    fn build(
-        self,
-        layout: &NameReference,
-    ) -> Result<(Self::Item, Self::ItemOption), Vec<Self::BuildFailError>> {
+    fn build(self) -> Result<(Self::Item, Self::ItemOption), Vec<Self::BuildFailError>> {
         unimplemented!()
     }
 }

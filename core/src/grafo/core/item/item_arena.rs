@@ -82,7 +82,7 @@ impl<I: ItemBase> ItemArena<I> {
     {
         let item_kind = B::kind();
         let group_id = item_builder.get_group_id();
-        match item_builder.build(name_ref) {
+        match item_builder.build() {
             Ok((item, option)) => {
                 let push_index = self.get_push_index();
                 self.arena.insert((group_id, push_index), item);
@@ -162,7 +162,6 @@ mod test {
         HasItemKind, ItemArena, ItemBase, ItemBuilderBase, ItemBuilderBaseBuilderMethod,
         ItemErrorBase,
     };
-    use crate::grafo::core::layout::LayoutReference;
     use crate::grafo::core::refindex::NameReference;
     use crate::grafo::GrafoError;
     use crate::util::alias::{GraphItemId, GroupId, RefIndex};
@@ -236,10 +235,7 @@ mod test {
     }
 
     impl ItemBuilderBaseBuilderMethod for NodeItemBuilder {
-        fn build(
-            self,
-            _layout: &NameReference,
-        ) -> Result<(NodeItem, NodeItemOption), Vec<NodeBuildError>> {
+        fn build(self) -> Result<(NodeItem, NodeItemOption), Vec<NodeBuildError>> {
             let NodeItemBuilder { group_id, name } = self;
             Ok((
                 NodeItem {

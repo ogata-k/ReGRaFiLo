@@ -22,3 +22,6 @@ impl<'a> Default for NameReference<'a> {
 }
 
 // TODO imple insert
+impl<'a> NameReference<'a> {
+    // TODO
+}
