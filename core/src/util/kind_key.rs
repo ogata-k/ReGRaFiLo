@@ -1,8 +1,6 @@
 //! key with kind
-use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::fmt::{Debug, Display, Formatter, Result};
-use std::ops::Deref;
 
 /// key with kind
 #[derive(Debug, Eq, PartialEq, Copy, Clone, Hash)]

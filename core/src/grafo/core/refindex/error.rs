@@ -1,6 +1,6 @@
 use crate::grafo::GrafoError;
 use crate::util::item_kind::ItemKind;
-use crate::util::layout_kind::{AttributeKind, LayoutKind};
+use crate::util::layout_kind::LayoutKind;
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 

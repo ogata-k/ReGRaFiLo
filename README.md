@@ -1,5 +1,5 @@
 # ReGRaFiLo
-![ロゴ 案](logo.png)
+![ロゴ 案](document/logo.png)
 **ReGRaFiLo**は一言でいうと「グラフを表現するあるフォーマットからグラフを表現するあるフォーマットへ変換するRust純正のCLIツール」です。
 つまり「ある文書構造をある文書構造に変換する[Pandoc](http://sky-y.github.io/site-pandoc-jp/users-guide/) のグラフ版」だと思ってもいいかもしれません。
 ちなみに読み方は「レグラフィーロ」です。エスペラント語で「再度グラフを扱う道具」の意味です。<br/>
@@ -27,10 +27,10 @@
 1. [.gif](https://www.loc.gov/preservation/digital/formats/fdd/fdd000133.shtml) <br/>画像データを可逆圧縮により記録するラスタ画像形式の一つ。色数の少ない画像データの保存に適しており、透過もできる。
 
 # 作成可能なグラフ
-まず丁寧に記述された[dot言語のファイル](example.dot)をご覧ください。
+まず丁寧に記述された[dot言語のファイル](document/example.dot)をご覧ください。
 このファイルを入力としてgraphvizのコマンド```dot -T png document/example.dot -o document/example.png```により同名のpng画像を出力出力すると次のようになります。<br/>
-![出力例](example.png)<br/>
-そしてこのdotファイルをregrf形式で記述すると[このregrfファイル](example.regrf)になります。
+![出力例](document/example.png)<br/>
+そしてこのdotファイルをregrf形式で記述すると[このregrfファイル](document/example.regrf)になります。
 
 # .regrfのファイル形式
 （変更予定あり）
@@ -85,7 +85,7 @@ regrf形式の全体構造の外形は次のように表現されます。
 ```
 このように.regrfは属性を用いないXML風の形式で記述されます。
 中身を見ていくと、regrfタグの下にはmeta、layout、outer-graphタグが定義されています。これらは必須です。<br/>
-文法について詳しく知りたければ[こちらのファイル](regrf_syntax.md) をご覧ください。
+文法について詳しく知りたければ[こちらのファイル](document/regrf_syntax.md) をご覧ください。
 
 # Git
 階層が深い順に作成し、一つ上にプルリクして開発していきます。

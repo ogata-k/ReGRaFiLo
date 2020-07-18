@@ -2,8 +2,6 @@
 
 use crate::grafo::core::item::node::{NodeItem, NodeItemError};
 use crate::grafo::core::item::{HasItemKind, ItemBuilderBase, ItemBuilderBaseBuilderMethod};
-use crate::grafo::core::layout::LayoutReference;
-use crate::grafo::core::refindex::NameReference;
 use crate::util::item_kind::ItemKind;
 
 #[derive(Debug, Clone)]

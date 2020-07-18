@@ -2,9 +2,8 @@ use crate::grafo::core::item::edge::EdgeItemError;
 use crate::grafo::core::item::group::GroupItemError;
 use crate::grafo::core::item::node::NodeItemError;
 use crate::grafo::core::refindex::NameRefWarning;
-use crate::util::alias::{GraphItemId, GroupId};
 use crate::util::item_kind::ItemKind;
-use crate::util::layout_kind::{AttributeKind, LayoutKind};
+use crate::util::layout_kind::LayoutKind;
 use std::error::Error;
 use std::fmt::Formatter;
 

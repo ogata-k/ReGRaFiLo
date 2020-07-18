@@ -21,9 +21,7 @@ impl<'a> Default for NameReference<'a> {
     }
 }
 
-// TODO impl insert
 impl<'a> NameReference<'a> {
-    // TODO
     pub fn new() -> Self {
         Default::default()
     }

@@ -89,5 +89,3 @@ impl<'a, Kind: Eq + Copy + Hash, Value: Eq + Copy> Default for NameRefIndex<'a, 
         }
     }
 }
-
-// TODO Test

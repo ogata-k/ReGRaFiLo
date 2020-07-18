@@ -2,7 +2,6 @@
 
 use std::error::Error;
 
-use crate::grafo::core::refindex::NameReference;
 use crate::grafo::GrafoError;
 use crate::util::alias::GroupId;
 use crate::util::item_kind::ItemKind;
