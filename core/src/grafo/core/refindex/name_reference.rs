@@ -1,4 +1,4 @@
-use crate::grafo::core::refindex::NameRefIndex;
+use crate::grafo::core::refindex::{NameRefIndex, NameRefWarning};
 use crate::util::alias::{GraphItemId, GroupId, LayoutItemId};
 use crate::util::item_kind::ItemKind;
 use crate::util::layout_kind::AttributeKind;
@@ -24,4 +24,11 @@ impl<'a> Default for NameReference<'a> {
 // TODO imple insert
 impl<'a> NameReference<'a> {
     // TODO
+    pub fn new() -> Self {
+        Default::default()
+    }
+
+    pub fn push_name(&mut self) -> Result<(), NameRefWarning<ItemKind>> {
+        
+    }
 }
