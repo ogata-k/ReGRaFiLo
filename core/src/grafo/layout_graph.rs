@@ -4,7 +4,7 @@ use crate::grafo::core::graph_item::edge::EdgeItem;
 use crate::grafo::core::graph_item::group::GroupItem;
 use crate::grafo::core::graph_item::node::NodeItem;
 use crate::grafo::core::graph_item::ItemArena;
-use crate::grafo::core::layout::LayoutReference;
+use crate::grafo::core::layout::Layout;
 use crate::grafo::core::name_refindex::NameReference;
 
 /// Grafo is Graph with Layout
@@ -17,10 +17,10 @@ pub struct Grafo<'a> {
     edge_arena: ItemArena<EdgeItem>,
 
     // name to id
-    item_names: NameReference<'a>,
+    name_ref: NameReference<'a>,
 
     // layout
-    layout: LayoutReference,
+    layout: Layout,
 }
 
 impl<'a> Grafo<'a> {

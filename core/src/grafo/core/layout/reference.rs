@@ -1,7 +1,4 @@
-//! reference indexes
-
-/// reference indexes for layout
 #[derive(Debug, Clone)]
-pub struct LayoutReference {
+pub struct Layout {
     // TODO layout item store
 }
