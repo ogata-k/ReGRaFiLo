@@ -13,7 +13,7 @@ use crate::util::item_kind::ItemKind;
 
 /// item pool
 #[derive(Debug, Clone)]
-pub(crate) struct ItemArena<I> {
+pub struct ItemArena<I> {
     pushed_index: Arc<Mutex<GraphItemId>>,
     /// (GroupId, ItemId) => Item
     arena: BTreeMap<(GroupId, GraphItemId), I>,
@@ -32,7 +32,7 @@ fn range_with_group(
 
 impl<I: ItemBase> ItemArena<I> {
     /// initialize
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         ItemArena::default()
     }
 
@@ -93,12 +93,12 @@ impl<I: ItemBase> ItemArena<I> {
     }
 
     /// item getter
-    pub(crate) fn get(&self, group_id: GroupId, index: GraphItemId) -> Option<&I> {
+    pub fn get(&self, group_id: GroupId, index: GraphItemId) -> Option<&I> {
         self.arena.get(&(group_id, index))
     }
 
     /// item getter by range
-    pub(crate) fn range<R: RangeBounds<GraphItemId>>(
+    pub fn range<R: RangeBounds<GraphItemId>>(
         &self,
         group_id: GroupId,
         range: R,
@@ -109,7 +109,7 @@ impl<I: ItemBase> ItemArena<I> {
     }
 
     /// iter by filtering group_id
-    pub(crate) fn filter_by_group<'a>(&'a self, group_id: GroupId) -> impl Iterator + 'a {
+    pub fn filter_by_group<'a>(&'a self, group_id: GroupId) -> impl Iterator + 'a {
         self.iter()
             .filter_map(move |((item_group_id, item_id), item)| {
                 if item_group_id == &group_id {
@@ -125,12 +125,12 @@ impl<I: ItemBase> ItemArena<I> {
     //
 
     /// count of item
-    pub(crate) fn count(&self) -> usize {
+    pub fn count(&self) -> usize {
         self.arena.len()
     }
 
     /// item pool is empty
-    pub(crate) fn is_empty(&self) -> bool {
+    pub fn is_empty(&self) -> bool {
         self.count() == 0
     }
 
@@ -139,7 +139,7 @@ impl<I: ItemBase> ItemArena<I> {
     //
 
     /// to iterator
-    pub(crate) fn iter(&self) -> Iter<(GroupId, GraphItemId), I> {
+    pub fn iter(&self) -> Iter<(GroupId, GraphItemId), I> {
         self.arena.iter()
     }
 }
@@ -167,7 +167,6 @@ mod test {
     use crate::util::alias::{GraphItemId, GroupId, RefIndex};
     use crate::util::item_kind::test::check_list;
     use crate::util::item_kind::ItemKind;
-    use crate::util::kind_key::KeyWithKind;
     use std::error::Error;
 
     const ITERATE_COUNT: usize = 10;
