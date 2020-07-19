@@ -22,24 +22,21 @@ impl ItemBuilderBase for EdgeItemBuilder {
     type Item = EdgeItem;
     // TODO
     type ItemOption = ();
-    type BuildFailError = EdgeItemError;
+    type BuilderError = EdgeItemError;
 }
 
 impl GraphItemBuilderBase for EdgeItemBuilder {
-    fn set_group_id(&mut self, group_id: GroupId) -> &mut Self {
+    fn set_belong_group<S: Into<String>>(&mut self, group: S) -> &mut Self {
         unimplemented!()
     }
 
-    fn get_group_id(&self) -> GroupId {
+    fn set_name<S: Into<String>>(&mut self, name: S) -> &mut Self {
         unimplemented!()
     }
 }
 
 impl HasItemBuilderMethod for EdgeItemBuilder {
-    fn build(
-        self,
-        name_ref: &NameReference,
-    ) -> ItemBuilderResult<Self::Item, Self::ItemOption, Self::BuildFailError> {
+    fn build(self, name_ref: &NameReference) -> ItemBuilderResult<Self::Item, Self::ItemOption> {
         unimplemented!()
     }
 }

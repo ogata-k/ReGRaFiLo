@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 use std::ops::{Bound, RangeBounds};
 use std::sync::{Arc, Mutex};
 
-use crate::grafo::core::graph_item::{GraphItemBase, GraphItemBuilderBase, GraphItemErrorBase};
+use crate::grafo::core::graph_item::{GraphBuilderErrorBase, GraphItemBase, GraphItemBuilderBase};
 use crate::grafo::core::name_refindex::NameReference;
 use crate::grafo::GrafoError;
 use crate::util::alias::{GraphItemId, GroupId};
@@ -64,8 +64,8 @@ impl<I: GraphItemBase> ItemArena<I> {
     pub(crate) fn push<
         F,
         O,
-        E: GraphItemErrorBase,
-        B: GraphItemBuilderBase + HasItemBuilderMethod<Item = I, ItemOption = O, BuildFailError = E>,
+        E: GraphBuilderErrorBase,
+        B: GraphItemBuilderBase + HasItemBuilderMethod<Item = I, ItemOption = O, BuilderError = E>,
     >(
         &mut self,
         name_ref: &mut NameReference,
@@ -82,14 +82,15 @@ impl<I: GraphItemBase> ItemArena<I> {
         ) -> Option<Vec<GrafoError>>,
     {
         let item_kind = B::kind();
-        let group_id = item_builder.get_group_id();
         match item_builder.build(name_ref) {
             Ok((item, option)) => {
+                let group_id = item.get_belong_group_id();
                 let push_index = self.get_push_index();
                 self.arena.insert((group_id, push_index), item);
+
                 action(name_ref, item_kind, group_id, push_index, option)
             }
-            Err(errors) => Some(errors.into_iter().map(|error| error.into()).collect()),
+            Err(errors) => Some(errors),
         }
     }
 
@@ -160,12 +161,14 @@ mod test {
     use std::fmt::{Display, Formatter};
 
     use crate::grafo::core::graph_item::{
-        GraphItemBase, GraphItemBuilderBase, GraphItemErrorBase, ItemArena,
+        GraphBuilderErrorBase, GraphItemBase, GraphItemBuilderBase, ItemArena,
     };
-    use crate::grafo::core::name_refindex::{NameRefWarning, NameReference};
+    use crate::grafo::core::name_refindex::{NameRefError, NameReference};
     use crate::grafo::GrafoError;
-    use crate::util::alias::GraphItemId;
-    use crate::util::item_base::{HasItemBuilderMethod, ItemBase, ItemBuilderBase, ItemErrorBase};
+    use crate::util::alias::{GraphItemId, GroupId};
+    use crate::util::item_base::{
+        HasItemBuilderMethod, ItemBase, ItemBuilderBase, ItemBuilderErrorBase, ItemBuilderResult,
+    };
     use crate::util::kind::test::graph_item_check_list;
     use crate::util::kind::{GraphItemKind, HasGraphItemKind};
     use std::error::Error;
@@ -175,27 +178,28 @@ mod test {
 
     #[derive(Debug, Eq, PartialEq, Clone)]
     struct TargetItemBuilder {
-        group_id: GraphItemId,
+        belong_group: Option<String>,
         name: Option<String>,
     }
 
     #[derive(Debug, Eq, PartialEq, Clone)]
     struct TargetItem {
-        group_id: GraphItemId,
+        belong_group_id: GraphItemId,
     }
 
     #[derive(Debug, Eq, PartialEq, Clone)]
     struct TargetItemOption {
-        group_id: GraphItemId,
+        belong_group_id: GraphItemId,
         name: Option<String>,
     }
 
     #[derive(Debug)]
-    enum TargetBuildError {
+    enum TargetBuilderError {
         BuildFail,
+        NotFindGroup,
     }
 
-    impl Into<GrafoError> for TargetBuildError {
+    impl Into<GrafoError> for TargetBuilderError {
         fn into(self) -> GrafoError {
             unimplemented!()
         }
@@ -213,7 +217,7 @@ mod test {
         }
     }
 
-    impl HasGraphItemKind for TargetBuildError {
+    impl HasGraphItemKind for TargetBuilderError {
         fn kind() -> GraphItemKind {
             TARGET_KIND
         }
@@ -222,17 +226,42 @@ mod test {
     impl ItemBuilderBase for TargetItemBuilder {
         type Item = TargetItem;
         type ItemOption = TargetItemOption;
-        type BuildFailError = TargetBuildError;
+        type BuilderError = TargetBuilderError;
     }
 
     impl GraphItemBuilderBase for TargetItemBuilder {
-        fn set_group_id(&mut self, group_id: GraphItemId) -> &mut Self {
-            self.group_id = group_id;
+        fn set_belong_group<S: Into<String>>(&mut self, group: S) -> &mut Self {
+            self.belong_group = Some(group.into());
             self
         }
 
-        fn get_group_id(&self) -> usize {
-            self.group_id
+        fn set_name<S: Into<String>>(&mut self, name: S) -> &mut Self {
+            self.name = Some(name.into());
+            self
+        }
+    }
+
+    impl TargetItemBuilder {
+        fn get_belong_group(
+            &self,
+            name_ref: &NameReference,
+            errors: &mut Vec<GrafoError>,
+            belong_group: Option<&str>,
+        ) -> Option<GroupId> {
+            match belong_group {
+                None => Some(name_ref.get_root_group_id()),
+                Some(belong_group_name) => {
+                    let belong_group_result =
+                        name_ref.get_item_id_pair(GraphItemKind::Group, &belong_group_name);
+                    match belong_group_result {
+                        Ok((_belong_group_id, item_id)) => Some(*item_id),
+                        Err(err) => {
+                            errors.push(err.into());
+                            None
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -240,48 +269,70 @@ mod test {
         fn build(
             self,
             name_ref: &NameReference,
-        ) -> Result<(TargetItem, TargetItemOption), Vec<TargetBuildError>> {
-            let TargetItemBuilder { group_id, name } = self;
-            Ok((TargetItem { group_id }, TargetItemOption { group_id, name }))
+        ) -> ItemBuilderResult<TargetItem, TargetItemOption> {
+            assert_ne!(TARGET_KIND, GraphItemKind::Group);
+            let mut errors: Vec<GrafoError> = Vec::new();
+
+            let group_id =
+                (&self).get_belong_group(&name_ref, &mut errors, self.belong_group.as_deref());
+            if group_id.is_none() {
+                errors.push(TargetBuilderError::NotFindGroup.into());
+                return Err(errors);
+            }
+            let group_id = group_id.unwrap();
+
+            let TargetItemBuilder {
+                belong_group: _,
+                name,
+            } = self;
+            if errors.is_empty() {
+                Ok((
+                    TargetItem {
+                        belong_group_id: group_id,
+                    },
+                    TargetItemOption {
+                        belong_group_id: group_id,
+                        name,
+                    },
+                ))
+            } else {
+                Err(errors)
+            }
         }
     }
 
     impl TargetItemBuilder {
         fn new() -> Self {
             TargetItemBuilder {
-                group_id: 0,
+                belong_group: None,
                 name: None,
             }
-        }
-
-        fn set_name(&mut self, name: String) -> &mut Self {
-            self.name = Some(name);
-            self
         }
     }
 
     impl ItemBase for TargetItem {}
 
     impl GraphItemBase for TargetItem {
-        fn get_group_id(&self) -> usize {
-            self.group_id
+        fn get_belong_group_id(&self) -> usize {
+            self.belong_group_id
         }
     }
 
-    impl Display for TargetBuildError {
+    impl Display for TargetBuilderError {
         fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-            use TargetBuildError::*;
+            use TargetBuilderError::*;
             match &self {
                 BuildFail => write!(f, "fail build item"),
+                NotFindGroup => write!(f, "fail found belong group"),
             }
         }
     }
 
-    impl Error for TargetBuildError {}
+    impl Error for TargetBuilderError {}
 
-    impl ItemErrorBase for TargetBuildError {}
+    impl ItemBuilderErrorBase for TargetBuilderError {}
 
-    impl GraphItemErrorBase for TargetBuildError {}
+    impl GraphBuilderErrorBase for TargetBuilderError {}
 
     #[test]
     fn is_empty() {
@@ -292,15 +343,16 @@ mod test {
     fn with_name_count() {
         let mut arena_mut = ItemArena::<TargetItem>::new();
         let mut reference = NameReference::default();
+        reference.set_root_group_id(0);
         for i in 0..ITERATE_COUNT {
             let mut builder = TargetItemBuilder::new();
-            builder.set_group_id(0).set_name(format!("{}", i));
+            builder.set_name(format!("{}", i));
             let push_result = arena_mut.push(
                 &mut reference,
                 builder,
                 |name_ref, kind, group_id, item_id, option| {
                     if let TargetItemOption {
-                        group_id: _,
+                        belong_group_id: _,
                         name: Some(name),
                     } = option
                     {
@@ -337,15 +389,17 @@ mod test {
     fn with_name_each_eq() {
         let mut arena_mut = ItemArena::<TargetItem>::new();
         let mut reference = NameReference::default();
+        reference.set_root_group_id(0);
+
         for i in 0..ITERATE_COUNT {
             let mut builder = TargetItemBuilder::new();
-            builder.set_group_id(0).set_name(format!("{}", i));
+            builder.set_name(format!("{}", i));
             let push_result = arena_mut.push(
                 &mut reference,
                 builder,
                 |name_ref, kind, group_id, item_id, option| {
                     if let TargetItemOption {
-                        group_id: _,
+                        belong_group_id: _,
                         name: Some(name),
                     } = option
                     {
@@ -378,7 +432,7 @@ mod test {
                     assert!(err.is_some());
                     assert_eq!(
                         err.unwrap(),
-                        NameRefWarning::NotExist(kind, format!("{}", index))
+                        NameRefError::NotExist(kind, format!("{}", index))
                     );
                 }
             }
@@ -389,9 +443,9 @@ mod test {
     fn mixed_count() {
         let mut arena_mut = ItemArena::<TargetItem>::new();
         let mut reference = NameReference::default();
+        reference.set_root_group_id(0);
         for i in 0..2 * ITERATE_COUNT {
             let mut builder = TargetItemBuilder::new();
-            builder.set_group_id(0);
             if i < ITERATE_COUNT {
                 builder.set_name(format!("{}", i));
             }
@@ -400,7 +454,7 @@ mod test {
                 builder,
                 |name_ref, kind, group_id, item_id, option| {
                     if let TargetItemOption {
-                        group_id: _,
+                        belong_group_id: _,
                         name: Some(name),
                     } = option
                     {
@@ -437,9 +491,9 @@ mod test {
     fn mixed_each_eq() {
         let mut arena_mut = ItemArena::<TargetItem>::new();
         let mut reference = NameReference::default();
+        reference.set_root_group_id(0);
         for i in 0..2 * ITERATE_COUNT {
             let mut builder = TargetItemBuilder::new();
-            builder.set_group_id(0);
             if i < ITERATE_COUNT {
                 builder.set_name(format!("{}", i));
             }
@@ -448,7 +502,7 @@ mod test {
                 builder,
                 |name_ref, kind, group_id, item_id, option| {
                     if let TargetItemOption {
-                        group_id: _,
+                        belong_group_id: _,
                         name: Some(name),
                     } = option
                     {
@@ -485,7 +539,7 @@ mod test {
                     assert!(err.is_some());
                     assert_eq!(
                         err.clone().unwrap(),
-                        NameRefWarning::NotExist(kind, format!("{}", index))
+                        NameRefError::NotExist(kind, format!("{}", index))
                     );
                 }
             }

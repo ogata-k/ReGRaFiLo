@@ -20,7 +20,7 @@ impl HasGraphItemKind for NodeItem {
 impl ItemBase for NodeItem {}
 
 impl GraphItemBase for NodeItem {
-    fn get_group_id(&self) -> GroupId {
+    fn get_belong_group_id(&self) -> GroupId {
         unimplemented!()
     }
 }

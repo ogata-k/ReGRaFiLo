@@ -20,7 +20,7 @@ impl HasGraphItemKind for EdgeItem {
 impl ItemBase for EdgeItem {}
 
 impl GraphItemBase for EdgeItem {
-    fn get_group_id(&self) -> GroupId {
+    fn get_belong_group_id(&self) -> GroupId {
         unimplemented!()
     }
 }

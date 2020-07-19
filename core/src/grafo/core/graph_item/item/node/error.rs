@@ -1,6 +1,6 @@
-use crate::grafo::core::graph_item::GraphItemErrorBase;
+use crate::grafo::core::graph_item::GraphBuilderErrorBase;
 use crate::grafo::GrafoError;
-use crate::util::item_base::ItemErrorBase;
+use crate::util::item_base::ItemBuilderErrorBase;
 use crate::util::kind::{GraphItemKind, HasGraphItemKind};
 use std::error::Error;
 use std::fmt::{Display, Formatter};
@@ -29,5 +29,5 @@ impl Into<GrafoError> for NodeItemError {
 }
 
 impl Error for NodeItemError {}
-impl ItemErrorBase for NodeItemError {}
-impl GraphItemErrorBase for NodeItemError {}
+impl ItemBuilderErrorBase for NodeItemError {}
+impl GraphBuilderErrorBase for NodeItemError {}

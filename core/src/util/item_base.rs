@@ -6,17 +6,17 @@ use crate::grafo::GrafoError;
 pub trait ItemBuilderBase {
     type Item;
     type ItemOption;
-    type BuildFailError: ItemErrorBase;
+    type BuilderError: ItemBuilderErrorBase;
 }
 
-pub(crate) type ItemBuilderResult<Item, Option, BuildError> =
-    Result<(Item, Option), Vec<BuildError>>;
+pub(crate) type ItemBuilderResult<Item, Option> =
+    Result<(Item, Option), Vec<GrafoError>>;
 pub(crate) trait HasItemBuilderMethod: ItemBuilderBase {
     fn build(
         self,
         name_ref: &NameReference,
-    ) -> ItemBuilderResult<Self::Item, Self::ItemOption, Self::BuildFailError>;
+    ) -> ItemBuilderResult<Self::Item, Self::ItemOption>;
 }
 
 pub trait ItemBase {}
-pub trait ItemErrorBase: Error + Into<GrafoError> {}
+pub trait ItemBuilderErrorBase: Error + Into<GrafoError> {}

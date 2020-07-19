@@ -1,4 +1,4 @@
-use crate::grafo::core::name_refindex::error::NameRefWarning;
+use crate::grafo::core::name_refindex::error::NameRefError;
 use crate::util::kind_key::KeyWithKind;
 use std::borrow::Cow;
 use std::collections::HashMap;
@@ -46,12 +46,12 @@ impl<'a, Kind: Debug + Display + Eq + Copy + Hash, Value: Eq + Copy> NameRefInde
         kind: Kind,
         name: S,
         value: Value,
-    ) -> Result<(), NameRefWarning<Kind>> {
+    ) -> Result<(), NameRefError<Kind>> {
         let key = create_layout_key(kind, name);
         if self.reference_index.contains_key(&key) {
             let s = key_to_str(&key).to_string();
             self.reference_index.insert(key, value);
-            return Err(NameRefWarning::Override(kind, s));
+            return Err(NameRefError::Override(kind, s));
         }
         self.reference_index.insert(key, value);
         Ok(())
@@ -64,13 +64,13 @@ impl<'a, Kind: Eq + Copy + Hash, Value: Eq + Copy> NameRefIndex<'a, Kind, Value>
         &'a self,
         kind: Kind,
         name: &'b str,
-    ) -> Result<&'a Value, NameRefWarning<Kind>> {
+    ) -> Result<&'a Value, NameRefError<Kind>> {
         self.reference_index
             .get(&create_layout_key(kind, name))
-            .ok_or_else(|| NameRefWarning::NotExist(kind, name.to_string()))
+            .ok_or_else(|| NameRefError::NotExist(kind, name.to_string()))
     }
 
-    pub fn exist_key(&self, kind: Kind, name: &str) -> bool {
+    pub fn contains_key(&self, kind: Kind, name: &str) -> bool {
         self.reference_index
             .contains_key(&create_layout_key(kind, name))
     }

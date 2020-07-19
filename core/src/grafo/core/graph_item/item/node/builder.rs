@@ -3,6 +3,7 @@
 use crate::grafo::core::graph_item::node::{NodeItem, NodeItemError};
 use crate::grafo::core::graph_item::GraphItemBuilderBase;
 use crate::grafo::core::name_refindex::NameReference;
+use crate::grafo::GrafoError;
 use crate::util::alias::GroupId;
 use crate::util::item_base::{HasItemBuilderMethod, ItemBuilderBase, ItemBuilderResult};
 use crate::util::kind::{GraphItemKind, HasGraphItemKind};
@@ -22,24 +23,21 @@ impl ItemBuilderBase for NodeItemBuilder {
     type Item = NodeItem;
     // TODO
     type ItemOption = ();
-    type BuildFailError = NodeItemError;
+    type BuilderError = NodeItemError;
 }
 
 impl GraphItemBuilderBase for NodeItemBuilder {
-    fn set_group_id(&mut self, group_id: GroupId) -> &mut Self {
+    fn set_belong_group<S: Into<String>>(&mut self, group: S) -> &mut Self {
         unimplemented!()
     }
 
-    fn get_group_id(&self) -> GroupId {
+    fn set_name<S: Into<String>>(&mut self, name: S) -> &mut Self {
         unimplemented!()
     }
 }
 
 impl HasItemBuilderMethod for NodeItemBuilder {
-    fn build(
-        self,
-        name_ref: &NameReference,
-    ) -> ItemBuilderResult<Self::Item, Self::ItemOption, Self::BuildFailError> {
+    fn build(self, name_ref: &NameReference) -> ItemBuilderResult<Self::Item, Self::ItemOption> {
         unimplemented!()
     }
 }
