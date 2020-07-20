@@ -5,7 +5,7 @@ use crate::grafo::core::graph_item::group::{GroupItem, GroupItemBuilder};
 use crate::grafo::core::graph_item::node::NodeItem;
 use crate::grafo::core::graph_item::ItemArena;
 use crate::grafo::core::layout_item::Layout;
-use crate::grafo::core::name_refindex::NameReference;
+use crate::grafo::core::resolve::Resolver;
 use crate::grafo::GrafoError;
 use crate::util::kind::GraphItemKind;
 
@@ -14,7 +14,7 @@ pub struct GrafoBuilder<'a> {
     // TODO グループ構造の管理(GroupTree)
 
     // name to id
-    name_ref: NameReference<'a>,
+    resolver: Resolver<'a>,
 
     // layout
     layout: Layout,
@@ -24,18 +24,18 @@ impl<'a> GrafoBuilder<'a> {
     pub fn build(self, group_builder: GroupItemBuilder) -> Result<Grafo<'a>, Vec<GrafoError>> {
         let mut group_store = ItemArena::<GroupItem>::new();
         let GrafoBuilder {
-            mut name_ref,
+            resolver: mut name_ref,
             layout,
         } = self;
         // TODO pushのactionの引数にGroupTree???
         let push_result = group_store.push(
             &mut name_ref,
             group_builder,
-            |name_ref, item_kind, group_id, push_index, option| {
+            |resolver, item_kind, group_id, push_index, option| {
                 // グループのルートを設定
                 // ルートのIDは自身と同じ
                 if item_kind == GraphItemKind::Group && group_id == push_index {
-                    name_ref.set_root_group_id(push_index);
+                    resolver.set_root_group_id(push_index);
                 }
 
                 // TODO ここでGroupTreeを指定したい
@@ -66,7 +66,7 @@ pub struct Grafo<'a> {
     edge_arena: ItemArena<EdgeItem>,
 
     // name to id
-    name_ref: NameReference<'a>,
+    name_ref: Resolver<'a>,
 
     // layout
     layout: Layout,

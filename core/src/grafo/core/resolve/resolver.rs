@@ -1,10 +1,10 @@
-use crate::grafo::core::name_refindex::{NameRefError, NameRefIndex};
+use crate::grafo::core::resolve::{NameRefIndex, ResolverError};
 use crate::util::alias::{GraphItemId, GroupId, ItemId, LayoutItemId};
 use crate::util::kind::{AttributeKind, GraphItemKind, LayoutItemKind};
 
 /// reference indexes for names
 #[derive(Debug, Clone)]
-pub struct NameReference<'a> {
+pub struct Resolver<'a> {
     root_group_id: Option<GroupId>,
     /// names reference indexes name:(group_id, item_id)
     names: NameRefIndex<'a, GraphItemKind, (GroupId, GraphItemId)>,
@@ -12,7 +12,7 @@ pub struct NameReference<'a> {
     attributes: NameRefIndex<'a, LayoutItemKind, LayoutItemId>,
 }
 
-impl<'a> Default for NameReference<'a> {
+impl<'a> Default for Resolver<'a> {
     fn default() -> Self {
         Self {
             root_group_id: None,
@@ -22,7 +22,7 @@ impl<'a> Default for NameReference<'a> {
     }
 }
 
-impl<'a> NameReference<'a> {
+impl<'a> Resolver<'a> {
     pub fn new() -> Self {
         Default::default()
     }
@@ -51,7 +51,7 @@ impl<'a> NameReference<'a> {
         name: S,
         group_id: GroupId,
         item_id: ItemId,
-    ) -> Result<(), NameRefError<GraphItemKind>> {
+    ) -> Result<(), ResolverError<GraphItemKind>> {
         self.names
             .push_value(item_kind, name.into(), (group_id, item_id))
     }
@@ -60,7 +60,7 @@ impl<'a> NameReference<'a> {
         &'a self,
         item_kind: GraphItemKind,
         name: &'b str,
-    ) -> Result<&'a (GroupId, ItemId), NameRefError<GraphItemKind>> {
+    ) -> Result<&'a (GroupId, ItemId), ResolverError<GraphItemKind>> {
         self.names.get_value(item_kind, name)
     }
 
@@ -82,7 +82,7 @@ impl<'a> NameReference<'a> {
         attribute_kind: AttributeKind,
         name: S,
         layout_item_id: LayoutItemId,
-    ) -> Result<(), NameRefError<LayoutItemKind>> {
+    ) -> Result<(), ResolverError<LayoutItemKind>> {
         self.attributes.push_value(
             LayoutItemKind::new_with_item(item_kind, attribute_kind),
             name.into(),
@@ -95,7 +95,7 @@ impl<'a> NameReference<'a> {
         attribute_kind: AttributeKind,
         name: S,
         layout_item_id: LayoutItemId,
-    ) -> Result<(), NameRefError<LayoutItemKind>> {
+    ) -> Result<(), ResolverError<LayoutItemKind>> {
         self.attributes.push_value(
             LayoutItemKind::new(attribute_kind),
             name.into(),
@@ -108,7 +108,7 @@ impl<'a> NameReference<'a> {
         item_kind: GraphItemKind,
         attribute_kind: AttributeKind,
         name: &'b str,
-    ) -> Result<&'a LayoutItemId, NameRefError<LayoutItemKind>> {
+    ) -> Result<&'a LayoutItemId, ResolverError<LayoutItemKind>> {
         self.attributes.get_value(
             LayoutItemKind::new_with_item(item_kind, attribute_kind),
             name,
@@ -119,7 +119,7 @@ impl<'a> NameReference<'a> {
         &'a self,
         attribute_kind: AttributeKind,
         name: &'b str,
-    ) -> Result<&'a LayoutItemId, NameRefError<LayoutItemKind>> {
+    ) -> Result<&'a LayoutItemId, ResolverError<LayoutItemKind>> {
         self.attributes
             .get_value(LayoutItemKind::new(attribute_kind), name)
     }

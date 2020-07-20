@@ -2,4 +2,4 @@
 
 pub mod graph_item;
 pub mod layout_item;
-pub mod name_refindex;
+pub mod resolve;

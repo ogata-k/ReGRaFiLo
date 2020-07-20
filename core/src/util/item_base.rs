@@ -1,7 +1,7 @@
 use std::error::Error;
 
-use crate::grafo::name_refindex::NameReference;
 use crate::grafo::GrafoError;
+use crate::grafo::resolve::Resolver;
 
 pub trait ItemBuilderBase {
     type Item;
@@ -14,7 +14,7 @@ pub(crate) type ItemBuilderResult<Item, Option> =
 pub(crate) trait HasItemBuilderMethod: ItemBuilderBase {
     fn build(
         self,
-        name_ref: &NameReference,
+        resolver: &Resolver,
     ) -> ItemBuilderResult<Self::Item, Self::ItemOption>;
 }
 

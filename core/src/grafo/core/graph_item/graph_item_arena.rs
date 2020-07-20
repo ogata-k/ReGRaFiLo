@@ -6,7 +6,7 @@ use std::ops::{Bound, RangeBounds};
 use std::sync::{Arc, Mutex};
 
 use crate::grafo::core::graph_item::{GraphBuilderErrorBase, GraphItemBase, GraphItemBuilderBase};
-use crate::grafo::core::name_refindex::NameReference;
+use crate::grafo::resolve::Resolver;
 use crate::grafo::GrafoError;
 use crate::util::alias::{GraphItemId, GroupId};
 use crate::util::item_base::HasItemBuilderMethod;
@@ -68,13 +68,13 @@ impl<I: GraphItemBase> ItemArena<I> {
         B: GraphItemBuilderBase + HasItemBuilderMethod<Item = I, ItemOption = O, BuilderError = E>,
     >(
         &mut self,
-        name_ref: &mut NameReference,
+        resolver: &mut Resolver,
         item_builder: B,
         action: F,
     ) -> Option<Vec<GrafoError>>
     where
         F: FnOnce(
-            &mut NameReference,
+            &mut Resolver,
             GraphItemKind,
             GroupId,
             GraphItemId,
@@ -82,13 +82,13 @@ impl<I: GraphItemBase> ItemArena<I> {
         ) -> Option<Vec<GrafoError>>,
     {
         let item_kind = B::kind();
-        match item_builder.build(name_ref) {
+        match item_builder.build(resolver) {
             Ok((item, option)) => {
                 let group_id = item.get_belong_group_id();
                 let push_index = self.get_push_index();
                 self.arena.insert((group_id, push_index), item);
 
-                action(name_ref, item_kind, group_id, push_index, option)
+                action(resolver, item_kind, group_id, push_index, option)
             }
             Err(errors) => Some(errors),
         }
@@ -163,7 +163,7 @@ mod test {
     use crate::grafo::core::graph_item::{
         GraphBuilderErrorBase, GraphItemBase, GraphItemBuilderBase, ItemArena,
     };
-    use crate::grafo::core::name_refindex::{NameRefError, NameReference};
+    use crate::grafo::core::resolve::{Resolver, ResolverError};
     use crate::grafo::GrafoError;
     use crate::util::alias::{GraphItemId, GroupId};
     use crate::util::item_base::{
@@ -244,15 +244,15 @@ mod test {
     impl TargetItemBuilder {
         fn get_belong_group(
             &self,
-            name_ref: &NameReference,
+            resolver: &Resolver,
             errors: &mut Vec<GrafoError>,
             belong_group: Option<&str>,
         ) -> Option<GroupId> {
             match belong_group {
-                None => Some(name_ref.get_root_group_id()),
+                None => Some(resolver.get_root_group_id()),
                 Some(belong_group_name) => {
                     let belong_group_result =
-                        name_ref.get_item_id_pair(GraphItemKind::Group, &belong_group_name);
+                        resolver.get_item_id_pair(GraphItemKind::Group, &belong_group_name);
                     match belong_group_result {
                         Ok((_belong_group_id, item_id)) => Some(*item_id),
                         Err(err) => {
@@ -266,15 +266,12 @@ mod test {
     }
 
     impl HasItemBuilderMethod for TargetItemBuilder {
-        fn build(
-            self,
-            name_ref: &NameReference,
-        ) -> ItemBuilderResult<TargetItem, TargetItemOption> {
+        fn build(self, resolver: &Resolver) -> ItemBuilderResult<TargetItem, TargetItemOption> {
             assert_ne!(TARGET_KIND, GraphItemKind::Group);
             let mut errors: Vec<GrafoError> = Vec::new();
 
             let group_id =
-                (&self).get_belong_group(&name_ref, &mut errors, self.belong_group.as_deref());
+                (&self).get_belong_group(&resolver, &mut errors, self.belong_group.as_deref());
             if group_id.is_none() {
                 errors.push(TargetBuilderError::NotFindGroup.into());
                 return Err(errors);
@@ -342,22 +339,22 @@ mod test {
     #[test]
     fn with_name_count() {
         let mut arena_mut = ItemArena::<TargetItem>::new();
-        let mut reference = NameReference::default();
-        reference.set_root_group_id(0);
+        let mut resolver = Resolver::default();
+        resolver.set_root_group_id(0);
         for i in 0..ITERATE_COUNT {
             let mut builder = TargetItemBuilder::new();
             builder.set_name(format!("{}", i));
             let push_result = arena_mut.push(
-                &mut reference,
+                &mut resolver,
                 builder,
-                |name_ref, kind, group_id, item_id, option| {
+                |resolver, kind, group_id, item_id, option| {
                     if let TargetItemOption {
                         belong_group_id: _,
                         name: Some(name),
                     } = option
                     {
                         let mut errors: Vec<GrafoError> = Vec::new();
-                        if let Err(err) = name_ref.push_item_name(kind, name, group_id, item_id) {
+                        if let Err(err) = resolver.push_item_name(kind, name, group_id, item_id) {
                             errors.push(err.into());
                         }
                         return if errors.is_empty() {
@@ -375,7 +372,7 @@ mod test {
         assert_eq!(arena.count(), ITERATE_COUNT);
         for target in graph_item_check_list() {
             assert_eq!(
-                reference.item_name_count_by(target),
+                resolver.item_name_count_by(target),
                 if target == TARGET_KIND {
                     ITERATE_COUNT
                 } else {
@@ -388,23 +385,23 @@ mod test {
     #[test]
     fn with_name_each_eq() {
         let mut arena_mut = ItemArena::<TargetItem>::new();
-        let mut reference = NameReference::default();
-        reference.set_root_group_id(0);
+        let mut resolver = Resolver::default();
+        resolver.set_root_group_id(0);
 
         for i in 0..ITERATE_COUNT {
             let mut builder = TargetItemBuilder::new();
             builder.set_name(format!("{}", i));
             let push_result = arena_mut.push(
-                &mut reference,
+                &mut resolver,
                 builder,
-                |name_ref, kind, group_id, item_id, option| {
+                |resolver, kind, group_id, item_id, option| {
                     if let TargetItemOption {
                         belong_group_id: _,
                         name: Some(name),
                     } = option
                     {
                         let mut errors: Vec<GrafoError> = Vec::new();
-                        if let Err(err) = name_ref.push_item_name(kind, name, group_id, item_id) {
+                        if let Err(err) = resolver.push_item_name(kind, name, group_id, item_id) {
                             errors.push(err.into());
                         }
                         return if errors.is_empty() {
@@ -424,7 +421,7 @@ mod test {
             assert_eq!(result, *item.0);
             for kind in graph_item_check_list() {
                 let name = format!("{}", index);
-                let ref_result = reference.get_item_id_pair(kind, &name);
+                let ref_result = resolver.get_item_id_pair(kind, &name);
                 if let Ok(success) = ref_result {
                     assert_eq!(success, &result);
                 } else {
@@ -432,7 +429,7 @@ mod test {
                     assert!(err.is_some());
                     assert_eq!(
                         err.unwrap(),
-                        NameRefError::NotExist(kind, format!("{}", index))
+                        ResolverError::NotExist(kind, format!("{}", index))
                     );
                 }
             }
@@ -442,24 +439,24 @@ mod test {
     #[test]
     fn mixed_count() {
         let mut arena_mut = ItemArena::<TargetItem>::new();
-        let mut reference = NameReference::default();
-        reference.set_root_group_id(0);
+        let mut refeolver = Resolver::default();
+        refeolver.set_root_group_id(0);
         for i in 0..2 * ITERATE_COUNT {
             let mut builder = TargetItemBuilder::new();
             if i < ITERATE_COUNT {
                 builder.set_name(format!("{}", i));
             }
             let push_result = arena_mut.push(
-                &mut reference,
+                &mut refeolver,
                 builder,
-                |name_ref, kind, group_id, item_id, option| {
+                |resolver, kind, group_id, item_id, option| {
                     if let TargetItemOption {
                         belong_group_id: _,
                         name: Some(name),
                     } = option
                     {
                         let mut errors: Vec<GrafoError> = Vec::new();
-                        if let Err(err) = name_ref.push_item_name(kind, name, group_id, item_id) {
+                        if let Err(err) = resolver.push_item_name(kind, name, group_id, item_id) {
                             errors.push(err.into());
                         }
                         return if errors.is_empty() {
@@ -477,7 +474,7 @@ mod test {
         assert_eq!(arena.count(), 2 * ITERATE_COUNT);
         for target in graph_item_check_list() {
             assert_eq!(
-                reference.item_name_count_by(target),
+                refeolver.item_name_count_by(target),
                 if target == TARGET_KIND {
                     ITERATE_COUNT
                 } else {
@@ -490,24 +487,24 @@ mod test {
     #[test]
     fn mixed_each_eq() {
         let mut arena_mut = ItemArena::<TargetItem>::new();
-        let mut reference = NameReference::default();
-        reference.set_root_group_id(0);
+        let mut resolver = Resolver::default();
+        resolver.set_root_group_id(0);
         for i in 0..2 * ITERATE_COUNT {
             let mut builder = TargetItemBuilder::new();
             if i < ITERATE_COUNT {
                 builder.set_name(format!("{}", i));
             }
             let push_result = arena_mut.push(
-                &mut reference,
+                &mut resolver,
                 builder,
-                |name_ref, kind, group_id, item_id, option| {
+                |resolver, kind, group_id, item_id, option| {
                     if let TargetItemOption {
                         belong_group_id: _,
                         name: Some(name),
                     } = option
                     {
                         let mut errors: Vec<GrafoError> = Vec::new();
-                        if let Err(err) = name_ref.push_item_name(kind, name, group_id, item_id) {
+                        if let Err(err) = resolver.push_item_name(kind, name, group_id, item_id) {
                             errors.push(err.into());
                         }
                         return if errors.is_empty() {
@@ -527,7 +524,7 @@ mod test {
             assert_eq!(result, *item.0);
             for kind in graph_item_check_list() {
                 let name = format!("{}", index);
-                let ref_result = reference.get_item_id_pair(kind, &name);
+                let ref_result = resolver.get_item_id_pair(kind, &name);
                 if index < ITERATE_COUNT && kind == TARGET_KIND {
                     if let Ok(success) = &ref_result {
                         assert_eq!(success, &&result);
@@ -539,7 +536,7 @@ mod test {
                     assert!(err.is_some());
                     assert_eq!(
                         err.clone().unwrap(),
-                        NameRefError::NotExist(kind, format!("{}", index))
+                        ResolverError::NotExist(kind, format!("{}", index))
                     );
                 }
             }
