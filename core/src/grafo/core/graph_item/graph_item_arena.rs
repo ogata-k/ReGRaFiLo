@@ -8,7 +8,7 @@ use std::sync::{Arc, Mutex};
 use crate::grafo::core::graph_item::{GraphBuilderErrorBase, GraphItemBase, GraphItemBuilderBase};
 use crate::grafo::resolve::Resolver;
 use crate::grafo::GrafoError;
-use crate::util::alias::{GraphItemId, GroupId};
+use crate::util::alias::{GraphItemId, GroupId, DEFAULT_ITEM_ID};
 use crate::util::item_base::HasItemBuilderMethod;
 use crate::util::kind::GraphItemKind;
 
@@ -45,6 +45,9 @@ impl<I: GraphItemBase> ItemArena<I> {
     fn get_push_index(&mut self) -> GraphItemId {
         match self.pushed_index.lock() {
             Ok(mut pushed_index) => {
+                if *pushed_index == DEFAULT_ITEM_ID {
+                    *pushed_index += 1;
+                }
                 let next_index: GraphItemId = *pushed_index;
                 *pushed_index += 1;
                 next_index
@@ -143,6 +146,53 @@ impl<I: GraphItemBase> ItemArena<I> {
     /// to iterator
     pub fn iter(&self) -> Iter<(GroupId, GraphItemId), I> {
         self.arena.iter()
+    }
+}
+
+impl<I: GraphItemBase> ItemArena<I> {
+    fn get_default_index(&self) -> GraphItemId {
+        DEFAULT_ITEM_ID
+    }
+
+    /// push the item into arena with action for conclusion
+    pub(crate) fn push_default<
+        F,
+        O,
+        E: GraphBuilderErrorBase,
+        B: GraphItemBuilderBase
+            + Default
+            + HasItemBuilderMethod<Item = I, ItemOption = O, BuilderError = E>,
+    >(
+        &mut self,
+        resolver: &mut Resolver,
+        action: F,
+    ) where
+        F: FnOnce(
+            &mut Resolver,
+            GraphItemKind,
+            GroupId,
+            GraphItemId,
+            B::ItemOption,
+        ) -> Option<Vec<GrafoError>>,
+    {
+        let item_kind = B::kind();
+        match B::default().build(resolver) {
+            Ok((item, option)) => {
+                let group_id = item.get_belong_group_id();
+                let push_index = self.get_default_index();
+                self.arena.insert((group_id, push_index), item);
+
+                if let Some(errors) = action(resolver, item_kind, group_id, push_index, option) {
+                    panic!("{:?}", errors);
+                }
+            }
+            Err(errors) => panic!("{:?}", errors),
+        };
+    }
+
+    /// item getter
+    pub(crate) fn get_default(&self, group_id: GroupId) -> Option<&I> {
+        self.arena.get(&(group_id, self.get_default_index()))
     }
 }
 
@@ -388,7 +438,7 @@ mod test {
         let mut resolver = Resolver::default();
         resolver.set_root_group_id(0);
 
-        for i in 0..ITERATE_COUNT {
+        for i in 1..=ITERATE_COUNT {
             let mut builder = TargetItemBuilder::new();
             builder.set_name(format!("{}", i));
             let push_result = arena_mut.push(
@@ -416,20 +466,19 @@ mod test {
             assert!(push_result.is_none());
         }
         let arena = arena_mut;
-        for (index, item) in (&arena).iter().enumerate() {
-            let result: (usize, usize) = (0, index);
-            assert_eq!(result, *item.0);
+        for (index, item) in (&arena).iter() {
             for kind in graph_item_check_list() {
-                let name = format!("{}", index);
+                let name = format!("{}", index.1);
                 let ref_result = resolver.get_item_id_pair(kind, &name);
                 if let Ok(success) = ref_result {
-                    assert_eq!(success, &result);
+                    // デフォルトがitem_id = 0占有
+                    assert_eq!(success, index);
                 } else {
                     let err = ref_result.err();
                     assert!(err.is_some());
                     assert_eq!(
                         err.unwrap(),
-                        ResolverError::NotExist(kind, format!("{}", index))
+                        ResolverError::NotExist(kind, format!("{}", index.1))
                     );
                 }
             }
@@ -441,9 +490,9 @@ mod test {
         let mut arena_mut = ItemArena::<TargetItem>::new();
         let mut refeolver = Resolver::default();
         refeolver.set_root_group_id(0);
-        for i in 0..2 * ITERATE_COUNT {
+        for i in 1..=2 * ITERATE_COUNT {
             let mut builder = TargetItemBuilder::new();
-            if i < ITERATE_COUNT {
+            if i <= ITERATE_COUNT {
                 builder.set_name(format!("{}", i));
             }
             let push_result = arena_mut.push(
@@ -489,9 +538,9 @@ mod test {
         let mut arena_mut = ItemArena::<TargetItem>::new();
         let mut resolver = Resolver::default();
         resolver.set_root_group_id(0);
-        for i in 0..2 * ITERATE_COUNT {
+        for i in 1..=2 * ITERATE_COUNT {
             let mut builder = TargetItemBuilder::new();
-            if i < ITERATE_COUNT {
+            if i <= ITERATE_COUNT {
                 builder.set_name(format!("{}", i));
             }
             let push_result = arena_mut.push(
@@ -519,15 +568,14 @@ mod test {
             assert!(push_result.is_none());
         }
         let arena = arena_mut;
-        for (index, item) in (&arena).iter().enumerate() {
-            let result: (usize, usize) = (0, index);
-            assert_eq!(result, *item.0);
+        for (index, item) in (&arena).iter() {
             for kind in graph_item_check_list() {
-                let name = format!("{}", index);
+                let name = format!("{}", index.1);
                 let ref_result = resolver.get_item_id_pair(kind, &name);
-                if index < ITERATE_COUNT && kind == TARGET_KIND {
+                if index.1 <= ITERATE_COUNT && kind == TARGET_KIND {
                     if let Ok(success) = &ref_result {
-                        assert_eq!(success, &&result);
+                        // デフォルトがitem_id = 0占有
+                        assert_eq!(success, &index);
                     } else {
                         unreachable!("over count and not exist the name \"{}\"", name)
                     }
@@ -536,7 +584,7 @@ mod test {
                     assert!(err.is_some());
                     assert_eq!(
                         err.clone().unwrap(),
-                        ResolverError::NotExist(kind, format!("{}", index))
+                        ResolverError::NotExist(kind, format!("{}", index.1))
                     );
                 }
             }

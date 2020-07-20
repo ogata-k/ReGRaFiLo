@@ -40,4 +40,10 @@ impl HasItemBuilderMethod for GroupItemBuilder {
     }
 }
 
+impl Default for GroupItemBuilder {
+    fn default() -> Self {
+        unimplemented!()
+    }
+}
+
 // TODO Test check kind eq

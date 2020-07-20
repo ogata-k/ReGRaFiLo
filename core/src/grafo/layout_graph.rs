@@ -21,6 +21,8 @@ pub struct GrafoBuilder<'a> {
 }
 
 impl<'a> GrafoBuilder<'a> {
+    // TODO build_with_default_group(self)->Grafo<'a>
+
     pub fn build(self, group_builder: GroupItemBuilder) -> Result<Grafo<'a>, Vec<GrafoError>> {
         let mut group_store = ItemArena::<GroupItem>::new();
         let GrafoBuilder {
