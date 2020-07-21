@@ -5,6 +5,7 @@ use crate::grafo::core::graph_item::GraphItemBuilderBase;
 use crate::grafo::core::resolve::Resolver;
 use crate::util::item_base::{HasItemBuilderMethod, ItemBuilderBase, ItemBuilderResult};
 use crate::util::kind::{GraphItemKind, HasGraphItemKind};
+use crate::grafo::core::graph_item::item::edge::EdgeItemOption;
 
 #[derive(Debug, Clone)]
 pub struct EdgeItemBuilder {
@@ -19,8 +20,7 @@ impl HasGraphItemKind for EdgeItemBuilder {
 
 impl ItemBuilderBase for EdgeItemBuilder {
     type Item = EdgeItem;
-    // TODO
-    type ItemOption = ();
+    type ItemOption = EdgeItemOption;
     type BuilderError = EdgeItemError;
 }
 

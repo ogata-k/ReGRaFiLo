@@ -24,3 +24,9 @@ impl GraphItemBase for GroupItem {
         unimplemented!()
     }
 }
+
+impl Default for GroupItem{
+    fn default() -> Self {
+        unimplemented!()
+    }
+}

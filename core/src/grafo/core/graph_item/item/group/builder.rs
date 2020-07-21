@@ -1,6 +1,7 @@
 //! module for Group item builder
 
 use crate::grafo::core::graph_item::group::{GroupItem, GroupItemError};
+use crate::grafo::core::graph_item::item::group::GroupItemOption;
 use crate::grafo::core::graph_item::GraphItemBuilderBase;
 use crate::grafo::core::resolve::Resolver;
 use crate::util::item_base::{HasItemBuilderMethod, ItemBuilderBase, ItemBuilderResult};
@@ -19,8 +20,7 @@ impl HasGraphItemKind for GroupItemBuilder {
 
 impl ItemBuilderBase for GroupItemBuilder {
     type Item = GroupItem;
-    // TODO
-    type ItemOption = ();
+    type ItemOption = GroupItemOption;
     type BuilderError = GroupItemError;
 }
 

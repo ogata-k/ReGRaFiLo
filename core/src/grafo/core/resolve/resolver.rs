@@ -5,6 +5,7 @@ use crate::util::kind::{AttributeKind, GraphItemKind, LayoutItemKind};
 /// reference indexes for names
 #[derive(Debug, Clone)]
 pub struct Resolver<'a> {
+    // TODO Group構造の管理（GroupTree）
     root_group_id: Option<GroupId>,
     /// names reference indexes name:(group_id, item_id)
     names: NameRefIndex<'a, GraphItemKind, (GroupId, GraphItemId)>,
@@ -15,6 +16,7 @@ pub struct Resolver<'a> {
 impl<'a> Default for Resolver<'a> {
     fn default() -> Self {
         Self {
+            // TODO できればroot_group_idは決め打ちのを使いたい
             root_group_id: None,
             names: Default::default(),
             attributes: Default::default(),

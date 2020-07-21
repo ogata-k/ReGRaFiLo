@@ -45,9 +45,6 @@ impl<I: GraphItemBase> ItemArena<I> {
     fn get_push_index(&mut self) -> GraphItemId {
         match self.pushed_index.lock() {
             Ok(mut pushed_index) => {
-                if *pushed_index == DEFAULT_ITEM_ID {
-                    *pushed_index += 1;
-                }
                 let next_index: GraphItemId = *pushed_index;
                 *pushed_index += 1;
                 next_index
@@ -84,7 +81,7 @@ impl<I: GraphItemBase> ItemArena<I> {
             B::ItemOption,
         ) -> Option<Vec<GrafoError>>,
     {
-        let item_kind = B::kind();
+        let item_kind = I::kind();
         match item_builder.build(resolver) {
             Ok((item, option)) => {
                 let group_id = item.get_belong_group_id();
@@ -149,24 +146,41 @@ impl<I: GraphItemBase> ItemArena<I> {
     }
 }
 
-impl<I: GraphItemBase> ItemArena<I> {
+impl<I: GraphItemBase + Default> ItemArena<I> {
     fn get_default_index(&self) -> GraphItemId {
         DEFAULT_ITEM_ID
     }
 
     /// push the item into arena with action for conclusion
-    pub(crate) fn push_default<
+    pub(crate) fn push_default<F, O: Default>(&mut self, resolver: &mut Resolver, action: F)
+    where
+        F: FnOnce(&mut Resolver, GraphItemKind, GroupId, GraphItemId, O) -> Option<Vec<GrafoError>>,
+    {
+        let item_kind = I::kind();
+        let item = I::default();
+        let group_id = item.get_belong_group_id();
+        let push_index = self.get_default_index();
+        self.arena.insert((group_id, push_index), item);
+
+        if let Some(errors) = action(resolver, item_kind, group_id, push_index, O::default()) {
+            let errors_str: Vec<String> = errors.into_iter().map(|e| format!("{}", e)).collect();
+            panic!("{}", errors_str.as_slice().join("\n"));
+        }
+    }
+
+    /// push the item into arena with action for conclusion
+    pub(crate) fn push_user_item_as_default<
         F,
         O,
         E: GraphBuilderErrorBase,
-        B: GraphItemBuilderBase
-            + Default
-            + HasItemBuilderMethod<Item = I, ItemOption = O, BuilderError = E>,
+        B: GraphItemBuilderBase + HasItemBuilderMethod<Item = I, ItemOption = O, BuilderError = E>,
     >(
         &mut self,
         resolver: &mut Resolver,
+        item_builder: B,
         action: F,
-    ) where
+    ) -> Option<Vec<GrafoError>>
+    where
         F: FnOnce(
             &mut Resolver,
             GraphItemKind,
@@ -175,19 +189,18 @@ impl<I: GraphItemBase> ItemArena<I> {
             B::ItemOption,
         ) -> Option<Vec<GrafoError>>,
     {
-        let item_kind = B::kind();
-        match B::default().build(resolver) {
+        let item_kind = I::kind();
+        let item = I::default();
+        match item_builder.build(resolver) {
             Ok((item, option)) => {
                 let group_id = item.get_belong_group_id();
                 let push_index = self.get_default_index();
                 self.arena.insert((group_id, push_index), item);
 
-                if let Some(errors) = action(resolver, item_kind, group_id, push_index, option) {
-                    panic!("{:?}", errors);
-                }
+                action(resolver, item_kind, group_id, push_index, option)
             }
-            Err(errors) => panic!("{:?}", errors),
-        };
+            Err(errors) => Some(errors),
+        }
     }
 
     /// item getter
@@ -200,7 +213,7 @@ impl<I> Default for ItemArena<I> {
     /// initialize without log
     fn default() -> Self {
         ItemArena {
-            pushed_index: Default::default(),
+            pushed_index: Arc::new(Mutex::new(1)),
             arena: Default::default(),
         }
     }
