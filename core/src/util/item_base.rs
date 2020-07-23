@@ -1,7 +1,7 @@
 use std::error::Error;
 
-use crate::grafo::GrafoError;
 use crate::grafo::resolve::Resolver;
+use crate::grafo::GrafoError;
 
 pub trait ItemBuilderBase {
     type Item;
@@ -9,13 +9,9 @@ pub trait ItemBuilderBase {
     type BuilderError: ItemBuilderErrorBase;
 }
 
-pub(crate) type ItemBuilderResult<Item, Option> =
-    Result<(Item, Option), Vec<GrafoError>>;
+pub(crate) type ItemBuilderResult<Item, Option> = Result<(Item, Option), Vec<GrafoError>>;
 pub(crate) trait HasItemBuilderMethod: ItemBuilderBase {
-    fn build(
-        self,
-        resolver: &Resolver,
-    ) -> ItemBuilderResult<Self::Item, Self::ItemOption>;
+    fn build(self, resolver: &Resolver) -> ItemBuilderResult<Self::Item, Self::ItemOption>;
 }
 
 pub trait ItemBase {}

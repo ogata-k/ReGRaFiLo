@@ -1,24 +1,38 @@
 //! graph with the layout for a converter from an input to an output
 
-use crate::grafo::core::graph_item::edge::EdgeItem;
-use crate::grafo::core::graph_item::group::{GroupItem, GroupItemBuilder, GroupItemOption};
-use crate::grafo::core::graph_item::node::NodeItem;
-use crate::grafo::core::graph_item::ItemArena;
-use crate::grafo::core::layout_item::Layout;
-use crate::grafo::core::resolve::Resolver;
+use crate::grafo::graph_item::edge::EdgeItem;
+use crate::grafo::graph_item::group::{GroupItem, GroupItemBuilder, GroupItemOption};
+use crate::grafo::graph_item::node::NodeItem;
+use crate::grafo::graph_item::ItemArena;
+use crate::grafo::layout_item::Layout;
+use crate::grafo::resolve::Resolver;
 use crate::grafo::GrafoError;
+use crate::util::alias::DEFAULT_ITEM_ID;
 use crate::util::kind::GraphItemKind;
 
 #[derive(Debug, Clone)]
 pub struct GrafoBuilder<'a> {
-    // name to id
+    // structure resolver
     resolver: Resolver<'a>,
 
     // layout
     layout: Layout,
 }
 
+impl<'a> Default for GrafoBuilder<'a> {
+    fn default() -> Self {
+        Self {
+            resolver: Default::default(),
+            layout: Default::default(),
+        }
+    }
+}
+
 impl<'a> GrafoBuilder<'a> {
+    pub fn new() -> Self {
+        Default::default()
+    }
+
     pub fn build_with_default(self) -> Grafo<'a> {
         let mut group_store = ItemArena::<GroupItem>::new();
         let GrafoBuilder {
@@ -28,14 +42,16 @@ impl<'a> GrafoBuilder<'a> {
 
         group_store.push_default(
             &mut resolver,
-            |resolver, item_kind, group_id, push_index, option: GroupItemOption| {
-                // グループのルートを設定
-                // ルートのIDは自身と同じ
-                if item_kind == GraphItemKind::Group && group_id == push_index {
-                    resolver.set_root_group_id(push_index);
+            |resolver, item_kind, group_id, push_index, _: GroupItemOption| {
+                if item_kind == GraphItemKind::Group
+                    && group_id == push_index
+                    && group_id == DEFAULT_ITEM_ID
+                {
+                    panic!("fail set default root group");
                 }
+                resolver.set_root_group_id(push_index);
 
-                // TODO ここでGroupTreeを指定したい
+                // TODO action before insert
                 None
             },
         );
@@ -62,13 +78,15 @@ impl<'a> GrafoBuilder<'a> {
             &mut resolver,
             group_builder,
             |resolver, item_kind, group_id, push_index, option| {
-                // グループのルートを設定
-                // ルートのIDは自身と同じ
-                if item_kind == GraphItemKind::Group && group_id == push_index {
-                    resolver.set_root_group_id(push_index);
+                if item_kind == GraphItemKind::Group
+                    && group_id == push_index
+                    && group_id == DEFAULT_ITEM_ID
+                {
+                    panic!("fail set user root group");
                 }
+                resolver.set_root_group_id(push_index);
 
-                // TODO ここでGroupTreeを指定したい
+                // TODO action before insert
                 None
             },
         );

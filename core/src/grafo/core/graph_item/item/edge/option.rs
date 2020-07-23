@@ -1,1 +1,1 @@
-pub struct EdgeItemOption{}
+pub struct EdgeItemOption {}

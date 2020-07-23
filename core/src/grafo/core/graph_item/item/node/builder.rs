@@ -1,11 +1,11 @@
 //! module for Node builder
 
+use crate::grafo::core::graph_item::item::node::NodeItemOption;
 use crate::grafo::core::graph_item::node::{NodeItem, NodeItemError};
 use crate::grafo::core::graph_item::GraphItemBuilderBase;
 use crate::grafo::core::resolve::Resolver;
 use crate::util::item_base::{HasItemBuilderMethod, ItemBuilderBase, ItemBuilderResult};
 use crate::util::kind::{GraphItemKind, HasGraphItemKind};
-use crate::grafo::core::graph_item::item::node::NodeItemOption;
 
 #[derive(Debug, Clone)]
 pub struct NodeItemBuilder {

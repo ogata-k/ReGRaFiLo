@@ -1,11 +1,11 @@
 //! module for Edge item builder
 
 use crate::grafo::core::graph_item::edge::{EdgeItem, EdgeItemError};
+use crate::grafo::core::graph_item::item::edge::EdgeItemOption;
 use crate::grafo::core::graph_item::GraphItemBuilderBase;
 use crate::grafo::core::resolve::Resolver;
 use crate::util::item_base::{HasItemBuilderMethod, ItemBuilderBase, ItemBuilderResult};
 use crate::util::kind::{GraphItemKind, HasGraphItemKind};
-use crate::grafo::core::graph_item::item::edge::EdgeItemOption;
 
 #[derive(Debug, Clone)]
 pub struct EdgeItemBuilder {

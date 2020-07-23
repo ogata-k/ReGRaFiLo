@@ -1,8 +1,10 @@
-use crate::grafo::core::resolve::ResolverError;
+use crate::grafo::GrafoError;
+use crate::util::kind::{GraphItemKind, LayoutItemKind};
 use crate::util::kind_key::KeyWithKind;
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::fmt::{Debug, Display};
+use std::error::Error;
+use std::fmt::{Debug, Display, Formatter};
 use std::hash::Hash;
 use std::ops::Deref;
 
@@ -22,6 +24,32 @@ fn key_to_str<'a, 'b: 'a, Kind: Eq + Copy + Hash>(
 
 /// references indexes
 type RefIndex<K, V> = HashMap<K, V>;
+
+#[derive(Debug, Eq, PartialEq, Clone)]
+pub enum NameIdError<Kind> {
+    Override(Kind, String),
+    NotExist(Kind, String),
+}
+
+impl<Kind: Display> Display for NameIdError<Kind> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        unimplemented!()
+    }
+}
+
+impl<Kind: Debug + Display> Error for NameIdError<Kind> {}
+
+impl Into<GrafoError> for NameIdError<GraphItemKind> {
+    fn into(self) -> GrafoError {
+        GrafoError::ItemNameRefError(self)
+    }
+}
+
+impl Into<GrafoError> for NameIdError<LayoutItemKind> {
+    fn into(self) -> GrafoError {
+        GrafoError::LayoutNameRefError(self)
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct NameRefIndex<'a, Kind: Eq + Copy + Hash, Value: Eq + Copy> {
@@ -46,12 +74,12 @@ impl<'a, Kind: Debug + Display + Eq + Copy + Hash, Value: Eq + Copy> NameRefInde
         kind: Kind,
         name: S,
         value: Value,
-    ) -> Result<(), ResolverError<Kind>> {
+    ) -> Result<(), NameIdError<Kind>> {
         let key = create_layout_key(kind, name);
         if self.reference_index.contains_key(&key) {
             let s = key_to_str(&key).to_string();
             self.reference_index.insert(key, value);
-            return Err(ResolverError::Override(kind, s));
+            return Err(NameIdError::Override(kind, s));
         }
         self.reference_index.insert(key, value);
         Ok(())
@@ -64,10 +92,10 @@ impl<'a, Kind: Eq + Copy + Hash, Value: Eq + Copy> NameRefIndex<'a, Kind, Value>
         &'a self,
         kind: Kind,
         name: &'b str,
-    ) -> Result<&'a Value, ResolverError<Kind>> {
+    ) -> Result<&'a Value, NameIdError<Kind>> {
         self.reference_index
             .get(&create_layout_key(kind, name))
-            .ok_or_else(|| ResolverError::NotExist(kind, name.to_string()))
+            .ok_or_else(|| NameIdError::NotExist(kind, name.to_string()))
     }
 
     pub fn contains_key(&self, kind: Kind, name: &str) -> bool {

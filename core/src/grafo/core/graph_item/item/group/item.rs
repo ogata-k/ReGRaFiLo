@@ -25,7 +25,7 @@ impl GraphItemBase for GroupItem {
     }
 }
 
-impl Default for GroupItem{
+impl Default for GroupItem {
     fn default() -> Self {
         unimplemented!()
     }

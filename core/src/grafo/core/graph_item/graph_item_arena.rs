@@ -45,9 +45,8 @@ impl<I: GraphItemBase> ItemArena<I> {
     fn get_push_index(&mut self) -> GraphItemId {
         match self.pushed_index.lock() {
             Ok(mut pushed_index) => {
-                let next_index: GraphItemId = *pushed_index;
                 *pushed_index += 1;
-                next_index
+                *pushed_index
             }
             Err(e) => {
                 panic!("fail lock error: {}", e);
@@ -71,6 +70,7 @@ impl<I: GraphItemBase> ItemArena<I> {
         resolver: &mut Resolver,
         item_builder: B,
         action: F,
+        // TODO Result
     ) -> Option<Vec<GrafoError>>
     where
         F: FnOnce(
@@ -79,6 +79,7 @@ impl<I: GraphItemBase> ItemArena<I> {
             GroupId,
             GraphItemId,
             B::ItemOption,
+            // TODO Result
         ) -> Option<Vec<GrafoError>>,
     {
         let item_kind = I::kind();
@@ -86,9 +87,9 @@ impl<I: GraphItemBase> ItemArena<I> {
             Ok((item, option)) => {
                 let group_id = item.get_belong_group_id();
                 let push_index = self.get_push_index();
+                let result = action(resolver, item_kind, group_id, push_index, option);
                 self.arena.insert((group_id, push_index), item);
-
-                action(resolver, item_kind, group_id, push_index, option)
+                result
             }
             Err(errors) => Some(errors),
         }
@@ -154,18 +155,19 @@ impl<I: GraphItemBase + Default> ItemArena<I> {
     /// push the item into arena with action for conclusion
     pub(crate) fn push_default<F, O: Default>(&mut self, resolver: &mut Resolver, action: F)
     where
+        // TODO Result
         F: FnOnce(&mut Resolver, GraphItemKind, GroupId, GraphItemId, O) -> Option<Vec<GrafoError>>,
     {
         let item_kind = I::kind();
         let item = I::default();
         let group_id = item.get_belong_group_id();
         let push_index = self.get_default_index();
-        self.arena.insert((group_id, push_index), item);
-
         if let Some(errors) = action(resolver, item_kind, group_id, push_index, O::default()) {
             let errors_str: Vec<String> = errors.into_iter().map(|e| format!("{}", e)).collect();
             panic!("{}", errors_str.as_slice().join("\n"));
         }
+
+        self.arena.insert((group_id, push_index), item);
     }
 
     /// push the item into arena with action for conclusion
@@ -179,6 +181,7 @@ impl<I: GraphItemBase + Default> ItemArena<I> {
         resolver: &mut Resolver,
         item_builder: B,
         action: F,
+        // TODO Result
     ) -> Option<Vec<GrafoError>>
     where
         F: FnOnce(
@@ -187,17 +190,17 @@ impl<I: GraphItemBase + Default> ItemArena<I> {
             GroupId,
             GraphItemId,
             B::ItemOption,
+            // TODO Result
         ) -> Option<Vec<GrafoError>>,
     {
         let item_kind = I::kind();
-        let item = I::default();
         match item_builder.build(resolver) {
             Ok((item, option)) => {
                 let group_id = item.get_belong_group_id();
                 let push_index = self.get_default_index();
+                let result = action(resolver, item_kind, group_id, push_index, option);
                 self.arena.insert((group_id, push_index), item);
-
-                action(resolver, item_kind, group_id, push_index, option)
+                result
             }
             Err(errors) => Some(errors),
         }
@@ -213,7 +216,7 @@ impl<I> Default for ItemArena<I> {
     /// initialize without log
     fn default() -> Self {
         ItemArena {
-            pushed_index: Arc::new(Mutex::new(1)),
+            pushed_index: Arc::new(Mutex::new(DEFAULT_ITEM_ID)),
             arena: Default::default(),
         }
     }
@@ -226,7 +229,7 @@ mod test {
     use crate::grafo::core::graph_item::{
         GraphBuilderErrorBase, GraphItemBase, GraphItemBuilderBase, ItemArena,
     };
-    use crate::grafo::core::resolve::{Resolver, ResolverError};
+    use crate::grafo::core::resolve::{NameIdError, Resolver};
     use crate::grafo::GrafoError;
     use crate::util::alias::{GraphItemId, GroupId};
     use crate::util::item_base::{
@@ -491,7 +494,7 @@ mod test {
                     assert!(err.is_some());
                     assert_eq!(
                         err.unwrap(),
-                        ResolverError::NotExist(kind, format!("{}", index.1))
+                        NameIdError::NotExist(kind, format!("{}", index.1))
                     );
                 }
             }
@@ -597,7 +600,7 @@ mod test {
                     assert!(err.is_some());
                     assert_eq!(
                         err.clone().unwrap(),
-                        ResolverError::NotExist(kind, format!("{}", index.1))
+                        NameIdError::NotExist(kind, format!("{}", index.1))
                     );
                 }
             }

@@ -1,7 +1,7 @@
 use crate::grafo::core::graph_item::edge::EdgeItemError;
 use crate::grafo::core::graph_item::group::GroupItemError;
 use crate::grafo::core::graph_item::node::NodeItemError;
-use crate::grafo::core::resolve::ResolverError;
+use crate::grafo::core::resolve::NameIdError;
 use crate::util::kind::{GraphItemKind, LayoutItemKind};
 use std::error::Error;
 use std::fmt::Formatter;
@@ -11,8 +11,8 @@ pub enum GrafoError {
     GroupItemError(GroupItemError),
     NodeItemError(NodeItemError),
     EdgeItemError(EdgeItemError),
-    ItemNameRefError(ResolverError<GraphItemKind>),
-    LayoutNameRefError(ResolverError<LayoutItemKind>),
+    ItemNameRefError(NameIdError<GraphItemKind>),
+    LayoutNameRefError(NameIdError<LayoutItemKind>),
 }
 
 impl std::fmt::Display for GrafoError {
