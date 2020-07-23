@@ -1,9 +1,8 @@
 //! key with kind
-use std::cmp::Ordering;
 use std::fmt::{Debug, Display, Formatter, Result};
 
 /// key with kind
-#[derive(Debug, Eq, PartialEq, Copy, Clone, Hash)]
+#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone, Hash)]
 pub struct KeyWithKind<Kind: Copy, Key> {
     pub kind: Kind,
     pub key: Key,
@@ -29,18 +28,6 @@ impl<Kind: Eq + Copy, Key> KeyWithKind<Kind, Key> {
 impl<Kind: Display + Copy, Key: Display> Display for KeyWithKind<Kind, Key> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         write!(f, "{}:{}", self.kind, self.key)
-    }
-}
-
-impl<Kind: PartialOrd + Copy, Key: PartialOrd> PartialOrd for KeyWithKind<Kind, Key> {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        (&self.kind, &self.key).partial_cmp(&(&other.kind, &other.key))
-    }
-}
-
-impl<Kind: Ord + Copy, Key: Ord> Ord for KeyWithKind<Kind, Key> {
-    fn cmp(&self, other: &Self) -> Ordering {
-        (&self.kind, &self.key).cmp(&(&other.kind, &other.key))
     }
 }
 

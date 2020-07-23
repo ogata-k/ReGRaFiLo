@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 use std::ops::{Bound, RangeBounds};
 use std::sync::{Arc, Mutex};
 
-use crate::grafo::core::graph_item::{GraphBuilderErrorBase, GraphItemBase, GraphItemBuilderBase};
+use crate::grafo::graph_item::{GraphBuilderErrorBase, GraphItemBase, GraphItemBuilderBase};
 use crate::grafo::resolve::Resolver;
 use crate::grafo::GrafoError;
 use crate::util::alias::{GraphItemId, GroupId, DEFAULT_ITEM_ID};
@@ -70,8 +70,7 @@ impl<I: GraphItemBase> ItemArena<I> {
         resolver: &mut Resolver,
         item_builder: B,
         action: F,
-        // TODO Result
-    ) -> Option<Vec<GrafoError>>
+    ) -> Result<(), Vec<GrafoError>>
     where
         F: FnOnce(
             &mut Resolver,
@@ -79,20 +78,15 @@ impl<I: GraphItemBase> ItemArena<I> {
             GroupId,
             GraphItemId,
             B::ItemOption,
-            // TODO Result
-        ) -> Option<Vec<GrafoError>>,
+        ) -> Result<(), Vec<GrafoError>>,
     {
         let item_kind = I::kind();
-        match item_builder.build(resolver) {
-            Ok((item, option)) => {
-                let group_id = item.get_belong_group_id();
-                let push_index = self.get_push_index();
-                let result = action(resolver, item_kind, group_id, push_index, option);
-                self.arena.insert((group_id, push_index), item);
-                result
-            }
-            Err(errors) => Some(errors),
-        }
+        let (item, option) = item_builder.build(resolver)?;
+        let group_id = item.get_belong_group_id();
+        let push_index = self.get_push_index();
+        action(resolver, item_kind, group_id, push_index, option)?;
+        self.arena.insert((group_id, push_index), item);
+        Ok(())
     }
 
     /// item getter
@@ -114,7 +108,7 @@ impl<I: GraphItemBase> ItemArena<I> {
     /// iter by filtering group_id
     pub fn filter_by_group<'a>(&'a self, group_id: GroupId) -> impl Iterator + 'a {
         self.iter()
-            .filter_map(move |((item_group_id, item_id), item)| {
+            .filter_map(move |((item_group_id, _item_id), item)| {
                 if item_group_id == &group_id {
                     Some(item)
                 } else {
@@ -155,14 +149,19 @@ impl<I: GraphItemBase + Default> ItemArena<I> {
     /// push the item into arena with action for conclusion
     pub(crate) fn push_default<F, O: Default>(&mut self, resolver: &mut Resolver, action: F)
     where
-        // TODO Result
-        F: FnOnce(&mut Resolver, GraphItemKind, GroupId, GraphItemId, O) -> Option<Vec<GrafoError>>,
+        F: FnOnce(
+            &mut Resolver,
+            GraphItemKind,
+            GroupId,
+            GraphItemId,
+            O,
+        ) -> Result<(), Vec<GrafoError>>,
     {
         let item_kind = I::kind();
         let item = I::default();
         let group_id = item.get_belong_group_id();
         let push_index = self.get_default_index();
-        if let Some(errors) = action(resolver, item_kind, group_id, push_index, O::default()) {
+        if let Err(errors) = action(resolver, item_kind, group_id, push_index, O::default()) {
             let errors_str: Vec<String> = errors.into_iter().map(|e| format!("{}", e)).collect();
             panic!("{}", errors_str.as_slice().join("\n"));
         }
@@ -181,8 +180,7 @@ impl<I: GraphItemBase + Default> ItemArena<I> {
         resolver: &mut Resolver,
         item_builder: B,
         action: F,
-        // TODO Result
-    ) -> Option<Vec<GrafoError>>
+    ) -> Result<(), Vec<GrafoError>>
     where
         F: FnOnce(
             &mut Resolver,
@@ -190,20 +188,15 @@ impl<I: GraphItemBase + Default> ItemArena<I> {
             GroupId,
             GraphItemId,
             B::ItemOption,
-            // TODO Result
-        ) -> Option<Vec<GrafoError>>,
+        ) -> Result<(), Vec<GrafoError>>,
     {
         let item_kind = I::kind();
-        match item_builder.build(resolver) {
-            Ok((item, option)) => {
-                let group_id = item.get_belong_group_id();
-                let push_index = self.get_default_index();
-                let result = action(resolver, item_kind, group_id, push_index, option);
-                self.arena.insert((group_id, push_index), item);
-                result
-            }
-            Err(errors) => Some(errors),
-        }
+        let (item, option) = item_builder.build(resolver)?;
+        let group_id = item.get_belong_group_id();
+        let push_index = self.get_default_index();
+        action(resolver, item_kind, group_id, push_index, option)?;
+        self.arena.insert((group_id, push_index), item);
+        Ok(())
     }
 
     /// item getter
@@ -259,7 +252,7 @@ mod test {
         name: Option<String>,
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, Eq, PartialEq, Clone)]
     enum TargetBuilderError {
         BuildFail,
         NotFindGroup,
@@ -414,25 +407,24 @@ mod test {
                 &mut resolver,
                 builder,
                 |resolver, kind, group_id, item_id, option| {
+                    let mut errors: Vec<GrafoError> = Vec::new();
                     if let TargetItemOption {
                         belong_group_id: _,
                         name: Some(name),
                     } = option
                     {
-                        let mut errors: Vec<GrafoError> = Vec::new();
                         if let Err(err) = resolver.push_item_name(kind, name, group_id, item_id) {
                             errors.push(err.into());
                         }
-                        return if errors.is_empty() {
-                            None
-                        } else {
-                            Some(errors)
-                        };
                     }
-                    None
+                    if errors.is_empty() {
+                        Ok(())
+                    } else {
+                        Err(errors)
+                    }
                 },
             );
-            assert!(push_result.is_none());
+            assert_eq!(Ok(()), push_result);
         }
         let arena = arena_mut;
         assert_eq!(arena.count(), ITERATE_COUNT);
@@ -461,25 +453,25 @@ mod test {
                 &mut resolver,
                 builder,
                 |resolver, kind, group_id, item_id, option| {
+                    let mut errors: Vec<GrafoError> = Vec::new();
                     if let TargetItemOption {
                         belong_group_id: _,
                         name: Some(name),
                     } = option
                     {
-                        let mut errors: Vec<GrafoError> = Vec::new();
                         if let Err(err) = resolver.push_item_name(kind, name, group_id, item_id) {
                             errors.push(err.into());
                         }
-                        return if errors.is_empty() {
-                            None
-                        } else {
-                            Some(errors)
-                        };
                     }
-                    None
+
+                    if errors.is_empty() {
+                        Ok(())
+                    } else {
+                        Err(errors)
+                    }
                 },
             );
-            assert!(push_result.is_none());
+            assert_eq!(Ok(()), push_result);
         }
         let arena = arena_mut;
         for (index, item) in (&arena).iter() {
@@ -490,11 +482,9 @@ mod test {
                     // デフォルトがitem_id = 0占有
                     assert_eq!(success, index);
                 } else {
-                    let err = ref_result.err();
-                    assert!(err.is_some());
                     assert_eq!(
-                        err.unwrap(),
-                        NameIdError::NotExist(kind, format!("{}", index.1))
+                        ref_result,
+                        Err(NameIdError::NotExist(kind, format!("{}", index.1)))
                     );
                 }
             }
@@ -515,25 +505,25 @@ mod test {
                 &mut refeolver,
                 builder,
                 |resolver, kind, group_id, item_id, option| {
+                    let mut errors: Vec<GrafoError> = Vec::new();
                     if let TargetItemOption {
                         belong_group_id: _,
                         name: Some(name),
                     } = option
                     {
-                        let mut errors: Vec<GrafoError> = Vec::new();
                         if let Err(err) = resolver.push_item_name(kind, name, group_id, item_id) {
                             errors.push(err.into());
                         }
-                        return if errors.is_empty() {
-                            None
-                        } else {
-                            Some(errors)
-                        };
                     }
-                    None
+
+                    if errors.is_empty() {
+                        Ok(())
+                    } else {
+                        Err(errors)
+                    }
                 },
             );
-            assert!(push_result.is_none());
+            assert_eq!(Ok(()), push_result);
         }
         let arena = arena_mut;
         assert_eq!(arena.count(), 2 * ITERATE_COUNT);
@@ -563,25 +553,25 @@ mod test {
                 &mut resolver,
                 builder,
                 |resolver, kind, group_id, item_id, option| {
+                    let mut errors: Vec<GrafoError> = Vec::new();
                     if let TargetItemOption {
                         belong_group_id: _,
                         name: Some(name),
                     } = option
                     {
-                        let mut errors: Vec<GrafoError> = Vec::new();
                         if let Err(err) = resolver.push_item_name(kind, name, group_id, item_id) {
                             errors.push(err.into());
                         }
-                        return if errors.is_empty() {
-                            None
-                        } else {
-                            Some(errors)
-                        };
                     }
-                    None
+
+                    if errors.is_empty() {
+                        Ok(())
+                    } else {
+                        Err(errors)
+                    }
                 },
             );
-            assert!(push_result.is_none());
+            assert_eq!(Ok(()), push_result);
         }
         let arena = arena_mut;
         for (index, item) in (&arena).iter() {
@@ -596,11 +586,9 @@ mod test {
                         unreachable!("over count and not exist the name \"{}\"", name)
                     }
                 } else {
-                    let err = &ref_result.err();
-                    assert!(err.is_some());
                     assert_eq!(
-                        err.clone().unwrap(),
-                        NameIdError::NotExist(kind, format!("{}", index.1))
+                        ref_result,
+                        Err(NameIdError::NotExist(kind, format!("{}", index.1)))
                     );
                 }
             }

@@ -15,4 +15,4 @@ pub(crate) trait HasItemBuilderMethod: ItemBuilderBase {
 }
 
 pub trait ItemBase {}
-pub trait ItemBuilderErrorBase: Error + Into<GrafoError> {}
+pub trait ItemBuilderErrorBase: Eq + Error + Into<GrafoError> {}

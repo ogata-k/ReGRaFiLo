@@ -6,7 +6,7 @@ use crate::util::kind::{GraphItemKind, LayoutItemKind};
 use std::error::Error;
 use std::fmt::Formatter;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum GrafoError {
     GroupItemError(GroupItemError),
     NodeItemError(NodeItemError),

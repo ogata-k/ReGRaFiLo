@@ -52,7 +52,7 @@ impl<'a> GrafoBuilder<'a> {
                 resolver.set_root_group_id(push_index);
 
                 // TODO action before insert
-                None
+                Ok(())
             },
         );
 
@@ -74,7 +74,7 @@ impl<'a> GrafoBuilder<'a> {
             mut resolver,
             layout,
         } = self;
-        let push_result = group_store.push_user_item_as_default(
+        group_store.push_user_item_as_default(
             &mut resolver,
             group_builder,
             |resolver, item_kind, group_id, push_index, option| {
@@ -87,19 +87,16 @@ impl<'a> GrafoBuilder<'a> {
                 resolver.set_root_group_id(push_index);
 
                 // TODO action before insert
-                None
+                Ok(())
             },
-        );
-        match push_result {
-            Some(errors) => Err(errors),
-            None => Ok(Grafo {
-                group_arena: group_store,
-                node_arena: Default::default(),
-                edge_arena: Default::default(),
-                resolver,
-                layout,
-            }),
-        }
+        )?;
+        Ok(Grafo {
+            group_arena: group_store,
+            node_arena: Default::default(),
+            edge_arena: Default::default(),
+            resolver,
+            layout,
+        })
     }
 }
 
