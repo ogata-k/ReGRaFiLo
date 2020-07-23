@@ -2,4 +2,6 @@
 
 pub mod graph_item;
 pub mod layout_item;
-pub mod resolve;
+mod resolve;
+
+pub(crate) use resolve::*;

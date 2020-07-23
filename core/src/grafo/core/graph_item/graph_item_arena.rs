@@ -6,8 +6,8 @@ use std::ops::{Bound, RangeBounds};
 use std::sync::{Arc, Mutex};
 
 use crate::grafo::graph_item::{GraphBuilderErrorBase, GraphItemBase, GraphItemBuilderBase};
-use crate::grafo::resolve::Resolver;
 use crate::grafo::GrafoError;
+use crate::grafo::Resolver;
 use crate::util::alias::{GraphItemId, GroupId, DEFAULT_ITEM_ID};
 use crate::util::item_base::HasItemBuilderMethod;
 use crate::util::kind::GraphItemKind;
@@ -222,7 +222,7 @@ mod test {
     use crate::grafo::core::graph_item::{
         GraphBuilderErrorBase, GraphItemBase, GraphItemBuilderBase, ItemArena,
     };
-    use crate::grafo::core::resolve::{NameIdError, Resolver};
+    use crate::grafo::core::{NameIdError, Resolver};
     use crate::grafo::GrafoError;
     use crate::util::alias::{GraphItemId, GroupId};
     use crate::util::item_base::{
@@ -494,15 +494,15 @@ mod test {
     #[test]
     fn mixed_count() {
         let mut arena_mut = ItemArena::<TargetItem>::new();
-        let mut refeolver = Resolver::default();
-        refeolver.set_root_group_id(0);
+        let mut resolver = Resolver::default();
+        resolver.set_root_group_id(0);
         for i in 1..=2 * ITERATE_COUNT {
             let mut builder = TargetItemBuilder::new();
             if i <= ITERATE_COUNT {
                 builder.set_name(format!("{}", i));
             }
             let push_result = arena_mut.push(
-                &mut refeolver,
+                &mut resolver,
                 builder,
                 |resolver, kind, group_id, item_id, option| {
                     let mut errors: Vec<GrafoError> = Vec::new();
@@ -529,7 +529,7 @@ mod test {
         assert_eq!(arena.count(), 2 * ITERATE_COUNT);
         for target in graph_item_check_list() {
             assert_eq!(
-                refeolver.item_name_count_by(target),
+                resolver.item_name_count_by(target),
                 if target == TARGET_KIND {
                     ITERATE_COUNT
                 } else {

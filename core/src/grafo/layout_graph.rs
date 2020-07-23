@@ -5,8 +5,7 @@ use crate::grafo::graph_item::group::{GroupItem, GroupItemBuilder, GroupItemOpti
 use crate::grafo::graph_item::node::NodeItem;
 use crate::grafo::graph_item::ItemArena;
 use crate::grafo::layout_item::Layout;
-use crate::grafo::resolve::Resolver;
-use crate::grafo::GrafoError;
+use crate::grafo::{GrafoError, Resolver};
 use crate::util::alias::DEFAULT_ITEM_ID;
 use crate::util::kind::GraphItemKind;
 

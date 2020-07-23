@@ -1,4 +1,4 @@
-use crate::grafo::resolve::{IdTree, NameIdError, NameRefIndex};
+use crate::grafo::{IdTree, NameIdError, NameRefIndex};
 use crate::util::alias::{GraphItemId, GroupId, ItemId, LayoutItemId};
 use crate::util::kind::{AttributeKind, GraphItemKind, LayoutItemKind};
 

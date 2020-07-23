@@ -1,7 +1,7 @@
-use crate::grafo::core::graph_item::edge::EdgeItemError;
-use crate::grafo::core::graph_item::group::GroupItemError;
-use crate::grafo::core::graph_item::node::NodeItemError;
-use crate::grafo::core::resolve::NameIdError;
+use crate::grafo::graph_item::edge::EdgeItemError;
+use crate::grafo::graph_item::group::GroupItemError;
+use crate::grafo::graph_item::node::NodeItemError;
+use crate::grafo::NameIdError;
 use crate::util::kind::{GraphItemKind, LayoutItemKind};
 use std::error::Error;
 use std::fmt::Formatter;

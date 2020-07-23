@@ -1,7 +1,7 @@
 use std::error::Error;
 
-use crate::grafo::resolve::Resolver;
 use crate::grafo::GrafoError;
+use crate::grafo::Resolver;
 
 pub trait ItemBuilderBase {
     type Item;
