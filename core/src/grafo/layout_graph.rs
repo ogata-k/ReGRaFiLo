@@ -102,13 +102,13 @@ impl<'a> GrafoBuilder<'a> {
 /// Grafo is Graph with Layout
 #[derive(Debug, Clone)]
 pub struct Grafo<'a> {
+    // structure resolver
+    resolver: Resolver<'a>,
+
     // item arena
     group_arena: ItemArena<GroupItem>,
     node_arena: ItemArena<NodeItem>,
     edge_arena: ItemArena<EdgeItem>,
-
-    // name to id
-    resolver: Resolver<'a>,
 
     // layout
     layout: Layout,
