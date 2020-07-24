@@ -11,7 +11,7 @@ pub enum EdgeItemError {
 }
 
 impl HasGraphItemKind for EdgeItemError {
-    fn kind() -> GraphItemKind {
+    fn get_kind(&self) -> GraphItemKind {
         GraphItemKind::Edge
     }
 }

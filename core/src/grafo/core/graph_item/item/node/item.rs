@@ -12,7 +12,7 @@ pub struct NodeItem {
 }
 
 impl HasGraphItemKind for NodeItem {
-    fn kind() -> GraphItemKind {
+    fn get_kind(&self) -> GraphItemKind {
         GraphItemKind::Node
     }
 }

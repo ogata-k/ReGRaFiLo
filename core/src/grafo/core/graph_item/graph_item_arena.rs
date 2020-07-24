@@ -80,11 +80,10 @@ impl<I: GraphItemBase> ItemArena<I> {
             B::ItemOption,
         ) -> Result<(), Vec<GrafoError>>,
     {
-        let item_kind = I::kind();
         let (item, option) = item_builder.build(resolver)?;
         let group_id = item.get_belong_group_id();
         let push_index = self.get_push_index();
-        action(resolver, item_kind, group_id, push_index, option)?;
+        action(resolver, item.get_kind(), group_id, push_index, option)?;
         self.arena.insert((group_id, push_index), item);
         Ok(())
     }
@@ -157,11 +156,16 @@ impl<I: GraphItemBase + Default> ItemArena<I> {
             O,
         ) -> Result<(), Vec<GrafoError>>,
     {
-        let item_kind = I::kind();
         let item = I::default();
         let group_id = item.get_belong_group_id();
         let push_index = self.get_default_index();
-        if let Err(errors) = action(resolver, item_kind, group_id, push_index, O::default()) {
+        if let Err(errors) = action(
+            resolver,
+            item.get_kind(),
+            group_id,
+            push_index,
+            O::default(),
+        ) {
             let errors_str: Vec<String> = errors.into_iter().map(|e| format!("{}", e)).collect();
             panic!("{}", errors_str.as_slice().join("\n"));
         }
@@ -190,11 +194,10 @@ impl<I: GraphItemBase + Default> ItemArena<I> {
             B::ItemOption,
         ) -> Result<(), Vec<GrafoError>>,
     {
-        let item_kind = I::kind();
         let (item, option) = item_builder.build(resolver)?;
         let group_id = item.get_belong_group_id();
         let push_index = self.get_default_index();
-        action(resolver, item_kind, group_id, push_index, option)?;
+        action(resolver, item.get_kind(), group_id, push_index, option)?;
         self.arena.insert((group_id, push_index), item);
         Ok(())
     }
@@ -265,19 +268,13 @@ mod test {
     }
 
     impl HasGraphItemKind for TargetItem {
-        fn kind() -> GraphItemKind {
-            TARGET_KIND
-        }
-    }
-
-    impl HasGraphItemKind for TargetItemBuilder {
-        fn kind() -> GraphItemKind {
+        fn get_kind(&self) -> GraphItemKind {
             TARGET_KIND
         }
     }
 
     impl HasGraphItemKind for TargetBuilderError {
-        fn kind() -> GraphItemKind {
+        fn get_kind(&self) -> GraphItemKind {
             TARGET_KIND
         }
     }

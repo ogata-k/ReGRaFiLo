@@ -12,7 +12,7 @@ pub struct GroupItem {
 }
 
 impl HasGraphItemKind for GroupItem {
-    fn kind() -> GraphItemKind {
+    fn get_kind(&self) -> GraphItemKind {
         GraphItemKind::Group
     }
 }

@@ -12,7 +12,7 @@ pub struct EdgeItem {
 }
 
 impl HasGraphItemKind for EdgeItem {
-    fn kind() -> GraphItemKind {
+    fn get_kind(&self) -> GraphItemKind {
         GraphItemKind::Edge
     }
 }

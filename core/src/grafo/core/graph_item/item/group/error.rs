@@ -11,7 +11,7 @@ pub enum GroupItemError {
 }
 
 impl HasGraphItemKind for GroupItemError {
-    fn kind() -> GraphItemKind {
+    fn get_kind(&self) -> GraphItemKind {
         GraphItemKind::Group
     }
 }

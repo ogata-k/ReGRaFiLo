@@ -5,17 +5,10 @@ use crate::grafo::core::graph_item::item::group::GroupItemOption;
 use crate::grafo::core::graph_item::GraphItemBuilderBase;
 use crate::grafo::core::resolve::Resolver;
 use crate::util::item_base::{HasItemBuilderMethod, ItemBuilderBase, ItemBuilderResult};
-use crate::util::kind::{GraphItemKind, HasGraphItemKind};
 
 #[derive(Debug, Clone)]
 pub struct GroupItemBuilder {
     // TODO
-}
-
-impl HasGraphItemKind for GroupItemBuilder {
-    fn kind() -> GraphItemKind {
-        GraphItemKind::Group
-    }
 }
 
 impl ItemBuilderBase for GroupItemBuilder {

@@ -5,17 +5,10 @@ use crate::grafo::core::graph_item::node::{NodeItem, NodeItemError};
 use crate::grafo::core::graph_item::GraphItemBuilderBase;
 use crate::grafo::core::resolve::Resolver;
 use crate::util::item_base::{HasItemBuilderMethod, ItemBuilderBase, ItemBuilderResult};
-use crate::util::kind::{GraphItemKind, HasGraphItemKind};
 
 #[derive(Debug, Clone)]
 pub struct NodeItemBuilder {
     // TODO
-}
-
-impl HasGraphItemKind for NodeItemBuilder {
-    fn kind() -> GraphItemKind {
-        GraphItemKind::Node
-    }
 }
 
 impl ItemBuilderBase for NodeItemBuilder {

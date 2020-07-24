@@ -11,7 +11,7 @@ pub enum NodeItemError {
 }
 
 impl HasGraphItemKind for NodeItemError {
-    fn kind() -> GraphItemKind {
+    fn get_kind(&self) -> GraphItemKind {
         GraphItemKind::Node
     }
 }

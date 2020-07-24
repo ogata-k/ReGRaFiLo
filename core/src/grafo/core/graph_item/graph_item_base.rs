@@ -5,7 +5,7 @@ use crate::util::item_base::{ItemBase, ItemBuilderBase, ItemBuilderErrorBase};
 use crate::util::kind::HasGraphItemKind;
 
 /// Item Builder's base set
-pub trait GraphItemBuilderBase: ItemBuilderBase + HasGraphItemKind {
+pub trait GraphItemBuilderBase: ItemBuilderBase {
     fn set_belong_group<S: Into<String>>(&mut self, group: S) -> &mut Self;
     fn set_name<S: Into<String>>(&mut self, name: S) -> &mut Self;
 }
