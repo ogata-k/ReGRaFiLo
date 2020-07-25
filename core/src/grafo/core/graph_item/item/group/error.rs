@@ -1,4 +1,5 @@
 use crate::grafo::core::graph_item::GraphBuilderErrorBase;
+use crate::grafo::graph_item::group::GroupItem;
 use crate::grafo::{GrafoError, NameIdError};
 use crate::util::item_base::ItemBuilderErrorBase;
 use crate::util::kind::{GraphItemKind, HasGraphItemKind};
@@ -11,8 +12,8 @@ pub enum GroupItemError {
 }
 
 impl HasGraphItemKind for GroupItemError {
-    fn get_kind(&self) -> GraphItemKind {
-        GraphItemKind::Group
+    fn kind() -> GraphItemKind {
+        GroupItem::kind()
     }
 }
 

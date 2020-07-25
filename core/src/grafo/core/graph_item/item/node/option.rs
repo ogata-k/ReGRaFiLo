@@ -1,1 +1,3 @@
-pub struct NodeItemOption {}
+pub struct NodeItemOption {
+    pub name: Option<String>,
+}

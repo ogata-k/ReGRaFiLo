@@ -1,3 +1,4 @@
+use crate::grafo::core::graph_item::item::node::NodeItem;
 use crate::grafo::core::graph_item::GraphBuilderErrorBase;
 use crate::grafo::{GrafoError, NameIdError};
 use crate::util::item_base::ItemBuilderErrorBase;
@@ -8,11 +9,12 @@ use std::fmt::{Display, Formatter};
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum NodeItemError {
     // TODO
+    FailResolveBelongGroup,
 }
 
 impl HasGraphItemKind for NodeItemError {
-    fn get_kind(&self) -> GraphItemKind {
-        GraphItemKind::Node
+    fn kind() -> GraphItemKind {
+        NodeItem::kind()
     }
 }
 

@@ -56,12 +56,24 @@ impl<'a> Resolver<'a> {
             .push_value(item_kind, name.into(), (group_id, item_id))
     }
 
+    pub fn get_belong_group<'b: 'a>(
+        &'a self,
+        name: Option<&'b str>,
+    ) -> Result<(GroupId, ItemId), NameIdError<GraphItemKind>> {
+        if let Some(n) = name {
+            self.get_item_id_pair(GraphItemKind::Group, n)
+        } else {
+            Ok((self.get_root_group_id(), self.get_root_group_id()))
+        }
+    }
+
     pub fn get_item_id_pair<'b: 'a>(
         &'a self,
         item_kind: GraphItemKind,
         name: &'b str,
-    ) -> Result<&'a (GroupId, ItemId), NameIdError<GraphItemKind>> {
-        self.names.get_value(item_kind, name)
+    ) -> Result<(GroupId, ItemId), NameIdError<GraphItemKind>> {
+        let id_pair = self.names.get_value(item_kind, name)?;
+        Ok(*id_pair)
     }
 
     pub fn contains_item_name<'b: 'a>(&'a self, item_kind: GraphItemKind, name: &'b str) -> bool {

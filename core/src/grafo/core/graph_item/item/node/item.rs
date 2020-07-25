@@ -8,11 +8,11 @@ use crate::util::kind::{GraphItemKind, HasGraphItemKind};
 /// Node Item
 #[derive(Debug, Clone)]
 pub struct NodeItem {
-    // TODO
+    belong_group_id: GroupId,
 }
 
 impl HasGraphItemKind for NodeItem {
-    fn get_kind(&self) -> GraphItemKind {
+    fn kind() -> GraphItemKind {
         GraphItemKind::Node
     }
 }
@@ -21,6 +21,14 @@ impl ItemBase for NodeItem {}
 
 impl GraphItemBase for NodeItem {
     fn get_belong_group_id(&self) -> GroupId {
-        unimplemented!()
+        self.belong_group_id
+    }
+}
+
+impl NodeItem {
+    pub(crate) fn new(belong_group: GroupId) -> Self {
+        Self {
+            belong_group_id: belong_group,
+        }
     }
 }

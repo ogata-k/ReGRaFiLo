@@ -9,7 +9,7 @@ pub trait ItemBuilderBase {
     type BuilderError: ItemBuilderErrorBase;
 }
 
-pub(crate) type ItemBuilderResult<Item, Option> = Result<(Item, Option), Vec<GrafoError>>;
+pub(crate) type ItemBuilderResult<Item, ItemOption> = (Option<(Item, ItemOption)>, Vec<GrafoError>);
 pub(crate) trait HasItemBuilderMethod: ItemBuilderBase {
     fn build(self, resolver: &Resolver) -> ItemBuilderResult<Self::Item, Self::ItemOption>;
 }

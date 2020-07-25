@@ -33,4 +33,8 @@ impl HasItemBuilderMethod for EdgeItemBuilder {
     }
 }
 
-// TODO Test check kind eq
+impl EdgeItemBuilder {
+    pub fn new() -> Self {
+        Self {}
+    }
+}

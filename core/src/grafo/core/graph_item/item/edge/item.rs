@@ -15,7 +15,7 @@ pub struct EdgeItem {
 }
 
 impl HasGraphItemKind for EdgeItem {
-    fn get_kind(&self) -> GraphItemKind {
+    fn kind() -> GraphItemKind {
         GraphItemKind::Edge
     }
 }

@@ -9,7 +9,10 @@ pub enum GraphItemKind {
 }
 
 pub trait HasGraphItemKind {
-    fn get_kind(&self) -> GraphItemKind;
+    fn kind() -> GraphItemKind;
+    fn get_kind(&self) -> GraphItemKind {
+        Self::kind()
+    }
 }
 
 fn item_kind_to_str(item_kind: &GraphItemKind) -> &str {

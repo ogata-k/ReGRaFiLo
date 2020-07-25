@@ -6,6 +6,7 @@ use std::fmt::Formatter;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum GrafoError {
+    FailBuildGrafo,
     GroupItemError(GroupItemError),
     NodeItemError(NodeItemError),
     EdgeItemError(EdgeItemError),

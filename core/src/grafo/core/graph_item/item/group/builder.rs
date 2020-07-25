@@ -39,4 +39,8 @@ impl Default for GroupItemBuilder {
     }
 }
 
-// TODO Test check kind eq
+impl GroupItemBuilder {
+    pub fn new() -> Self {
+        Self {}
+    }
+}

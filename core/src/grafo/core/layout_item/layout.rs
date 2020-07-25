@@ -5,6 +5,6 @@ pub struct Layout {
 
 impl Default for Layout {
     fn default() -> Self {
-        unimplemented!()
+        Self {}
     }
 }

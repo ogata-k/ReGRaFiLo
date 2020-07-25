@@ -4,6 +4,7 @@ use crate::util::item_base::ItemBuilderErrorBase;
 use crate::util::kind::{GraphItemKind, HasGraphItemKind};
 use std::error::Error;
 use std::fmt::{Display, Formatter};
+use crate::grafo::core::graph_item::item::edge::EdgeItem;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum EdgeItemError {
@@ -11,8 +12,8 @@ pub enum EdgeItemError {
 }
 
 impl HasGraphItemKind for EdgeItemError {
-    fn get_kind(&self) -> GraphItemKind {
-        GraphItemKind::Edge
+    fn kind() -> GraphItemKind {
+        EdgeItem::kind()
     }
 }
 
