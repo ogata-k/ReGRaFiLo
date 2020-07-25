@@ -149,11 +149,13 @@ mod test {
     use crate::grafo::graph_item::node::NodeItemBuilder;
     use crate::grafo::graph_item::GraphItemBuilderBase;
     use crate::grafo::{GrafoBuilder, GrafoError};
+    use crate::util::kind::GraphItemKind;
 
+    const ITERATE_COUNT: usize = 10;
     #[test]
     fn push_node_success() {
         let mut graph = GrafoBuilder::new().build_with_default();
-        for i in 0..10 {
+        for i in 0..2 * ITERATE_COUNT {
             let mut node_builder = NodeItemBuilder::new();
             if i % 2 == 0 {
                 node_builder.set_name(format!("{}", i));
@@ -162,5 +164,11 @@ mod test {
             assert_eq!(Vec::<GrafoError>::new(), errors);
             assert!(result);
         }
+
+        assert_eq!(graph.node_arena.count(), 2 * ITERATE_COUNT);
+        assert_eq!(
+            graph.resolver.item_name_count_by(GraphItemKind::Node),
+            ITERATE_COUNT
+        );
     }
 }
