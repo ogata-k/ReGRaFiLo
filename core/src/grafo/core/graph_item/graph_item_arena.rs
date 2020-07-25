@@ -312,7 +312,7 @@ mod test {
                     match belong_group_result {
                         Ok((_belong_group_id, item_id)) => Some(*item_id),
                         Err(err) => {
-                            errors.push(err.into());
+                            errors.push(TargetBuilderError::from(err).into());
                             None
                         }
                     }
@@ -385,6 +385,12 @@ mod test {
 
     impl ItemBuilderErrorBase for TargetBuilderError {}
 
+    impl From<NameIdError<GraphItemKind>> for TargetBuilderError {
+        fn from(error: NameIdError<GraphItemKind>) -> Self {
+            unimplemented!()
+        }
+    }
+
     impl GraphBuilderErrorBase for TargetBuilderError {}
 
     #[test]
@@ -411,7 +417,7 @@ mod test {
                     } = option
                     {
                         if let Err(err) = resolver.push_item_name(kind, name, group_id, item_id) {
-                            errors.push(err.into());
+                            errors.push(TargetBuilderError::from(err).into());
                         }
                     }
                     if errors.is_empty() {
@@ -457,7 +463,7 @@ mod test {
                     } = option
                     {
                         if let Err(err) = resolver.push_item_name(kind, name, group_id, item_id) {
-                            errors.push(err.into());
+                            errors.push(TargetBuilderError::from(err).into());
                         }
                     }
 
@@ -509,7 +515,7 @@ mod test {
                     } = option
                     {
                         if let Err(err) = resolver.push_item_name(kind, name, group_id, item_id) {
-                            errors.push(err.into());
+                            errors.push(TargetBuilderError::from(err).into());
                         }
                     }
 
@@ -557,7 +563,7 @@ mod test {
                     } = option
                     {
                         if let Err(err) = resolver.push_item_name(kind, name, group_id, item_id) {
-                            errors.push(err.into());
+                            errors.push(TargetBuilderError::from(err).into());
                         }
                     }
 

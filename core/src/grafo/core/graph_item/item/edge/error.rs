@@ -1,5 +1,5 @@
 use crate::grafo::core::graph_item::GraphBuilderErrorBase;
-use crate::grafo::GrafoError;
+use crate::grafo::{GrafoError, NameIdError};
 use crate::util::item_base::ItemBuilderErrorBase;
 use crate::util::kind::{GraphItemKind, HasGraphItemKind};
 use std::error::Error;
@@ -30,4 +30,9 @@ impl Into<GrafoError> for EdgeItemError {
 
 impl Error for EdgeItemError {}
 impl ItemBuilderErrorBase for EdgeItemError {}
+impl From<NameIdError<GraphItemKind>> for EdgeItemError {
+    fn from(error: NameIdError<GraphItemKind>) -> Self {
+        unimplemented!()
+    }
+}
 impl GraphBuilderErrorBase for EdgeItemError {}

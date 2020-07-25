@@ -39,18 +39,6 @@ impl<Kind: Display> Display for NameIdError<Kind> {
 
 impl<Kind: Debug + Display> Error for NameIdError<Kind> {}
 
-impl Into<GrafoError> for NameIdError<GraphItemKind> {
-    fn into(self) -> GrafoError {
-        GrafoError::ItemNameRefError(self)
-    }
-}
-
-impl Into<GrafoError> for NameIdError<LayoutItemKind> {
-    fn into(self) -> GrafoError {
-        GrafoError::LayoutNameRefError(self)
-    }
-}
-
 #[derive(Debug, Clone)]
 pub struct NameRefIndex<'a, Kind: Eq + Copy + Hash, Value: Eq + Copy> {
     reference_index: RefIndex<KeyWithKind<Kind, Cow<'a, str>>, Value>,

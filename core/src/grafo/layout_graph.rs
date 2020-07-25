@@ -115,5 +115,7 @@ pub struct Grafo<'a> {
 }
 
 impl<'a> Grafo<'a> {
-    // TODO
+    // TODO 2 push_group
+    // TODO 1 push_node
+    // TODO 3 push_edge
 }

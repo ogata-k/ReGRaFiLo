@@ -1,8 +1,9 @@
 //! base of item and item builder
 
+use crate::grafo::NameIdError;
 use crate::util::alias::GroupId;
 use crate::util::item_base::{ItemBase, ItemBuilderBase, ItemBuilderErrorBase};
-use crate::util::kind::HasGraphItemKind;
+use crate::util::kind::{GraphItemKind, HasGraphItemKind};
 
 /// Item Builder's base set
 pub trait GraphItemBuilderBase: ItemBuilderBase {
@@ -15,4 +16,7 @@ pub trait GraphItemBase: ItemBase + HasGraphItemKind {
     fn get_belong_group_id(&self) -> GroupId;
 }
 
-pub trait GraphBuilderErrorBase: ItemBuilderErrorBase + HasGraphItemKind {}
+pub trait GraphBuilderErrorBase:
+    ItemBuilderErrorBase + HasGraphItemKind + From<NameIdError<GraphItemKind>>
+{
+}
