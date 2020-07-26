@@ -16,6 +16,7 @@ pub trait GraphItemBase: ItemBase + HasGraphItemKind {
     fn get_belong_group_id(&self) -> GroupId;
 }
 
+// TODO ItemError事態に区別用にIdを持たせる。もちろんNameIdErrorからの変換時にIdを追加できるようにする。
 pub trait GraphBuilderErrorBase:
     ItemErrorBase + HasGraphItemKind + From<NameIdError<GraphItemKind>>
 {

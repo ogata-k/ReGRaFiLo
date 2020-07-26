@@ -8,22 +8,19 @@ use std::sync::{Arc, Mutex};
 use crate::grafo::graph_item::{GraphBuilderErrorBase, GraphItemBase, GraphItemBuilderBase};
 use crate::grafo::GrafoError;
 use crate::grafo::Resolver;
-use crate::util::alias::{GraphItemId, GroupId, DEFAULT_ITEM_ID};
+use crate::util::alias::{GroupId, ItemId, DEFAULT_ITEM_ID};
 use crate::util::item_base::HasItemBuilderMethod;
 use crate::util::kind::GraphItemKind;
 
 /// item pool
 #[derive(Debug, Clone)]
 pub struct ItemArena<I> {
-    pushed_index: Arc<Mutex<GraphItemId>>,
+    pushed_index: Arc<Mutex<ItemId>>,
     /// (GroupId, ItemId) => Item
-    arena: BTreeMap<(GroupId, GraphItemId), I>,
+    arena: BTreeMap<(GroupId, ItemId), I>,
 }
 
-fn range_with_group(
-    group_id: GroupId,
-    bound: Bound<&GraphItemId>,
-) -> Bound<(GroupId, GraphItemId)> {
+fn range_with_group(group_id: GroupId, bound: Bound<&ItemId>) -> Bound<(GroupId, ItemId)> {
     match bound {
         Bound::Included(item_id) => Bound::Included((group_id, *item_id)),
         Bound::Excluded(item_id) => Bound::Excluded((group_id, *item_id)),
@@ -42,7 +39,7 @@ impl<I: GraphItemBase> ItemArena<I> {
     //
 
     /// get the next index with increment as soon as possible
-    fn get_push_index(&mut self) -> GraphItemId {
+    fn get_push_index(&mut self) -> ItemId {
         match self.pushed_index.lock() {
             Ok(mut pushed_index) => {
                 *pushed_index += 1;
@@ -77,7 +74,7 @@ impl<I: GraphItemBase> ItemArena<I> {
             &mut Resolver,
             GraphItemKind,
             GroupId,
-            GraphItemId,
+            ItemId,
             B::ItemOption,
         ) -> (bool, Vec<GrafoError>),
     {
@@ -99,16 +96,16 @@ impl<I: GraphItemBase> ItemArena<I> {
     }
 
     /// item getter
-    pub fn get(&self, group_id: GroupId, index: GraphItemId) -> Option<&I> {
+    pub fn get(&self, group_id: GroupId, index: ItemId) -> Option<&I> {
         self.arena.get(&(group_id, index))
     }
 
     /// item getter by range
-    pub fn range<R: RangeBounds<GraphItemId>>(
+    pub fn range<R: RangeBounds<ItemId>>(
         &self,
         group_id: GroupId,
         range: R,
-    ) -> Range<(GroupId, GraphItemId), I> {
+    ) -> Range<(GroupId, ItemId), I> {
         let start = range_with_group(group_id, range.start_bound());
         let end = range_with_group(group_id, range.end_bound());
         self.arena.range((start, end))
@@ -145,20 +142,20 @@ impl<I: GraphItemBase> ItemArena<I> {
     //
 
     /// to iterator
-    pub fn iter(&self) -> Iter<(GroupId, GraphItemId), I> {
+    pub fn iter(&self) -> Iter<(GroupId, ItemId), I> {
         self.arena.iter()
     }
 }
 
 impl<I: GraphItemBase + Default> ItemArena<I> {
-    fn get_default_index(&self) -> GraphItemId {
+    fn get_default_index(&self) -> ItemId {
         DEFAULT_ITEM_ID
     }
 
     /// push the item into arena with action for conclusion
     pub(crate) fn push_default<F, O: Default>(&mut self, resolver: &mut Resolver, action: F)
     where
-        F: FnOnce(&mut Resolver, GraphItemKind, GroupId, GraphItemId, O) -> (bool, Vec<GrafoError>),
+        F: FnOnce(&mut Resolver, GraphItemKind, GroupId, ItemId, O) -> (bool, Vec<GrafoError>),
     {
         let item = I::default();
         let group_id = item.get_belong_group_id();
@@ -195,7 +192,7 @@ impl<I: GraphItemBase + Default> ItemArena<I> {
             &mut Resolver,
             GraphItemKind,
             GroupId,
-            GraphItemId,
+            ItemId,
             B::ItemOption,
         ) -> (bool, Vec<GrafoError>),
     {
@@ -234,6 +231,7 @@ impl<I> Default for ItemArena<I> {
 
 #[cfg(test)]
 mod test {
+    use std::error::Error;
     use std::fmt::{Display, Formatter};
 
     use crate::grafo::core::graph_item::{
@@ -241,13 +239,12 @@ mod test {
     };
     use crate::grafo::core::{NameIdError, Resolver};
     use crate::grafo::GrafoError;
-    use crate::util::alias::{GraphItemId, GroupId};
+    use crate::util::alias::{GroupId, ItemId};
     use crate::util::item_base::{
         HasItemBuilderMethod, ItemBase, ItemBuilderBase, ItemBuilderResult, ItemErrorBase,
     };
     use crate::util::kind::test::graph_item_check_list;
     use crate::util::kind::{GraphItemKind, HasGraphItemKind};
-    use std::error::Error;
 
     const ITERATE_COUNT: usize = 10;
     const TARGET_KIND: GraphItemKind = GraphItemKind::Node;
@@ -260,12 +257,12 @@ mod test {
 
     #[derive(Debug, Eq, PartialEq, Clone)]
     struct TargetItem {
-        belong_group_id: GraphItemId,
+        belong_group_id: ItemId,
     }
 
     #[derive(Debug, Eq, PartialEq, Clone)]
     struct TargetItemOption {
-        belong_group_id: GraphItemId,
+        belong_group_id: ItemId,
         name: Option<String>,
     }
 

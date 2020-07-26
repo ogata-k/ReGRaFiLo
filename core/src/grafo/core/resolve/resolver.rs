@@ -1,5 +1,5 @@
 use crate::grafo::{IdTree, NameIdError, NameRefIndex};
-use crate::util::alias::{GraphItemId, GroupId, ItemId, LayoutItemId};
+use crate::util::alias::{GroupId, ItemId};
 use crate::util::kind::{AttributeKind, GraphItemKind, LayoutItemKind};
 
 /// reference indexes for names
@@ -7,9 +7,9 @@ use crate::util::kind::{AttributeKind, GraphItemKind, LayoutItemKind};
 pub struct Resolver<'a> {
     group_id_tree: IdTree<GroupId>,
     /// names reference indexes name:(group_id, item_id)
-    names: NameRefIndex<'a, GraphItemKind, (GroupId, GraphItemId)>,
+    names: NameRefIndex<'a, GraphItemKind, (GroupId, ItemId)>,
     /// attribute reference indexes attribute_type:value
-    attributes: NameRefIndex<'a, LayoutItemKind, LayoutItemId>,
+    attributes: NameRefIndex<'a, LayoutItemKind, ItemId>,
 }
 
 impl<'a> Default for Resolver<'a> {
@@ -93,7 +93,7 @@ impl<'a> Resolver<'a> {
         item_kind: GraphItemKind,
         attribute_kind: AttributeKind,
         name: S,
-        layout_item_id: LayoutItemId,
+        layout_item_id: ItemId,
     ) -> Result<(), NameIdError<LayoutItemKind>> {
         self.attributes.push_value(
             LayoutItemKind::new_with_item(item_kind, attribute_kind),
@@ -106,7 +106,7 @@ impl<'a> Resolver<'a> {
         &mut self,
         attribute_kind: AttributeKind,
         name: S,
-        layout_item_id: LayoutItemId,
+        layout_item_id: ItemId,
     ) -> Result<(), NameIdError<LayoutItemKind>> {
         self.attributes.push_value(
             LayoutItemKind::new(attribute_kind),
@@ -120,7 +120,7 @@ impl<'a> Resolver<'a> {
         item_kind: GraphItemKind,
         attribute_kind: AttributeKind,
         name: &'b str,
-    ) -> Result<&'a LayoutItemId, NameIdError<LayoutItemKind>> {
+    ) -> Result<&'a ItemId, NameIdError<LayoutItemKind>> {
         self.attributes.get_value(
             LayoutItemKind::new_with_item(item_kind, attribute_kind),
             name,
@@ -131,7 +131,7 @@ impl<'a> Resolver<'a> {
         &'a self,
         attribute_kind: AttributeKind,
         name: &'b str,
-    ) -> Result<&'a LayoutItemId, NameIdError<LayoutItemKind>> {
+    ) -> Result<&'a ItemId, NameIdError<LayoutItemKind>> {
         self.attributes
             .get_value(LayoutItemKind::new(attribute_kind), name)
     }
