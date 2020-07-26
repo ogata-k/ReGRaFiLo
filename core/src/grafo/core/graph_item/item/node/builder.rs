@@ -17,8 +17,7 @@ pub struct NodeItemBuilder {
 
 impl ItemBuilderBase for NodeItemBuilder {
     type Item = NodeItem;
-    type ItemOption = NodeItemOption;
-    type BuilderError = NodeItemError;
+    type ItemError = NodeItemError;
 }
 
 impl GraphItemBuilderBase for NodeItemBuilder {
@@ -34,6 +33,7 @@ impl GraphItemBuilderBase for NodeItemBuilder {
 }
 
 impl HasItemBuilderMethod for NodeItemBuilder {
+    type ItemOption = NodeItemOption;
     fn build(self, resolver: &Resolver) -> ItemBuilderResult<Self::Item, Self::ItemOption> {
         let mut errors: Vec<GrafoError> = Vec::new();
         let belong_group: Option<(GroupId, ItemId)> =

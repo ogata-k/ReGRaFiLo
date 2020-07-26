@@ -2,7 +2,7 @@
 
 use crate::grafo::NameIdError;
 use crate::util::alias::GroupId;
-use crate::util::item_base::{ItemBase, ItemBuilderBase, ItemBuilderErrorBase};
+use crate::util::item_base::{ItemBase, ItemBuilderBase, ItemErrorBase};
 use crate::util::kind::{GraphItemKind, HasGraphItemKind};
 
 /// Item Builder's base set
@@ -17,6 +17,6 @@ pub trait GraphItemBase: ItemBase + HasGraphItemKind {
 }
 
 pub trait GraphBuilderErrorBase:
-    ItemBuilderErrorBase + HasGraphItemKind + From<NameIdError<GraphItemKind>>
+    ItemErrorBase + HasGraphItemKind + From<NameIdError<GraphItemKind>>
 {
 }

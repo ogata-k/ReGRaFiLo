@@ -13,8 +13,7 @@ pub struct GroupItemBuilder {
 
 impl ItemBuilderBase for GroupItemBuilder {
     type Item = GroupItem;
-    type ItemOption = GroupItemOption;
-    type BuilderError = GroupItemError;
+    type ItemError = GroupItemError;
 }
 
 impl GraphItemBuilderBase for GroupItemBuilder {
@@ -28,6 +27,7 @@ impl GraphItemBuilderBase for GroupItemBuilder {
 }
 
 impl HasItemBuilderMethod for GroupItemBuilder {
+    type ItemOption = GroupItemOption;
     fn build(self, resolver: &Resolver) -> ItemBuilderResult<Self::Item, Self::ItemOption> {
         unimplemented!()
     }

@@ -7,4 +7,4 @@ mod option;
 pub use builder::*;
 pub use error::*;
 pub use item::*;
-pub use option::*;
+pub(crate) use option::*;

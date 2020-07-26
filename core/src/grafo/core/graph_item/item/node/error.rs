@@ -1,7 +1,7 @@
 use crate::grafo::core::graph_item::item::node::NodeItem;
 use crate::grafo::core::graph_item::GraphBuilderErrorBase;
 use crate::grafo::{GrafoError, NameIdError};
-use crate::util::item_base::ItemBuilderErrorBase;
+use crate::util::item_base::ItemErrorBase;
 use crate::util::kind::{GraphItemKind, HasGraphItemKind};
 use std::error::Error;
 use std::fmt::{Display, Formatter};
@@ -31,7 +31,7 @@ impl Into<GrafoError> for NodeItemError {
 }
 
 impl Error for NodeItemError {}
-impl ItemBuilderErrorBase for NodeItemError {}
+impl ItemErrorBase for NodeItemError {}
 impl From<NameIdError<GraphItemKind>> for NodeItemError {
     fn from(error: NameIdError<GraphItemKind>) -> Self {
         unimplemented!()

@@ -13,8 +13,7 @@ pub struct EdgeItemBuilder {
 
 impl ItemBuilderBase for EdgeItemBuilder {
     type Item = EdgeItem;
-    type ItemOption = EdgeItemOption;
-    type BuilderError = EdgeItemError;
+    type ItemError = EdgeItemError;
 }
 
 impl GraphItemBuilderBase for EdgeItemBuilder {
@@ -28,6 +27,7 @@ impl GraphItemBuilderBase for EdgeItemBuilder {
 }
 
 impl HasItemBuilderMethod for EdgeItemBuilder {
+    type ItemOption = EdgeItemOption;
     fn build(self, resolver: &Resolver) -> ItemBuilderResult<Self::Item, Self::ItemOption> {
         unimplemented!()
     }

@@ -64,7 +64,8 @@ impl<I: GraphItemBase> ItemArena<I> {
         F,
         O,
         E: GraphBuilderErrorBase,
-        B: GraphItemBuilderBase + HasItemBuilderMethod<Item = I, ItemOption = O, BuilderError = E>,
+        B: GraphItemBuilderBase<Item = I, ItemError = E>
+            + HasItemBuilderMethod<Item = I, ItemOption = O, ItemError = E>,
     >(
         &mut self,
         resolver: &mut Resolver,
@@ -182,7 +183,7 @@ impl<I: GraphItemBase + Default> ItemArena<I> {
         F,
         O,
         E: GraphBuilderErrorBase,
-        B: GraphItemBuilderBase + HasItemBuilderMethod<Item = I, ItemOption = O, BuilderError = E>,
+        B: GraphItemBuilderBase + HasItemBuilderMethod<Item = I, ItemOption = O, ItemError = E>,
     >(
         &mut self,
         resolver: &mut Resolver,
@@ -242,7 +243,7 @@ mod test {
     use crate::grafo::GrafoError;
     use crate::util::alias::{GraphItemId, GroupId};
     use crate::util::item_base::{
-        HasItemBuilderMethod, ItemBase, ItemBuilderBase, ItemBuilderErrorBase, ItemBuilderResult,
+        HasItemBuilderMethod, ItemBase, ItemBuilderBase, ItemBuilderResult, ItemErrorBase,
     };
     use crate::util::kind::test::graph_item_check_list;
     use crate::util::kind::{GraphItemKind, HasGraphItemKind};
@@ -294,8 +295,7 @@ mod test {
 
     impl ItemBuilderBase for TargetItemBuilder {
         type Item = TargetItem;
-        type ItemOption = TargetItemOption;
-        type BuilderError = TargetBuilderError;
+        type ItemError = TargetBuilderError;
     }
 
     impl GraphItemBuilderBase for TargetItemBuilder {
@@ -341,6 +341,7 @@ mod test {
     }
 
     impl HasItemBuilderMethod for TargetItemBuilder {
+        type ItemOption = TargetItemOption;
         fn build(self, resolver: &Resolver) -> ItemBuilderResult<TargetItem, TargetItemOption> {
             assert_ne!(TARGET_KIND, GraphItemKind::Group);
             let mut errors: Vec<GrafoError> = Vec::new();
@@ -396,7 +397,7 @@ mod test {
 
     impl Error for TargetBuilderError {}
 
-    impl ItemBuilderErrorBase for TargetBuilderError {}
+    impl ItemErrorBase for TargetBuilderError {}
 
     impl From<NameIdError<GraphItemKind>> for TargetBuilderError {
         fn from(error: NameIdError<GraphItemKind>) -> Self {

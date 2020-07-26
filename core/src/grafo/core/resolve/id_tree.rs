@@ -76,13 +76,13 @@ impl<Id: Debug> Error for IdTreeError<Id> {}
 
 #[derive(Debug, Clone)]
 pub struct IdTreeRoot<Id: Eq + Copy> {
-    root: _UniqueTree<Id>,
+    root: UniqueTree<Id>,
 }
 
 impl<Id: Eq + Copy> IdTreeRoot<Id> {
     fn new(root: Id) -> Self {
         Self {
-            root: _UniqueTree::new(root),
+            root: UniqueTree::new(root),
         }
     }
 
@@ -102,12 +102,12 @@ impl<Id: Debug + Eq + Copy> IdTreeRoot<Id> {
 }
 
 #[derive(Debug, Clone)]
-struct _UniqueTree<Id: Eq + Copy> {
+struct UniqueTree<Id: Eq + Copy> {
     node: Id,
-    children: Vec<Box<_UniqueTree<Id>>>,
+    children: Vec<Box<UniqueTree<Id>>>,
 }
 
-impl<Id: Eq + Copy> _UniqueTree<Id> {
+impl<Id: Eq + Copy> UniqueTree<Id> {
     fn new(root: Id) -> Self {
         Self {
             node: root,
@@ -141,13 +141,13 @@ impl<Id: Eq + Copy> _UniqueTree<Id> {
     }
 }
 
-impl<Id: Debug + Eq + Copy> _UniqueTree<Id> {
+impl<Id: Debug + Eq + Copy> UniqueTree<Id> {
     fn push_id(&mut self, parent: Id, child: Id) -> Result<(), IdTreeError<Id>> {
         if self.contains_id(child) {
             return Err(IdTreeError::AlreadyExistId(child));
         }
         if let Some(parent_node) = self.find_as_mut(parent) {
-            parent_node.children.push(Box::new(_UniqueTree {
+            parent_node.children.push(Box::new(UniqueTree {
                 node: child,
                 children: Vec::new(),
             }));
