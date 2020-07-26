@@ -15,7 +15,7 @@ use crate::util::kind::GraphItemKind;
 /// item pool
 #[derive(Debug, Clone)]
 pub struct ItemArena<I> {
-    pushed_index: Arc<Mutex<ItemId>>,
+    id_counter: Arc<Mutex<ItemId>>,
     /// (GroupId, ItemId) => Item
     arena: BTreeMap<(GroupId, ItemId), I>,
 }
@@ -39,8 +39,8 @@ impl<I: GraphItemBase> ItemArena<I> {
     //
 
     /// get the next index with increment as soon as possible
-    fn get_push_index(&mut self) -> ItemId {
-        match self.pushed_index.lock() {
+    fn get_push_id(&mut self) -> ItemId {
+        match self.id_counter.lock() {
             Ok(mut pushed_index) => {
                 *pushed_index += 1;
                 *pushed_index
@@ -78,17 +78,17 @@ impl<I: GraphItemBase> ItemArena<I> {
             B::ItemOption,
         ) -> (bool, Vec<GrafoError>),
     {
-        let (item_option, mut errors) = item_builder.build(resolver);
+        let push_id = self.get_push_id();
+        let (item_option, mut errors) = item_builder.build(push_id, resolver);
         match item_option {
             None => (false, errors),
             Some((item, option)) => {
                 let group_id = item.get_belong_group_id();
-                let push_index = self.get_push_index();
                 let (result, action_errors) =
-                    action(resolver, item.get_kind(), group_id, push_index, option);
+                    action(resolver, item.get_kind(), group_id, push_id, option);
                 errors.extend(action_errors);
                 if result {
-                    self.arena.insert((group_id, push_index), item);
+                    self.arena.insert((group_id, push_id), item);
                 }
                 (result, errors)
             }
@@ -159,20 +159,14 @@ impl<I: GraphItemBase + Default> ItemArena<I> {
     {
         let item = I::default();
         let group_id = item.get_belong_group_id();
-        let push_index = self.get_default_index();
-        let (result, errors) = action(
-            resolver,
-            item.get_kind(),
-            group_id,
-            push_index,
-            O::default(),
-        );
+        let push_id = self.get_default_index();
+        let (result, errors) = action(resolver, item.get_kind(), group_id, push_id, O::default());
         if !result || !errors.is_empty() {
             let errors_str: Vec<String> = errors.into_iter().map(|e| format!("{}", e)).collect();
             panic!("{}", errors_str.as_slice().join("\n"));
         }
 
-        self.arena.insert((group_id, push_index), item);
+        self.arena.insert((group_id, push_id), item);
     }
 
     /// push the item into arena with action for conclusion<br/>
@@ -180,7 +174,8 @@ impl<I: GraphItemBase + Default> ItemArena<I> {
         F,
         O,
         E: GraphBuilderErrorBase,
-        B: GraphItemBuilderBase + HasItemBuilderMethod<Item = I, ItemOption = O, ItemError = E>,
+        B: GraphItemBuilderBase<Item = I, ItemError = E>
+            + HasItemBuilderMethod<Item = I, ItemOption = O, ItemError = E>,
     >(
         &mut self,
         resolver: &mut Resolver,
@@ -196,17 +191,17 @@ impl<I: GraphItemBase + Default> ItemArena<I> {
             B::ItemOption,
         ) -> (bool, Vec<GrafoError>),
     {
-        let (item_option, mut errors) = item_builder.build(resolver);
+        let push_id = self.get_default_index();
+        let (item_option, mut errors) = item_builder.build(push_id, resolver);
         match item_option {
             None => (false, errors),
             Some((item, option)) => {
                 let group_id = item.get_belong_group_id();
-                let push_index = self.get_default_index();
                 let (result, action_errors) =
-                    action(resolver, item.get_kind(), group_id, push_index, option);
+                    action(resolver, item.get_kind(), group_id, push_id, option);
                 errors.extend(action_errors);
                 if result {
-                    self.arena.insert((group_id, push_index), item);
+                    self.arena.insert((group_id, push_id), item);
                 }
                 (result, errors)
             }
@@ -223,7 +218,7 @@ impl<I> Default for ItemArena<I> {
     /// initialize without log
     fn default() -> Self {
         ItemArena {
-            pushed_index: Arc::new(Mutex::new(DEFAULT_ITEM_ID)),
+            id_counter: Arc::new(Mutex::new(DEFAULT_ITEM_ID)),
             arena: Default::default(),
         }
     }
@@ -241,7 +236,8 @@ mod test {
     use crate::grafo::GrafoError;
     use crate::util::alias::{GroupId, ItemId};
     use crate::util::item_base::{
-        HasItemBuilderMethod, ItemBase, ItemBuilderBase, ItemBuilderResult, ItemErrorBase,
+        FromWithItemId, HasItemBuilderMethod, ItemBase, ItemBuilderBase, ItemBuilderResult,
+        ItemErrorBase,
     };
     use crate::util::kind::test::graph_item_check_list;
     use crate::util::kind::{GraphItemKind, HasGraphItemKind};
@@ -268,8 +264,8 @@ mod test {
 
     #[derive(Debug, Eq, PartialEq, Clone)]
     enum TargetBuilderError {
-        BuildFail,
-        NotFindGroup,
+        BuildFail(ItemId),
+        NotFindGroup(ItemId),
     }
 
     impl Into<GrafoError> for TargetBuilderError {
@@ -314,8 +310,9 @@ mod test {
                 name: None,
             }
         }
-        fn get_belong_group(
+        fn resolve_belong_group(
             &self,
+            item_id: ItemId,
             resolver: &Resolver,
             errors: &mut Vec<GrafoError>,
             belong_group: Option<&str>,
@@ -326,9 +323,9 @@ mod test {
                     let belong_group_result =
                         resolver.get_item_id_pair(GraphItemKind::Group, &belong_group_name);
                     match belong_group_result {
-                        Ok((_belong_group_id, item_id)) => Some(item_id),
+                        Ok((_belong_group_id, group_item_id)) => Some(group_item_id),
                         Err(err) => {
-                            errors.push(TargetBuilderError::from(err).into());
+                            errors.push(TargetBuilderError::from_with_id(item_id, err).into());
                             None
                         }
                     }
@@ -339,14 +336,22 @@ mod test {
 
     impl HasItemBuilderMethod for TargetItemBuilder {
         type ItemOption = TargetItemOption;
-        fn build(self, resolver: &Resolver) -> ItemBuilderResult<TargetItem, TargetItemOption> {
+        fn build(
+            self,
+            item_id: ItemId,
+            resolver: &Resolver,
+        ) -> ItemBuilderResult<TargetItem, TargetItemOption> {
             assert_ne!(TARGET_KIND, GraphItemKind::Group);
             let mut errors: Vec<GrafoError> = Vec::new();
 
-            let group_id =
-                (&self).get_belong_group(&resolver, &mut errors, self.belong_group.as_deref());
+            let group_id = (&self).resolve_belong_group(
+                item_id,
+                &resolver,
+                &mut errors,
+                self.belong_group.as_deref(),
+            );
             if group_id.is_none() {
-                errors.push(TargetBuilderError::NotFindGroup.into());
+                errors.push(TargetBuilderError::NotFindGroup(item_id).into());
                 return (None, errors);
             }
             let group_id = group_id.unwrap();
@@ -386,8 +391,8 @@ mod test {
         fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
             use TargetBuilderError::*;
             match &self {
-                BuildFail => write!(f, "fail build item"),
-                NotFindGroup => write!(f, "fail found belong group"),
+                BuildFail(id) => write!(f, "id: {} fail build item", id),
+                NotFindGroup(id) => write!(f, "id: {} fail found belong group", id),
             }
         }
     }
@@ -396,12 +401,11 @@ mod test {
 
     impl ItemErrorBase for TargetBuilderError {}
 
-    impl From<NameIdError<GraphItemKind>> for TargetBuilderError {
-        fn from(error: NameIdError<GraphItemKind>) -> Self {
+    impl FromWithItemId<NameIdError<GraphItemKind>> for TargetBuilderError {
+        fn from_with_id(item_id: usize, from: NameIdError<GraphItemKind>) -> Self {
             unimplemented!()
         }
     }
-
     impl GraphBuilderErrorBase for TargetBuilderError {}
 
     #[test]
@@ -428,7 +432,7 @@ mod test {
                     } = option
                     {
                         if let Err(err) = resolver.push_item_name(kind, name, group_id, item_id) {
-                            errors.push(TargetBuilderError::from(err).into());
+                            errors.push(TargetBuilderError::from_with_id(item_id, err).into());
                         }
                     }
                     (errors.is_empty(), errors)
@@ -471,7 +475,7 @@ mod test {
                     } = option
                     {
                         if let Err(err) = resolver.push_item_name(kind, name, group_id, item_id) {
-                            errors.push(TargetBuilderError::from(err).into());
+                            errors.push(TargetBuilderError::from_with_id(item_id, err).into());
                         }
                     }
 
@@ -520,7 +524,7 @@ mod test {
                     } = option
                     {
                         if let Err(err) = resolver.push_item_name(kind, name, group_id, item_id) {
-                            errors.push(TargetBuilderError::from(err).into());
+                            errors.push(TargetBuilderError::from_with_id(item_id, err).into());
                         }
                     }
 
@@ -565,7 +569,7 @@ mod test {
                     } = option
                     {
                         if let Err(err) = resolver.push_item_name(kind, name, group_id, item_id) {
-                            errors.push(TargetBuilderError::from(err).into());
+                            errors.push(TargetBuilderError::from_with_id(item_id, err).into());
                         }
                     }
 

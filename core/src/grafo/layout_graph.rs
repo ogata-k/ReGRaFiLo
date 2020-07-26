@@ -8,6 +8,7 @@ use crate::grafo::graph_item::ItemArena;
 use crate::grafo::layout_item::Layout;
 use crate::grafo::{GrafoError, Resolver};
 use crate::util::alias::DEFAULT_ITEM_ID;
+use crate::util::item_base::FromWithItemId;
 use crate::util::kind::GraphItemKind;
 
 #[derive(Debug, Clone)]
@@ -133,7 +134,7 @@ impl<'a> Grafo<'a> {
                 let NodeItemOption { name } = option;
                 if let Some(n) = name {
                     if let Err(e) = resolver.push_item_name(kind, n, belong_group_id, item_id) {
-                        errors.push(NodeItemError::from(e).into());
+                        errors.push(NodeItemError::from_with_id(item_id, e).into());
                     }
                 }
 
@@ -146,12 +147,13 @@ impl<'a> Grafo<'a> {
 
 #[cfg(test)]
 mod test {
-    use crate::grafo::graph_item::node::NodeItemBuilder;
+    use crate::grafo::graph_item::node::{NodeItemBuilder, NodeItemError};
     use crate::grafo::graph_item::GraphItemBuilderBase;
-    use crate::grafo::{GrafoBuilder, GrafoError};
+    use crate::grafo::{GrafoBuilder, GrafoError, NameIdError};
     use crate::util::kind::GraphItemKind;
 
     const ITERATE_COUNT: usize = 10;
+
     #[test]
     fn push_node_success() {
         let mut graph = GrafoBuilder::new().build_with_default();
@@ -170,5 +172,47 @@ mod test {
             graph.resolver.item_name_count_by(GraphItemKind::Node),
             ITERATE_COUNT
         );
+    }
+
+    #[test]
+    fn push_node_success_has_error() {
+        let mut graph = GrafoBuilder::new().build_with_default();
+
+        let mut node_builder_1 = NodeItemBuilder::new();
+        node_builder_1.set_name("node");
+        let (result, errors) = graph.push_node(node_builder_1);
+        assert_eq!(Vec::<GrafoError>::new(), errors);
+        assert!(result);
+
+        let mut node_builder_2 = NodeItemBuilder::new();
+        node_builder_2.set_name("node");
+        let (result, errors) = graph.push_node(node_builder_2);
+        assert_eq!(
+            errors,
+            [
+                NodeItemError::NameIdError(
+                    2,
+                    NameIdError::AlreadyExist(GraphItemKind::Node, "node".to_string())
+                )
+                .into(),
+                NodeItemError::NameIdError(
+                    2,
+                    NameIdError::Override(GraphItemKind::Node, "node".to_string())
+                )
+                .into(),
+            ]
+            .to_vec()
+        );
+        assert!(result);
+    }
+
+    #[test]
+    fn build_node_fail() {
+        let mut graph = GrafoBuilder::new().build_with_default();
+        let mut node_builder = NodeItemBuilder::new();
+        node_builder.set_belong_group("hoge");
+        let (result, errors) = graph.push_node(node_builder);
+        assert!(!result);
+        assert_ne!(Vec::<GrafoError>::new(), errors);
     }
 }

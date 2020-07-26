@@ -4,6 +4,7 @@ use crate::grafo::core::graph_item::group::{GroupItem, GroupItemError};
 use crate::grafo::core::graph_item::item::group::GroupItemOption;
 use crate::grafo::core::graph_item::GraphItemBuilderBase;
 use crate::grafo::core::resolve::Resolver;
+use crate::util::alias::ItemId;
 use crate::util::item_base::{HasItemBuilderMethod, ItemBuilderBase, ItemBuilderResult};
 
 #[derive(Debug, Clone)]
@@ -28,7 +29,11 @@ impl GraphItemBuilderBase for GroupItemBuilder {
 
 impl HasItemBuilderMethod for GroupItemBuilder {
     type ItemOption = GroupItemOption;
-    fn build(self, resolver: &Resolver) -> ItemBuilderResult<Self::Item, Self::ItemOption> {
+    fn build(
+        self,
+        item_id: ItemId,
+        resolver: &Resolver,
+    ) -> ItemBuilderResult<Self::Item, Self::ItemOption> {
         unimplemented!()
     }
 }

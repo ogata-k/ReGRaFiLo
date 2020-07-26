@@ -1,15 +1,16 @@
-use crate::grafo::core::graph_item::item::node::NodeItem;
-use crate::grafo::core::graph_item::GraphBuilderErrorBase;
+use crate::grafo::graph_item::item::node::NodeItem;
+use crate::grafo::graph_item::GraphBuilderErrorBase;
 use crate::grafo::{GrafoError, NameIdError};
-use crate::util::item_base::ItemErrorBase;
+use crate::util::alias::ItemId;
+use crate::util::item_base::{FromWithItemId, ItemErrorBase};
 use crate::util::kind::{GraphItemKind, HasGraphItemKind};
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum NodeItemError {
-    // TODO
-    FailResolveBelongGroup,
+    FailResolveBelongGroup(ItemId),
+    NameIdError(ItemId, NameIdError<GraphItemKind>),
 }
 
 impl HasGraphItemKind for NodeItemError {
@@ -32,9 +33,9 @@ impl Into<GrafoError> for NodeItemError {
 
 impl Error for NodeItemError {}
 impl ItemErrorBase for NodeItemError {}
-impl From<NameIdError<GraphItemKind>> for NodeItemError {
-    fn from(error: NameIdError<GraphItemKind>) -> Self {
-        unimplemented!()
+impl FromWithItemId<NameIdError<GraphItemKind>> for NodeItemError {
+    fn from_with_id(item_id: ItemId, from: NameIdError<GraphItemKind>) -> Self {
+        NodeItemError::NameIdError(item_id, from)
     }
 }
 impl GraphBuilderErrorBase for NodeItemError {}

@@ -27,6 +27,7 @@ type RefIndex<K, V> = HashMap<K, V>;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum NameIdError<Kind> {
+    AlreadyExist(Kind, String),
     Override(Kind, String),
     NotExist(Kind, String),
 }

@@ -1,7 +1,8 @@
 use crate::grafo::core::graph_item::GraphBuilderErrorBase;
 use crate::grafo::graph_item::group::GroupItem;
 use crate::grafo::{GrafoError, NameIdError};
-use crate::util::item_base::ItemErrorBase;
+use crate::util::alias::ItemId;
+use crate::util::item_base::{FromWithItemId, ItemErrorBase};
 use crate::util::kind::{GraphItemKind, HasGraphItemKind};
 use std::error::Error;
 use std::fmt::{Display, Formatter};
@@ -31,8 +32,8 @@ impl Into<GrafoError> for GroupItemError {
 
 impl Error for GroupItemError {}
 impl ItemErrorBase for GroupItemError {}
-impl From<NameIdError<GraphItemKind>> for GroupItemError {
-    fn from(error: NameIdError<GraphItemKind>) -> Self {
+impl FromWithItemId<NameIdError<GraphItemKind>> for GroupItemError {
+    fn from_with_id(item_id: ItemId, from: NameIdError<GraphItemKind>) -> Self {
         unimplemented!()
     }
 }
