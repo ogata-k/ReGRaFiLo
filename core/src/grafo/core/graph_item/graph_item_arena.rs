@@ -240,7 +240,7 @@ mod test {
         ItemErrorBase,
     };
     use crate::util::kind::test::graph_item_check_list;
-    use crate::util::kind::{GraphItemKind, HasGraphItemKind};
+    use crate::util::kind::{GraphItemKind, HasGraphItemKind, NameKind};
 
     const ITERATE_COUNT: usize = 10;
     const TARGET_KIND: GraphItemKind = GraphItemKind::Node;
@@ -321,7 +321,7 @@ mod test {
                 None => Some(resolver.get_root_group_id()),
                 Some(belong_group_name) => {
                     let belong_group_result =
-                        resolver.get_item_id_pair(GraphItemKind::Group, &belong_group_name);
+                        resolver.get_graph_item_id_pair(GraphItemKind::Group, &belong_group_name);
                     match belong_group_result {
                         Ok((_belong_group_id, group_item_id)) => Some(group_item_id),
                         Err(err) => {
@@ -431,7 +431,9 @@ mod test {
                         name: Some(name),
                     } = option
                     {
-                        if let Err(err) = resolver.push_item_name(kind, name, group_id, item_id) {
+                        if let Err(err) =
+                            resolver.push_graph_item_value(kind, name, group_id, item_id)
+                        {
                             errors.push(TargetBuilderError::from_with_id(item_id, err).into());
                         }
                     }
@@ -445,7 +447,7 @@ mod test {
         assert_eq!(arena.count(), ITERATE_COUNT);
         for target in graph_item_check_list() {
             assert_eq!(
-                resolver.item_name_count_by(target),
+                resolver.count_names_graph_item_by(target),
                 if target == TARGET_KIND {
                     ITERATE_COUNT
                 } else {
@@ -474,7 +476,9 @@ mod test {
                         name: Some(name),
                     } = option
                     {
-                        if let Err(err) = resolver.push_item_name(kind, name, group_id, item_id) {
+                        if let Err(err) =
+                            resolver.push_graph_item_value(kind, name, group_id, item_id)
+                        {
                             errors.push(TargetBuilderError::from_with_id(item_id, err).into());
                         }
                     }
@@ -489,14 +493,18 @@ mod test {
         for (index, item) in (&arena).iter() {
             for kind in graph_item_check_list() {
                 let name = format!("{}", index.1);
-                let ref_result = resolver.get_item_id_pair(kind, &name);
+                let ref_result = resolver.get_graph_item_id_pair(kind, &name);
                 if let Ok(success) = ref_result {
                     // デフォルトがitem_id = 0占有
                     assert_eq!(success, *index);
                 } else {
                     assert_eq!(
                         ref_result,
-                        Err(NameIdError::NotExist(kind, format!("{}", index.1)))
+                        Err(NameIdError::NotExist(
+                            kind,
+                            NameKind::ItemName,
+                            format!("{}", index.1)
+                        ))
                     );
                 }
             }
@@ -523,7 +531,9 @@ mod test {
                         name: Some(name),
                     } = option
                     {
-                        if let Err(err) = resolver.push_item_name(kind, name, group_id, item_id) {
+                        if let Err(err) =
+                            resolver.push_graph_item_value(kind, name, group_id, item_id)
+                        {
                             errors.push(TargetBuilderError::from_with_id(item_id, err).into());
                         }
                     }
@@ -538,7 +548,7 @@ mod test {
         assert_eq!(arena.count(), 2 * ITERATE_COUNT);
         for target in graph_item_check_list() {
             assert_eq!(
-                resolver.item_name_count_by(target),
+                resolver.count_names_graph_item_by(target),
                 if target == TARGET_KIND {
                     ITERATE_COUNT
                 } else {
@@ -568,7 +578,9 @@ mod test {
                         name: Some(name),
                     } = option
                     {
-                        if let Err(err) = resolver.push_item_name(kind, name, group_id, item_id) {
+                        if let Err(err) =
+                            resolver.push_graph_item_value(kind, name, group_id, item_id)
+                        {
                             errors.push(TargetBuilderError::from_with_id(item_id, err).into());
                         }
                     }
@@ -583,7 +595,7 @@ mod test {
         for (index, item) in (&arena).iter() {
             for kind in graph_item_check_list() {
                 let name = format!("{}", index.1);
-                let ref_result = resolver.get_item_id_pair(kind, &name);
+                let ref_result = resolver.get_graph_item_id_pair(kind, &name);
                 if index.1 <= ITERATE_COUNT && kind == TARGET_KIND {
                     if let Ok(success) = &ref_result {
                         // デフォルトがitem_id = 0占有
@@ -594,7 +606,11 @@ mod test {
                 } else {
                     assert_eq!(
                         ref_result,
-                        Err(NameIdError::NotExist(kind, format!("{}", index.1)))
+                        Err(NameIdError::NotExist(
+                            kind,
+                            NameKind::ItemName,
+                            format!("{}", index.1)
+                        ))
                     );
                 }
             }

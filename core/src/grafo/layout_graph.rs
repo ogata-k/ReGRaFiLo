@@ -9,7 +9,7 @@ use crate::grafo::layout_item::Layout;
 use crate::grafo::{GrafoError, Resolver};
 use crate::util::alias::DEFAULT_ITEM_ID;
 use crate::util::item_base::FromWithItemId;
-use crate::util::kind::GraphItemKind;
+use crate::util::kind::{GraphItemKind, NameKind};
 
 #[derive(Debug, Clone)]
 pub struct GrafoBuilder<'a> {
@@ -133,7 +133,9 @@ impl<'a> Grafo<'a> {
                 let mut validate = true;
                 let NodeItemOption { name } = option;
                 if let Some(n) = name {
-                    if let Err(e) = resolver.push_item_name(kind, n, belong_group_id, item_id) {
+                    if let Err(e) =
+                        resolver.push_graph_item_value(kind, n, belong_group_id, item_id)
+                    {
                         errors.push(NodeItemError::from_with_id(item_id, e).into());
                     }
                     validate &= true;
@@ -151,7 +153,7 @@ mod test {
     use crate::grafo::graph_item::node::{NodeItemBuilder, NodeItemError};
     use crate::grafo::graph_item::GraphItemBuilderBase;
     use crate::grafo::{GrafoBuilder, GrafoError, NameIdError};
-    use crate::util::kind::GraphItemKind;
+    use crate::util::kind::{GraphItemKind, NameKind};
 
     const ITERATE_COUNT: usize = 10;
 
@@ -170,7 +172,9 @@ mod test {
 
         assert_eq!(graph.node_arena.count(), 2 * ITERATE_COUNT);
         assert_eq!(
-            graph.resolver.item_name_count_by(GraphItemKind::Node),
+            graph
+                .resolver
+                .count_names_graph_item_by(GraphItemKind::Node),
             ITERATE_COUNT
         );
     }
@@ -193,12 +197,20 @@ mod test {
             [
                 NodeItemError::NameIdError(
                     2,
-                    NameIdError::AlreadyExist(GraphItemKind::Node, "node".to_string())
+                    NameIdError::AlreadyExist(
+                        GraphItemKind::Node,
+                        NameKind::ItemName,
+                        "node".to_string()
+                    )
                 )
                 .into(),
                 NodeItemError::NameIdError(
                     2,
-                    NameIdError::Override(GraphItemKind::Node, "node".to_string())
+                    NameIdError::Override(
+                        GraphItemKind::Node,
+                        NameKind::ItemName,
+                        "node".to_string()
+                    )
                 )
                 .into(),
             ]

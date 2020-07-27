@@ -9,7 +9,7 @@ use crate::util::alias::{GroupId, ItemId};
 use crate::util::item_base::{
     FromWithItemId, HasItemBuilderMethod, ItemBuilderBase, ItemBuilderResult,
 };
-use crate::util::kind::HasGraphItemKind;
+use crate::util::kind::{HasGraphItemKind, NameKind};
 
 #[derive(Debug, Clone)]
 pub struct NodeItemBuilder {
@@ -89,11 +89,15 @@ impl NodeItemBuilder {
             name,
         } = self;
         if let Some(n) = &name {
-            if resolver.contains_item_name(NodeItem::kind(), n) {
+            if resolver.contains_name_graph_item(NodeItem::kind(), n) {
                 errors.push(
                     NodeItemError::from_with_id(
                         item_id,
-                        NameIdError::AlreadyExist(NodeItem::kind(), n.to_string()),
+                        NameIdError::AlreadyExist(
+                            NodeItem::kind(),
+                            NameKind::ItemName,
+                            n.to_string(),
+                        ),
                     )
                     .into(),
                 );
