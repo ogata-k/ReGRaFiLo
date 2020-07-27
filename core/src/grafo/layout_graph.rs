@@ -136,6 +136,7 @@ impl<'a> Grafo<'a> {
                     if let Err(e) = resolver.push_item_name(kind, n, belong_group_id, item_id) {
                         errors.push(NodeItemError::from_with_id(item_id, e).into());
                     }
+                    validate &= true;
                 }
 
                 (validate, errors)
