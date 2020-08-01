@@ -240,7 +240,7 @@ mod test {
         ItemErrorBase,
     };
     use crate::util::kind::test::graph_item_check_list;
-    use crate::util::kind::{GraphItemKind, HasGraphItemKind, NameKind};
+    use crate::util::kind::{GraphItemKind, HasGraphItemKind};
 
     const ITERATE_COUNT: usize = 10;
     const TARGET_KIND: GraphItemKind = GraphItemKind::Node;
@@ -500,11 +500,7 @@ mod test {
                 } else {
                     assert_eq!(
                         ref_result,
-                        Err(NameIdError::NotExist(
-                            kind,
-                            NameKind::ItemName,
-                            format!("{}", index.1)
-                        ))
+                        Err(NameIdError::NotExist(kind, format!("{}", index.1)))
                     );
                 }
             }
@@ -606,11 +602,7 @@ mod test {
                 } else {
                     assert_eq!(
                         ref_result,
-                        Err(NameIdError::NotExist(
-                            kind,
-                            NameKind::ItemName,
-                            format!("{}", index.1)
-                        ))
+                        Err(NameIdError::NotExist(kind, format!("{}", index.1)))
                     );
                 }
             }

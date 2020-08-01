@@ -9,7 +9,7 @@ use crate::grafo::layout_item::Layout;
 use crate::grafo::{GrafoError, Resolver};
 use crate::util::alias::DEFAULT_ITEM_ID;
 use crate::util::item_base::FromWithItemId;
-use crate::util::kind::{GraphItemKind, NameKind};
+use crate::util::kind::GraphItemKind;
 
 #[derive(Debug, Clone)]
 pub struct GrafoBuilder<'a> {
@@ -23,7 +23,7 @@ pub struct GrafoBuilder<'a> {
 impl<'a> Default for GrafoBuilder<'a> {
     fn default() -> Self {
         Self {
-            resolver: Default::default(),
+            resolver: Resolver::new(),
             layout: Default::default(),
         }
     }
@@ -153,7 +153,7 @@ mod test {
     use crate::grafo::graph_item::node::{NodeItemBuilder, NodeItemError};
     use crate::grafo::graph_item::GraphItemBuilderBase;
     use crate::grafo::{GrafoBuilder, GrafoError, NameIdError};
-    use crate::util::kind::{GraphItemKind, NameKind};
+    use crate::util::kind::GraphItemKind;
 
     const ITERATE_COUNT: usize = 10;
 
@@ -197,20 +197,12 @@ mod test {
             [
                 NodeItemError::NameIdError(
                     2,
-                    NameIdError::AlreadyExist(
-                        GraphItemKind::Node,
-                        NameKind::ItemName,
-                        "node".to_string()
-                    )
+                    NameIdError::AlreadyExist(GraphItemKind::Node, "node".to_string())
                 )
                 .into(),
                 NodeItemError::NameIdError(
                     2,
-                    NameIdError::Override(
-                        GraphItemKind::Node,
-                        NameKind::ItemName,
-                        "node".to_string()
-                    )
+                    NameIdError::Override(GraphItemKind::Node, "node".to_string())
                 )
                 .into(),
             ]

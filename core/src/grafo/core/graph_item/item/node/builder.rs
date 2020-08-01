@@ -9,7 +9,7 @@ use crate::util::alias::{GroupId, ItemId};
 use crate::util::item_base::{
     FromWithItemId, HasItemBuilderMethod, ItemBuilderBase, ItemBuilderResult,
 };
-use crate::util::kind::{HasGraphItemKind, NameKind};
+use crate::util::kind::HasGraphItemKind;
 
 #[derive(Debug, Clone)]
 pub struct NodeItemBuilder {
@@ -93,11 +93,7 @@ impl NodeItemBuilder {
                 errors.push(
                     NodeItemError::from_with_id(
                         item_id,
-                        NameIdError::AlreadyExist(
-                            NodeItem::kind(),
-                            NameKind::ItemName,
-                            n.to_string(),
-                        ),
+                        NameIdError::AlreadyExist(NodeItem::kind(), n.to_string()),
                     )
                     .into(),
                 );

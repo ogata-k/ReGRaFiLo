@@ -1,23 +1,23 @@
 use crate::grafo::{IdTree, NameIdError, NameRefIndex};
 use crate::util::alias::{GroupId, ItemId};
-use crate::util::kind::{AttributeKind, GraphItemKind, LayoutItemKind, NameKind};
+use crate::util::kind::{AttributeKind, GraphItemKind, LayoutItemKind};
 
 /// reference indexes for names
 #[derive(Debug, Clone)]
 pub struct Resolver<'a> {
     group_id_tree: IdTree<GroupId>,
     /// names reference indexes name:(group_id, item_id)
-    names: NameRefIndex<'a, GraphItemKind, (GroupId, ItemId)>,
-    /// attribute reference indexes attribute_type:value
-    attributes: NameRefIndex<'a, LayoutItemKind, ItemId>,
+    graph_items: NameRefIndex<'a, GraphItemKind, (GroupId, ItemId)>,
+    /// layout reference indexes layout_type:value
+    layouts: NameRefIndex<'a, LayoutItemKind, ItemId>,
 }
 
 impl<'a> Default for Resolver<'a> {
     fn default() -> Self {
         Self {
             group_id_tree: IdTree::None,
-            names: Default::default(),
-            attributes: Default::default(),
+            graph_items: Default::default(),
+            layouts: Default::default(),
         }
     }
 }
@@ -41,25 +41,6 @@ impl<'a> Resolver<'a> {
         self.group_id_tree.get_root_id()
     }
 
-    //
-    // for item
-    //
-
-    pub fn push_graph_item_value<S: Into<String>>(
-        &mut self,
-        item_kind: GraphItemKind,
-        name: S,
-        group_id: GroupId,
-        item_id: ItemId,
-    ) -> Result<(), NameIdError<GraphItemKind>> {
-        self.names.push_value(
-            item_kind,
-            NameKind::ItemName,
-            name.into(),
-            (group_id, item_id),
-        )
-    }
-
     pub fn get_belong_group<'b: 'a>(
         &'a self,
         name: Option<&'b str>,
@@ -71,13 +52,40 @@ impl<'a> Resolver<'a> {
         }
     }
 
+    //
+    // for item
+    //
+
+    pub fn push_graph_item_value<S: Into<String>>(
+        &mut self,
+        item_kind: GraphItemKind,
+        name: S,
+        group_id: GroupId,
+        item_id: ItemId,
+    ) -> Result<(), NameIdError<GraphItemKind>> {
+        self.graph_items
+            .push_value(item_kind, name.into(), (group_id, item_id))
+    }
+
     pub fn get_graph_item_id_pair<'b: 'a>(
         &'a self,
         item_kind: GraphItemKind,
         name: &'b str,
     ) -> Result<(GroupId, ItemId), NameIdError<GraphItemKind>> {
-        let id_pair = self.names.get_value(item_kind, NameKind::ItemName, name)?;
+        let id_pair = self
+            .graph_items
+            .get_value(item_kind, name)
+            .ok_or_else(|| NameIdError::NotExist(item_kind, name.to_string()))?;
         Ok(*id_pair)
+    }
+
+    pub fn get_graph_item_name(
+        &'a self,
+        item_kind: GraphItemKind,
+        group_id: GroupId,
+        item_id: ItemId,
+    ) -> Option<&'a str> {
+        self.graph_items.get_name(item_kind, (group_id, item_id))
     }
 
     pub fn contains_name_graph_item<'b: 'a>(
@@ -85,43 +93,26 @@ impl<'a> Resolver<'a> {
         item_kind: GraphItemKind,
         name: &'b str,
     ) -> bool {
-        self.names.contains_key(item_kind, NameKind::ItemName, name)
+        self.graph_items.contains_name(item_kind, name)
     }
 
     pub fn count_names_graph_item_by(&self, item_kind: GraphItemKind) -> usize {
-        self.names.count_by(item_kind, NameKind::ItemName)
+        self.graph_items.count_names_by(item_kind)
     }
 
     //
-    // for attribute
+    // for layout with graph item
     //
 
     pub fn push_layout_value_for_graph_item<S: Into<String>>(
         &mut self,
         item_kind: GraphItemKind,
         attribute_kind: AttributeKind,
-        name_kind: NameKind,
         name: S,
         layout_item_id: ItemId,
     ) -> Result<(), NameIdError<LayoutItemKind>> {
-        self.attributes.push_value(
+        self.layouts.push_value(
             LayoutItemKind::new_with_item(item_kind, attribute_kind),
-            name_kind,
-            name.into(),
-            layout_item_id,
-        )
-    }
-
-    pub fn push_layout_value<S: Into<String>>(
-        &mut self,
-        attribute_kind: AttributeKind,
-        name_kind: NameKind,
-        name: S,
-        layout_item_id: ItemId,
-    ) -> Result<(), NameIdError<LayoutItemKind>> {
-        self.attributes.push_value(
-            LayoutItemKind::new(attribute_kind),
-            name_kind,
             name.into(),
             layout_item_id,
         )
@@ -131,68 +122,95 @@ impl<'a> Resolver<'a> {
         &'a self,
         item_kind: GraphItemKind,
         attribute_kind: AttributeKind,
-        name_kind: NameKind,
         name: &'b str,
     ) -> Result<&'a ItemId, NameIdError<LayoutItemKind>> {
-        self.attributes.get_value(
-            LayoutItemKind::new_with_item(item_kind, attribute_kind),
-            name_kind,
-            name,
-        )
+        let kind = LayoutItemKind::new_with_item(item_kind, attribute_kind);
+        self.layouts
+            .get_value(kind, name)
+            .ok_or_else(|| NameIdError::NotExist(kind, name.to_string()))
     }
 
-    pub fn get_layout_item_id<'b: 'a>(
+    pub fn get_layout_item_name_for_graph_item(
         &'a self,
+        item_kind: GraphItemKind,
         attribute_kind: AttributeKind,
-        name_kind: NameKind,
-        name: &'b str,
-    ) -> Result<&'a ItemId, NameIdError<LayoutItemKind>> {
-        self.attributes
-            .get_value(LayoutItemKind::new(attribute_kind), name_kind, name)
+        item_id: ItemId,
+    ) -> Option<&'a str> {
+        self.layouts.get_name(
+            LayoutItemKind::new_with_item(item_kind, attribute_kind),
+            item_id,
+        )
     }
 
     pub fn contains_name_layout_item_for_graph_item<'b: 'a>(
         &'a self,
         item_kind: GraphItemKind,
         attribute_kind: AttributeKind,
-        name_kind: NameKind,
         name: &'b str,
     ) -> bool {
-        self.attributes.contains_key(
+        self.layouts.contains_name(
             LayoutItemKind::new_with_item(item_kind, attribute_kind),
-            name_kind,
             name,
         )
-    }
-
-    pub fn contains_name_layout_item<'b: 'a>(
-        &'a self,
-        attribute_kind: AttributeKind,
-        name_kind: NameKind,
-        name: &'b str,
-    ) -> bool {
-        self.attributes
-            .contains_key(LayoutItemKind::new(attribute_kind), name_kind, name)
     }
 
     pub fn count_names_layout_item_for_graph_item_by(
         &self,
         item_kind: GraphItemKind,
         attribute_kind: AttributeKind,
-        name_kind: NameKind,
     ) -> usize {
-        self.attributes.count_by(
-            LayoutItemKind::new_with_item(item_kind, attribute_kind),
-            name_kind,
+        self.layouts
+            .count_names_by(LayoutItemKind::new_with_item(item_kind, attribute_kind))
+    }
+
+    //
+    //  for layout without graph item
+    //
+
+    pub fn push_layout_value<S: Into<String>>(
+        &mut self,
+        attribute_kind: AttributeKind,
+        name: S,
+        layout_item_id: ItemId,
+    ) -> Result<(), NameIdError<LayoutItemKind>> {
+        self.layouts.push_value(
+            LayoutItemKind::new(attribute_kind),
+            name.into(),
+            layout_item_id,
         )
     }
 
-    pub fn count_names_layout_item_by(
-        &self,
+    pub fn get_layout_item_id<'b: 'a>(
+        &'a self,
         attribute_kind: AttributeKind,
-        name_kind: NameKind,
-    ) -> usize {
-        self.attributes
-            .count_by(LayoutItemKind::new(attribute_kind), name_kind)
+        name: &'b str,
+    ) -> Result<&'a ItemId, NameIdError<LayoutItemKind>> {
+        let kind = LayoutItemKind::new(attribute_kind);
+        self.layouts
+            .get_value(kind, name)
+            .ok_or_else(|| NameIdError::NotExist(kind, name.to_string()))
+    }
+
+    pub fn get_layout_item_name(
+        &'a self,
+        attribute_kind: AttributeKind,
+        item_id: ItemId,
+    ) -> Option<&'a str> {
+        self.layouts
+            .get_name(LayoutItemKind::new(attribute_kind), item_id)
+    }
+
+    pub fn contains_name_layout_item<'b: 'a>(
+        &'a self,
+        attribute_kind: AttributeKind,
+        name: &'b str,
+    ) -> bool {
+        self.layouts
+            .contains_name(LayoutItemKind::new(attribute_kind), name)
+    }
+
+    pub fn count_names_layout_item_by(&self, attribute_kind: AttributeKind) -> usize {
+        self.layouts
+            .count_names_by(LayoutItemKind::new(attribute_kind))
     }
 }
