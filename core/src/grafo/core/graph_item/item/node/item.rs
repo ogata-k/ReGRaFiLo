@@ -1,7 +1,7 @@
 //! module for Node item
 
 use crate::grafo::core::graph_item::GraphItemBase;
-use crate::util::alias::GroupId;
+use crate::util::alias::{GroupId, ItemId};
 use crate::util::item_base::ItemBase;
 use crate::util::kind::{GraphItemKind, HasGraphItemKind};
 
@@ -9,6 +9,7 @@ use crate::util::kind::{GraphItemKind, HasGraphItemKind};
 #[derive(Debug, Clone)]
 pub struct NodeItem {
     belong_group_id: GroupId,
+    item_id: ItemId,
 }
 
 impl HasGraphItemKind for NodeItem {
@@ -17,7 +18,11 @@ impl HasGraphItemKind for NodeItem {
     }
 }
 
-impl ItemBase for NodeItem {}
+impl ItemBase for NodeItem {
+    fn get_item_id(&self) -> ItemId {
+        self.item_id
+    }
+}
 
 impl GraphItemBase for NodeItem {
     fn get_belong_group_id(&self) -> GroupId {
@@ -26,9 +31,10 @@ impl GraphItemBase for NodeItem {
 }
 
 impl NodeItem {
-    pub(crate) fn new(belong_group: GroupId) -> Self {
+    pub(crate) fn new(belong_group: GroupId, item_id: ItemId) -> Self {
         Self {
             belong_group_id: belong_group,
+            item_id,
         }
     }
 }

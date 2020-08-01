@@ -115,7 +115,7 @@ impl NodeItemBuilder {
         }
 
         if validate {
-            Some(NodeItem::new(resolved_belong_group.unwrap().1))
+            Some(NodeItem::new(resolved_belong_group.unwrap().1, item_id))
         } else {
             None
         }

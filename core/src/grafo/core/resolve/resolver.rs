@@ -1,3 +1,4 @@
+use crate::grafo::core::graph_item::GraphItemBase;
 use crate::grafo::{IdTree, NameIdError, NameRefIndex};
 use crate::util::alias::{GroupId, ItemId};
 use crate::util::kind::{AttributeKind, GraphItemKind, LayoutItemKind};
@@ -56,7 +57,7 @@ impl<'a> Resolver<'a> {
     // for item
     //
 
-    pub fn push_graph_item_value<S: Into<String>>(
+    pub(crate) fn push_graph_item_value<S: Into<String>>(
         &mut self,
         item_kind: GraphItemKind,
         name: S,
@@ -77,6 +78,14 @@ impl<'a> Resolver<'a> {
             .get_value(item_kind, name)
             .ok_or_else(|| NameIdError::NotExist(item_kind, name.to_string()))?;
         Ok(*id_pair)
+    }
+
+    pub fn get_graph_item_name_by_item<I: GraphItemBase>(&'a self, item: &I) -> Option<&'a str> {
+        self.get_graph_item_name(
+            item.get_kind(),
+            item.get_belong_group_id(),
+            item.get_item_id(),
+        )
     }
 
     pub fn get_graph_item_name(
@@ -104,7 +113,7 @@ impl<'a> Resolver<'a> {
     // for layout with graph item
     //
 
-    pub fn push_layout_value_for_graph_item<S: Into<String>>(
+    pub(crate) fn push_layout_value_for_graph_item<S: Into<String>>(
         &mut self,
         item_kind: GraphItemKind,
         attribute_kind: AttributeKind,
@@ -167,7 +176,7 @@ impl<'a> Resolver<'a> {
     //  for layout without graph item
     //
 
-    pub fn push_layout_value<S: Into<String>>(
+    pub(crate) fn push_layout_value<S: Into<String>>(
         &mut self,
         attribute_kind: AttributeKind,
         name: S,

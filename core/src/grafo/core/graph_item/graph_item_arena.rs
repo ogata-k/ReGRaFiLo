@@ -253,12 +253,13 @@ mod test {
 
     #[derive(Debug, Eq, PartialEq, Clone)]
     struct TargetItem {
-        belong_group_id: ItemId,
+        belong_group_id: GroupId,
+        item_id: ItemId,
     }
 
     #[derive(Debug, Eq, PartialEq, Clone)]
     struct TargetItemOption {
-        belong_group_id: ItemId,
+        belong_group_id: GroupId,
         name: Option<String>,
     }
 
@@ -365,6 +366,7 @@ mod test {
                     Some((
                         TargetItem {
                             belong_group_id: group_id,
+                            item_id,
                         },
                         TargetItemOption {
                             belong_group_id: group_id,
@@ -379,7 +381,11 @@ mod test {
         }
     }
 
-    impl ItemBase for TargetItem {}
+    impl ItemBase for TargetItem {
+        fn get_item_id(&self) -> usize {
+            self.item_id
+        }
+    }
 
     impl GraphItemBase for TargetItem {
         fn get_belong_group_id(&self) -> usize {

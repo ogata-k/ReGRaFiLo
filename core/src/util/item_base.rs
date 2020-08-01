@@ -19,7 +19,10 @@ pub(crate) trait HasItemBuilderMethod: ItemBuilderBase {
     ) -> ItemBuilderResult<Self::Item, Self::ItemOption>;
 }
 
-pub trait ItemBase {}
+pub trait ItemBase {
+    fn get_item_id(&self) -> ItemId;
+}
+
 pub trait ItemErrorBase: Eq + Error + Into<GrafoError> {}
 
 pub trait FromWithItemId<T> {
