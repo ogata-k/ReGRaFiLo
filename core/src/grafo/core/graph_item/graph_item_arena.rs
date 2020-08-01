@@ -15,7 +15,7 @@ use crate::util::kind::GraphItemKind;
 /// item pool
 #[derive(Debug, Clone)]
 pub struct ItemArena<I> {
-    id_counter: Arc<Mutex<ItemId>>,
+    id_counter: ItemId,
     /// (GroupId, ItemId) => Item
     arena: BTreeMap<(GroupId, ItemId), I>,
 }
@@ -40,15 +40,8 @@ impl<I: GraphItemBase> ItemArena<I> {
 
     /// get the next index with increment as soon as possible
     fn get_push_id(&mut self) -> ItemId {
-        match self.id_counter.lock() {
-            Ok(mut pushed_index) => {
-                *pushed_index += 1;
-                *pushed_index
-            }
-            Err(e) => {
-                panic!("fail lock error: {}", e);
-            }
-        }
+        self.id_counter += 1;
+        self.id_counter
     }
 
     //
@@ -218,7 +211,7 @@ impl<I> Default for ItemArena<I> {
     /// initialize without log
     fn default() -> Self {
         ItemArena {
-            id_counter: Arc::new(Mutex::new(DEFAULT_ITEM_ID)),
+            id_counter: DEFAULT_ITEM_ID,
             arena: Default::default(),
         }
     }
