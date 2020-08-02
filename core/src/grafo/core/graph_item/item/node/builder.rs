@@ -6,6 +6,7 @@ use crate::grafo::core::graph_item::GraphItemBuilderBase;
 use crate::grafo::core::resolve::Resolver;
 use crate::grafo::{GrafoError, NameIdError};
 use crate::util::alias::{GroupId, ItemId};
+use crate::util::either::Either;
 use crate::util::item_base::{
     FromWithItemId, HasItemBuilderMethod, ItemBuilderBase, ItemBuilderResult,
 };
@@ -71,8 +72,12 @@ impl NodeItemBuilder {
     ) -> Option<(GroupId, ItemId)> {
         match resolver.get_belong_group(self.belong_group.as_deref()) {
             Ok(group) => Some(group),
-            Err(e) => {
+            Err(Either::Left(e)) => {
                 errors.push(NodeItemError::from_with_id(item_id, e).into());
+                None
+            }
+            Err(Either::Right(e)) => {
+                errors.push(e.into());
                 None
             }
         }

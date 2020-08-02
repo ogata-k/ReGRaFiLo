@@ -1,5 +1,31 @@
+use crate::grafo::ResolverError;
+use crate::util::alias::GroupId;
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
+
+/// This Error is always panic!!
+#[derive(Debug, Eq, PartialEq, Clone)]
+pub enum IdTreeError<Id> {
+    NotInitialized,
+    NotFindParentId(Id),
+    AlreadyExistId(Id),
+}
+impl<Id: Debug + Display> Display for IdTreeError<Id> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        unimplemented!()
+    }
+}
+impl<Id: Debug + Display> Error for IdTreeError<Id> {}
+
+impl Into<ResolverError> for IdTreeError<GroupId> {
+    fn into(self) -> ResolverError {
+        match self {
+            IdTreeError::NotInitialized => ResolverError::NotInitialized,
+            IdTreeError::NotFindParentId(id) => ResolverError::NotFindParentId(id),
+            IdTreeError::AlreadyExistId(id) => ResolverError::AlreadyExistId(id),
+        }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub enum IdTree<Id: Eq + Copy> {
@@ -41,38 +67,20 @@ impl<Id: Eq + Copy> IdTree<Id> {
 }
 
 impl<Id: Debug + Eq + Copy> IdTree<Id> {
-    pub fn get_root_id(&self) -> Id {
+    pub fn get_root_id(&self) -> Result<Id, IdTreeError<Id>> {
         match self {
-            IdTree::Root(root) => root.get_root_id(),
-            IdTree::None => panic!("{}", IdTreeError::<Id>::NotInitialized),
+            IdTree::Root(root) => Ok(root.get_root_id()),
+            IdTree::None => Err(IdTreeError::<Id>::NotInitialized),
         }
     }
 
-    pub fn push_id(&mut self, parent: Id, child: Id) {
+    pub fn push_id(&mut self, parent: Id, child: Id) -> Result<(), IdTreeError<Id>> {
         match self {
-            IdTree::Root(root) => {
-                if let Err(e) = root.push_id(parent, child) {
-                    panic!("{}", e);
-                }
-            }
-            IdTree::None => panic!("{}", IdTreeError::<Id>::NotInitialized),
-        };
+            IdTree::Root(root) => root.push_id(parent, child),
+            IdTree::None => Err(IdTreeError::<Id>::NotInitialized),
+        }
     }
 }
-
-/// This Error is always panic!!
-#[derive(Debug, Eq, PartialEq, Clone)]
-enum IdTreeError<Id> {
-    NotInitialized,
-    NotFindParentId(Id),
-    AlreadyExistId(Id),
-}
-impl<Id: Debug> Display for IdTreeError<Id> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        unimplemented!()
-    }
-}
-impl<Id: Debug> Error for IdTreeError<Id> {}
 
 #[derive(Debug, Clone)]
 pub struct IdTreeRoot<Id: Eq + Copy> {

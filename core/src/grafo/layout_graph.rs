@@ -6,7 +6,7 @@ use crate::grafo::graph_item::group::{GroupItem, GroupItemBuilder, GroupItemOpti
 use crate::grafo::graph_item::node::{NodeItem, NodeItemOption};
 use crate::grafo::graph_item::ItemArena;
 use crate::grafo::layout_item::Layout;
-use crate::grafo::{GrafoError, Resolver};
+use crate::grafo::{GrafoError, Resolver, ResolverError};
 use crate::util::alias::DEFAULT_ITEM_ID;
 use crate::util::item_base::FromWithItemId;
 use crate::util::kind::GraphItemKind;
@@ -34,35 +34,44 @@ impl<'a> GrafoBuilder<'a> {
         Default::default()
     }
 
-    pub fn build_with_default(self) -> Grafo<'a> {
+    pub fn build_with_default(self) -> Result<Grafo<'a>, Vec<GrafoError>> {
         let mut group_store = ItemArena::<GroupItem>::new();
         let GrafoBuilder {
             mut resolver,
             layout,
         } = self;
 
-        group_store.push_default(
+        let (result, mut errors) = group_store.push_default(
             &mut resolver,
             |resolver, item_kind, group_id, push_index, _: GroupItemOption| {
+                let mut errors: Vec<GrafoError> = Vec::new();
+
                 if item_kind != GraphItemKind::Group
                     || group_id != push_index
                     || group_id != DEFAULT_ITEM_ID
                 {
-                    panic!("fail set default root group");
+                    return (false, vec![ResolverError::FailSetRootGraphId.into()]);
                 }
-                resolver.set_root_group_id(push_index);
+                if let Err(e) = resolver.set_root_group_id(push_index) {
+                    return (false, vec![e.into()]);
+                }
 
                 // TODO action before insert
-                (true, Vec::new())
+                (true, errors)
             },
         );
 
-        Grafo {
-            group_arena: group_store,
-            node_arena: Default::default(),
-            edge_arena: Default::default(),
-            resolver,
-            layout,
+        if !result {
+            errors.push(GrafoError::FailBuildGrafo);
+            Err(errors)
+        } else {
+            Ok(Grafo {
+                group_arena: group_store,
+                node_arena: Default::default(),
+                edge_arena: Default::default(),
+                resolver,
+                layout,
+            })
         }
     }
 
@@ -80,18 +89,22 @@ impl<'a> GrafoBuilder<'a> {
             group_builder,
             |resolver, item_kind, group_id, push_index, option| {
                 let mut errors: Vec<GrafoError> = Vec::new();
+
                 if item_kind != GraphItemKind::Group
                     || group_id != push_index
                     || group_id != DEFAULT_ITEM_ID
                 {
-                    panic!("fail set user root group");
+                    return (false, vec![ResolverError::FailSetRootGraphId.into()]);
                 }
-                resolver.set_root_group_id(push_index);
+                if let Err(e) = resolver.set_root_group_id(push_index) {
+                    return (false, vec![e.into()]);
+                }
 
                 // TODO action before insert
                 (true, errors)
             },
         );
+
         if !result {
             errors.push(GrafoError::FailBuildGrafo);
             Err(errors)
@@ -160,6 +173,11 @@ mod test {
     #[test]
     fn push_node_success() {
         let mut graph = GrafoBuilder::new().build_with_default();
+        if graph.is_err() {
+            panic!("errors: {:?}", graph.err().unwrap()); // in test panic
+        }
+        let mut graph = graph.unwrap();
+
         for i in 0..2 * ITERATE_COUNT {
             let mut node_builder = NodeItemBuilder::new();
             if i % 2 == 0 {
@@ -182,6 +200,10 @@ mod test {
     #[test]
     fn push_node_success_has_error() {
         let mut graph = GrafoBuilder::new().build_with_default();
+        if graph.is_err() {
+            panic!("errors: {:?}", graph.err().unwrap()); // in test panic
+        }
+        let mut graph = graph.unwrap();
 
         let mut node_builder_1 = NodeItemBuilder::new();
         node_builder_1.set_name("node");
@@ -214,6 +236,11 @@ mod test {
     #[test]
     fn build_node_fail() {
         let mut graph = GrafoBuilder::new().build_with_default();
+        if graph.is_err() {
+            panic!("errors: {:?}", graph.err().unwrap()); // in test panic
+        }
+        let mut graph = graph.unwrap();
+
         let mut node_builder = NodeItemBuilder::new();
         node_builder.set_belong_group("hoge");
         let (result, errors) = graph.push_node(node_builder);

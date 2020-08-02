@@ -1,7 +1,33 @@
+use std::error::Error;
+use std::fmt::Formatter;
+
 use crate::grafo::core::graph_item::GraphItemBase;
-use crate::grafo::{IdTree, NameIdError, NameRefIndex};
+use crate::grafo::{GrafoError, IdTree, NameIdError, NameRefIndex};
 use crate::util::alias::{GroupId, ItemId};
+use crate::util::either::Either;
 use crate::util::kind::{AttributeKind, GraphItemKind, LayoutItemKind};
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub enum ResolverError {
+    FailSetRootGraphId,
+    NotInitialized,
+    NotFindParentId(GroupId),
+    AlreadyExistId(GroupId),
+}
+
+impl std::fmt::Display for ResolverError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        unimplemented!()
+    }
+}
+
+impl Error for ResolverError {}
+
+impl Into<GrafoError> for ResolverError {
+    fn into(self) -> GrafoError {
+        unimplemented!()
+    }
+}
 
 /// reference indexes for names
 #[derive(Debug, Clone)]
@@ -31,25 +57,31 @@ impl<'a> Resolver<'a> {
     //
     // for root group
     //
-    pub(crate) fn set_root_group_id(&mut self, group_id: GroupId) {
+    pub(crate) fn set_root_group_id(&mut self, group_id: GroupId) -> Result<(), ResolverError> {
         if self.group_id_tree.is_some() {
-            panic!("already set root group");
+            return Err(ResolverError::FailSetRootGraphId);
         }
         self.group_id_tree = IdTree::new(group_id);
+        Ok(())
     }
 
-    pub(crate) fn get_root_group_id(&self) -> GroupId {
-        self.group_id_tree.get_root_id()
+    pub(crate) fn get_root_group_id(&self) -> Result<GroupId, ResolverError> {
+        match self.group_id_tree.get_root_id() {
+            Ok(id) => Ok(id),
+            Err(e) => Err(e.into()),
+        }
     }
 
     pub fn get_belong_group<'b: 'a>(
         &'a self,
         name: Option<&'b str>,
-    ) -> Result<(GroupId, ItemId), NameIdError<GraphItemKind>> {
+    ) -> Result<(GroupId, ItemId), Either<NameIdError<GraphItemKind>, ResolverError>> {
         if let Some(n) = name {
             self.get_graph_item_id_pair(GraphItemKind::Group, n)
+                .map_err(Either::Left)
         } else {
-            Ok((self.get_root_group_id(), self.get_root_group_id()))
+            let root_id = self.get_root_group_id().map_err(Either::Right)?;
+            Ok((root_id, root_id))
         }
     }
 

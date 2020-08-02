@@ -146,7 +146,11 @@ impl<I: GraphItemBase + Default> ItemArena<I> {
     }
 
     /// push the item into arena with action for conclusion
-    pub(crate) fn push_default<F, O: Default>(&mut self, resolver: &mut Resolver, action: F)
+    pub(crate) fn push_default<F, O: Default>(
+        &mut self,
+        resolver: &mut Resolver,
+        action: F,
+    ) -> (bool, Vec<GrafoError>)
     where
         F: FnOnce(&mut Resolver, GraphItemKind, GroupId, ItemId, O) -> (bool, Vec<GrafoError>),
     {
@@ -155,11 +159,11 @@ impl<I: GraphItemBase + Default> ItemArena<I> {
         let push_id = self.get_default_index();
         let (result, errors) = action(resolver, item.get_kind(), group_id, push_id, O::default());
         if !result || !errors.is_empty() {
-            let errors_str: Vec<String> = errors.into_iter().map(|e| format!("{}", e)).collect();
-            panic!("{}", errors_str.as_slice().join("\n"));
+            return (false, errors);
         }
 
         self.arena.insert((group_id, push_id), item);
+        (true, errors)
     }
 
     /// push the item into arena with action for conclusion<br/>
@@ -226,7 +230,7 @@ mod test {
         GraphBuilderErrorBase, GraphItemBase, GraphItemBuilderBase, ItemArena,
     };
     use crate::grafo::core::{NameIdError, Resolver};
-    use crate::grafo::GrafoError;
+    use crate::grafo::{GrafoError, ResolverError};
     use crate::util::alias::{GroupId, ItemId};
     use crate::util::item_base::{
         FromWithItemId, HasItemBuilderMethod, ItemBase, ItemBuilderBase, ItemBuilderResult,
@@ -312,7 +316,13 @@ mod test {
             belong_group: Option<&str>,
         ) -> Option<GroupId> {
             match belong_group {
-                None => Some(resolver.get_root_group_id()),
+                None => match resolver.get_root_group_id() {
+                    Ok(id) => Some(id),
+                    Err(e) => {
+                        errors.push(e.into());
+                        None
+                    }
+                },
                 Some(belong_group_name) => {
                     let belong_group_result =
                         resolver.get_graph_item_id_pair(GraphItemKind::Group, &belong_group_name);

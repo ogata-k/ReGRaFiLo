@@ -10,7 +10,7 @@ const SHOW: bool = false;
 fn main() {
     println!("iter count: {}", ITERATE_COUNT);
     let start = SystemTime::now();
-    let mut graph = GrafoBuilder::new().build_with_default();
+    let mut graph = GrafoBuilder::new().build_with_default().unwrap();
     let mut result = true;
     let mut errors: Vec<GrafoError> = Vec::new();
     for i in 0..ITERATE_COUNT {
