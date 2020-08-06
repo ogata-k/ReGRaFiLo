@@ -11,6 +11,7 @@ use crate::grafo::Resolver;
 use crate::util::alias::{GroupId, ItemId, DEFAULT_ITEM_ID};
 use crate::util::item_base::HasItemBuilderMethod;
 use crate::util::kind::GraphItemKind;
+use crate::util::name_type::{NameType, StoredNameType};
 
 /// item pool
 #[derive(Debug, Clone)]
@@ -51,25 +52,27 @@ impl<I: GraphItemBase> ItemArena<I> {
     /// push the item into arena with action for conclusion<br/>
     /// F: fn(item_kind, group_id, Result<(item_id, extension), err>)
     pub(crate) fn push<
+        Name: NameType<StoredName>,
+        StoredName: StoredNameType<Name>,
         F,
         O,
-        E: GraphBuilderErrorBase,
-        B: GraphItemBuilderBase<Item = I, ItemError = E>
-            + HasItemBuilderMethod<Item = I, ItemOption = O, ItemError = E>,
+        E: GraphBuilderErrorBase<Name, StoredName>,
+        B: GraphItemBuilderBase<Name, StoredName, Item = I, ItemError = E>
+            + HasItemBuilderMethod<Name, StoredName, Item = I, ItemOption = O, ItemError = E>,
     >(
         &mut self,
-        resolver: &mut Resolver,
+        resolver: &mut Resolver<Name, StoredName>,
         item_builder: B,
         action: F,
-    ) -> (bool, Vec<GrafoError>)
+    ) -> (bool, Vec<GrafoError<Name, StoredName>>)
     where
         F: FnOnce(
-            &mut Resolver,
+            &mut Resolver<Name, StoredName>,
             GraphItemKind,
             GroupId,
             ItemId,
             B::ItemOption,
-        ) -> (bool, Vec<GrafoError>),
+        ) -> (bool, Vec<GrafoError<Name, StoredName>>),
     {
         let push_id = self.get_push_id();
         let (item_option, mut errors) = item_builder.build(push_id, resolver);
@@ -146,13 +149,24 @@ impl<I: GraphItemBase + Default> ItemArena<I> {
     }
 
     /// push the item into arena with action for conclusion
-    pub(crate) fn push_default<F, O: Default>(
+    pub(crate) fn push_default<
+        Name: NameType<StoredName>,
+        StoredName: StoredNameType<Name>,
+        F,
+        O: Default,
+    >(
         &mut self,
-        resolver: &mut Resolver,
+        resolver: &mut Resolver<Name, StoredName>,
         action: F,
-    ) -> (bool, Vec<GrafoError>)
+    ) -> (bool, Vec<GrafoError<Name, StoredName>>)
     where
-        F: FnOnce(&mut Resolver, GraphItemKind, GroupId, ItemId, O) -> (bool, Vec<GrafoError>),
+        F: FnOnce(
+            &mut Resolver<Name, StoredName>,
+            GraphItemKind,
+            GroupId,
+            ItemId,
+            O,
+        ) -> (bool, Vec<GrafoError<Name, StoredName>>),
     {
         let item = I::default();
         let group_id = item.get_belong_group_id();
@@ -168,25 +182,27 @@ impl<I: GraphItemBase + Default> ItemArena<I> {
 
     /// push the item into arena with action for conclusion<br/>
     pub(crate) fn push_user_item_as_default<
+        Name: NameType<StoredName>,
+        StoredName: StoredNameType<Name>,
         F,
         O,
-        E: GraphBuilderErrorBase,
-        B: GraphItemBuilderBase<Item = I, ItemError = E>
-            + HasItemBuilderMethod<Item = I, ItemOption = O, ItemError = E>,
+        E: GraphBuilderErrorBase<Name, StoredName>,
+        B: GraphItemBuilderBase<Name, StoredName, Item = I, ItemError = E>
+            + HasItemBuilderMethod<Name, StoredName, Item = I, ItemOption = O, ItemError = E>,
     >(
         &mut self,
-        resolver: &mut Resolver,
+        resolver: &mut Resolver<Name, StoredName>,
         item_builder: B,
         action: F,
-    ) -> (bool, Vec<GrafoError>)
+    ) -> (bool, Vec<GrafoError<Name, StoredName>>)
     where
         F: FnOnce(
-            &mut Resolver,
+            &mut Resolver<Name, StoredName>,
             GraphItemKind,
             GroupId,
             ItemId,
             B::ItemOption,
-        ) -> (bool, Vec<GrafoError>),
+        ) -> (bool, Vec<GrafoError<Name, StoredName>>),
     {
         let push_id = self.get_default_index();
         let (item_option, mut errors) = item_builder.build(push_id, resolver);

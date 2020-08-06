@@ -1,72 +1,90 @@
 use crate::util::kind_key::KeyWithKind;
+use crate::util::name_type::{NameType, StoredNameType};
 use std::borrow::{Borrow, Cow};
 use std::collections::{BTreeMap, HashMap};
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 use std::hash::Hash;
-use std::ops::Deref;
+use std::marker::PhantomData;
 
 pub trait NameRefKeyTrait: Eq + Copy + Hash + Ord {}
 impl<T: Eq + Copy + Hash + Ord> NameRefKeyTrait for T {}
 
 /// helper for make reference key for layout
-fn create_key<'a, Kind: NameRefKeyTrait, S: Into<Cow<'a, str>>>(
-    kind: Kind,
-    name: S,
-) -> KeyWithKind<Kind, Cow<'a, str>> {
-    KeyWithKind::new(kind, name.into())
+fn create_key<N, Kind: NameRefKeyTrait>(kind: Kind, name: N) -> KeyWithKind<Kind, N> {
+    KeyWithKind::new(kind, name)
 }
 
 /// helper for make reference key for layout
-fn create_rev_key<Kind: NameRefKeyTrait, Value: NameRefKeyTrait>(
+fn create_rev_key<Kind: NameRefKeyTrait, Value>(
     kind: Kind,
     value: Value,
 ) -> KeyWithKind<Kind, Value> {
     KeyWithKind::new(kind, value)
 }
 
-fn key_to_str<'a, 'b: 'a, Kind: Eq + Copy + Hash>(
-    key: &'b KeyWithKind<Kind, Cow<'a, str>>,
-) -> &'b str {
-    key.key.deref()
+fn key_to_str<
+    Name: NameType<StoredName>,
+    StoredName: StoredNameType<Name>,
+    Kind: Eq + Copy + Hash,
+>(
+    key: &KeyWithKind<Kind, StoredName>,
+) -> &StoredName {
+    key.key.borrow()
 }
 
 #[derive(Debug, Eq, PartialEq, Clone)]
-pub enum NameIdError<Kind> {
-    AlreadyExist(Kind, String),
-    Override(Kind, String),
-    NotExist(Kind, String),
+pub enum NameIdError<Name: NameType<StoredName>, StoredName: StoredNameType<Name>, Kind> {
+    AlreadyExist(Kind, Name, PhantomData<StoredName>),
+    Override(Kind, Name, PhantomData<StoredName>),
+    NotExist(Kind, Name, PhantomData<StoredName>),
 }
 
-impl<Kind: Display> Display for NameIdError<Kind> {
+impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>, Kind> Display
+    for NameIdError<Name, StoredName, Kind>
+{
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         unimplemented!()
     }
 }
 
-impl<Kind: Debug + Display> Error for NameIdError<Kind> {}
-
-#[derive(Debug, Clone)]
-pub struct NameRefIndex<'a, Kind: NameRefKeyTrait, Value: NameRefKeyTrait> {
-    reference_index: HashMap<KeyWithKind<Kind, Cow<'a, str>>, Value>,
-    rev_reference_index: BTreeMap<KeyWithKind<Kind, Value>, Cow<'a, str>>,
+impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>, Kind: Debug + Display> Error
+    for NameIdError<Name, StoredName, Kind>
+{
 }
 
-impl<'a, Kind: NameRefKeyTrait, Value: NameRefKeyTrait> NameRefIndex<'a, Kind, Value> {
+#[derive(Debug, Clone)]
+pub struct NameRefIndex<
+    Name: NameType<StoredName>,
+    StoredName: StoredNameType<Name>,
+    Kind: NameRefKeyTrait,
+    Value: NameRefKeyTrait,
+> {
+    reference_index: HashMap<KeyWithKind<Kind, StoredName>, Value>,
+    rev_reference_index: BTreeMap<KeyWithKind<Kind, Value>, Name>,
+}
+
+impl<
+        Name: NameType<StoredName>,
+        StoredName: StoredNameType<Name>,
+        Kind: NameRefKeyTrait,
+        Value: NameRefKeyTrait,
+    > NameRefIndex<Name, StoredName, Kind, Value>
+{
     /// initialize
     pub fn new() -> Self {
         NameRefIndex::default()
     }
 
     /// helper for getter of string attribute
-    pub fn get_value<'b: 'a>(&'a self, kind: Kind, name: &'b str) -> Option<&'a Value> {
-        self.reference_index.get(&create_key(kind, name))
+    pub fn get_value<S: Into<StoredName>>(&self, kind: Kind, name: S) -> Option<&Value> {
+        self.reference_index.get(&create_key(kind, name.into()))
     }
 
-    pub fn get_name(&self, kind: Kind, value: Value) -> Option<&str> {
+    pub fn get_name(&self, kind: Kind, value: Value) -> Option<&StoredName> {
         self.rev_reference_index
             .get(&create_rev_key(kind, value))
-            .map(|cow_str| cow_str.borrow())
+            .map(|n| n.borrow())
     }
 
     pub fn contains_value(&self, kind: Kind, value: Value) -> bool {
@@ -74,8 +92,9 @@ impl<'a, Kind: NameRefKeyTrait, Value: NameRefKeyTrait> NameRefIndex<'a, Kind, V
             .contains_key(&create_rev_key(kind, value))
     }
 
-    pub fn contains_name(&self, kind: Kind, name: &str) -> bool {
-        self.reference_index.contains_key(&create_key(kind, name))
+    pub fn contains_name<S: Into<StoredName>>(&self, kind: Kind, name: S) -> bool {
+        self.reference_index
+            .contains_key(&create_key(kind, name.into().into().into()))
     }
 
     pub fn count_names_by(&self, kind: Kind) -> usize {
@@ -101,31 +120,41 @@ impl<'a, Kind: NameRefKeyTrait, Value: NameRefKeyTrait> NameRefIndex<'a, Kind, V
     }
 }
 
-impl<'a, Kind: Debug + Display + NameRefKeyTrait, Value: NameRefKeyTrait>
-    NameRefIndex<'a, Kind, Value>
+impl<
+        Name: NameType<StoredName>,
+        StoredName: StoredNameType<Name>,
+        Kind: Debug + Display + NameRefKeyTrait,
+        Value: NameRefKeyTrait,
+    > NameRefIndex<Name, StoredName, Kind, Value>
 {
-    pub fn push_value<S: Into<Cow<'a, str>> + Clone>(
+    pub fn push_value<S: Into<Name>>(
         &mut self,
         kind: Kind,
         name: S,
         value: Value,
-    ) -> Result<(), NameIdError<Kind>> {
-        let item_name = name.clone().into();
-        let key = create_key(kind, name);
+    ) -> Result<(), NameIdError<Name, StoredName, Kind>> {
+        let item_name: StoredName = name.into().into();
+        let key = create_key(kind, item_name.clone());
         let rev_key = create_rev_key(kind, value);
         if self.reference_index.contains_key(&key) {
-            let s = item_name.clone().to_string();
+            let s = item_name.clone().into();
             self.reference_index.insert(key, value);
-            self.rev_reference_index.insert(rev_key, item_name);
-            return Err(NameIdError::Override(kind, s));
+            self.rev_reference_index.insert(rev_key, item_name.into());
+            return Err(NameIdError::Override(kind, s, PhantomData));
         }
         self.reference_index.insert(key, value);
-        self.rev_reference_index.insert(rev_key, item_name);
+        self.rev_reference_index.insert(rev_key, item_name.into());
         Ok(())
     }
 }
 
-impl<'a, Kind: NameRefKeyTrait, Value: NameRefKeyTrait> Default for NameRefIndex<'a, Kind, Value> {
+impl<
+        Name: NameType<StoredName>,
+        StoredName: StoredNameType<Name>,
+        Kind: NameRefKeyTrait,
+        Value: NameRefKeyTrait,
+    > Default for NameRefIndex<Name, StoredName, Kind, Value>
+{
     fn default() -> Self {
         NameRefIndex {
             reference_index: Default::default(),

@@ -10,17 +10,25 @@ use crate::grafo::{GrafoError, Resolver, ResolverError};
 use crate::util::alias::DEFAULT_ITEM_ID;
 use crate::util::item_base::FromWithItemId;
 use crate::util::kind::GraphItemKind;
+use crate::util::name_type::{NameType, StoredNameType};
+use std::borrow::Cow;
 
 #[derive(Debug, Clone)]
-pub struct GrafoBuilder<'a> {
+pub struct GrafoBuilder<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> {
     // structure resolver
-    resolver: Resolver<'a>,
+    resolver: Resolver<Name, StoredName>,
 
     // layout
     layout: Layout,
 }
+pub type NameStrGrafoBuilder<'a> = GrafoBuilder<String, Cow<'a, str>>;
+pub type NameTGrafoBuilder<T> = GrafoBuilder<T, T>;
+pub type NameUsizeGrafoBuilder = NameTGrafoBuilder<usize>;
+pub type NameU16GrafoBuilder = NameTGrafoBuilder<u16>;
 
-impl<'a> Default for GrafoBuilder<'a> {
+impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> Default
+    for GrafoBuilder<Name, StoredName>
+{
     fn default() -> Self {
         Self {
             resolver: Resolver::new(),
@@ -29,12 +37,14 @@ impl<'a> Default for GrafoBuilder<'a> {
     }
 }
 
-impl<'a> GrafoBuilder<'a> {
+impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> GrafoBuilder<Name, StoredName> {
     pub fn new() -> Self {
         Default::default()
     }
 
-    pub fn build_with_default(self) -> Result<Grafo<'a>, Vec<GrafoError>> {
+    pub fn build_with_default(
+        self,
+    ) -> Result<Grafo<Name, StoredName>, Vec<GrafoError<Name, StoredName>>> {
         let mut group_store = ItemArena::<GroupItem>::new();
         let GrafoBuilder {
             mut resolver,
@@ -43,8 +53,8 @@ impl<'a> GrafoBuilder<'a> {
 
         let (result, mut errors) = group_store.push_default(
             &mut resolver,
-            |resolver, item_kind, group_id, push_index, _: GroupItemOption| {
-                let mut errors: Vec<GrafoError> = Vec::new();
+            |resolver, item_kind, group_id, push_index, _: GroupItemOption<Name, StoredName>| {
+                let mut errors: Vec<GrafoError<Name, StoredName>> = Vec::new();
 
                 if item_kind != GraphItemKind::Group
                     || group_id != push_index
@@ -77,8 +87,8 @@ impl<'a> GrafoBuilder<'a> {
 
     pub fn build_with_user_group(
         self,
-        group_builder: GroupItemBuilder,
-    ) -> Result<Grafo<'a>, Vec<GrafoError>> {
+        group_builder: GroupItemBuilder<Name, StoredName>,
+    ) -> Result<Grafo<Name, StoredName>, Vec<GrafoError<Name, StoredName>>> {
         let mut group_store = ItemArena::<GroupItem>::new();
         let GrafoBuilder {
             mut resolver,
@@ -88,7 +98,7 @@ impl<'a> GrafoBuilder<'a> {
             &mut resolver,
             group_builder,
             |resolver, item_kind, group_id, push_index, option| {
-                let mut errors: Vec<GrafoError> = Vec::new();
+                let mut errors: Vec<GrafoError<Name, StoredName>> = Vec::new();
 
                 if item_kind != GraphItemKind::Group
                     || group_id != push_index
@@ -122,9 +132,9 @@ impl<'a> GrafoBuilder<'a> {
 
 /// Grafo is Graph with Layout
 #[derive(Debug, Clone)]
-pub struct Grafo<'a> {
+pub struct Grafo<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> {
     // structure resolver
-    resolver: Resolver<'a>,
+    resolver: Resolver<Name, StoredName>,
 
     // item arena
     group_arena: ItemArena<GroupItem>,
@@ -135,16 +145,27 @@ pub struct Grafo<'a> {
     layout: Layout,
 }
 
-impl<'a> Grafo<'a> {
+pub type NameStrGrafo<'a> = Grafo<String, Cow<'a, str>>;
+pub type NameTGrafo<T> = Grafo<T, T>;
+pub type NameUsizeGrafo = NameTGrafo<usize>;
+pub type NameU16Grafo = NameTGrafo<u16>;
+
+impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> Grafo<Name, StoredName> {
     // TODO 2 next push_group
-    pub fn push_node(&mut self, builder: NodeItemBuilder) -> (bool, Vec<GrafoError>) {
+    pub fn push_node(
+        &mut self,
+        builder: NodeItemBuilder<Name, StoredName>,
+    ) -> (bool, Vec<GrafoError<Name, StoredName>>) {
         self.node_arena.push(
             &mut self.resolver,
             builder,
             |resolver, kind, belong_group_id, item_id, option| {
-                let mut errors: Vec<GrafoError> = Vec::new();
+                let mut errors: Vec<GrafoError<Name, StoredName>> = Vec::new();
                 let mut validate = true;
-                let NodeItemOption { name } = option;
+                let NodeItemOption {
+                    stored_name: _,
+                    name,
+                } = option;
                 if let Some(n) = name {
                     if let Err(e) =
                         resolver.push_graph_item_value(kind, n, belong_group_id, item_id)

@@ -6,6 +6,8 @@ use crate::grafo::{GrafoError, IdTree, NameIdError, NameRefIndex};
 use crate::util::alias::{GroupId, ItemId};
 use crate::util::either::Either;
 use crate::util::kind::{AttributeKind, GraphItemKind, LayoutItemKind};
+use crate::util::name_type::{NameType, StoredNameType};
+use std::marker::PhantomData;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ResolverError {
@@ -23,23 +25,27 @@ impl std::fmt::Display for ResolverError {
 
 impl Error for ResolverError {}
 
-impl Into<GrafoError> for ResolverError {
-    fn into(self) -> GrafoError {
+impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>>
+    Into<GrafoError<Name, StoredName>> for ResolverError
+{
+    fn into(self) -> GrafoError<Name, StoredName> {
         unimplemented!()
     }
 }
 
 /// reference indexes for names
 #[derive(Debug, Clone)]
-pub struct Resolver<'a> {
+pub struct Resolver<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> {
     group_id_tree: IdTree<GroupId>,
     /// names reference indexes name:(group_id, item_id)
-    graph_items: NameRefIndex<'a, GraphItemKind, (GroupId, ItemId)>,
+    graph_items: NameRefIndex<Name, StoredName, GraphItemKind, (GroupId, ItemId)>,
     /// layout reference indexes layout_type:value
-    layouts: NameRefIndex<'a, LayoutItemKind, ItemId>,
+    layouts: NameRefIndex<Name, StoredName, LayoutItemKind, ItemId>,
 }
 
-impl<'a> Default for Resolver<'a> {
+impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> Default
+    for Resolver<Name, StoredName>
+{
     fn default() -> Self {
         Self {
             group_id_tree: IdTree::None,
@@ -49,7 +55,7 @@ impl<'a> Default for Resolver<'a> {
     }
 }
 
-impl<'a> Resolver<'a> {
+impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> Resolver<Name, StoredName> {
     pub fn new() -> Self {
         Default::default()
     }
@@ -72,10 +78,13 @@ impl<'a> Resolver<'a> {
         }
     }
 
-    pub fn get_belong_group<'b: 'a>(
-        &'a self,
-        name: Option<&'b str>,
-    ) -> Result<(GroupId, ItemId), Either<NameIdError<GraphItemKind>, ResolverError>> {
+    pub fn get_belong_group<S: Into<StoredName>>(
+        &self,
+        name: Option<S>,
+    ) -> Result<
+        (GroupId, ItemId),
+        Either<NameIdError<Name, StoredName, GraphItemKind>, ResolverError>,
+    > {
         if let Some(n) = name {
             self.get_graph_item_id_pair(GraphItemKind::Group, n)
                 .map_err(Either::Left)
@@ -89,30 +98,31 @@ impl<'a> Resolver<'a> {
     // for item
     //
 
-    pub(crate) fn push_graph_item_value<S: Into<String>>(
+    pub(crate) fn push_graph_item_value<S: Into<Name>>(
         &mut self,
         item_kind: GraphItemKind,
         name: S,
         group_id: GroupId,
         item_id: ItemId,
-    ) -> Result<(), NameIdError<GraphItemKind>> {
+    ) -> Result<(), NameIdError<Name, StoredName, GraphItemKind>> {
         self.graph_items
-            .push_value(item_kind, name.into(), (group_id, item_id))
+            .push_value(item_kind, name, (group_id, item_id))
     }
 
-    pub fn get_graph_item_id_pair<'b: 'a>(
-        &'a self,
+    pub fn get_graph_item_id_pair<S: Into<StoredName>>(
+        &self,
         item_kind: GraphItemKind,
-        name: &'b str,
-    ) -> Result<(GroupId, ItemId), NameIdError<GraphItemKind>> {
+        name: S,
+    ) -> Result<(GroupId, ItemId), NameIdError<Name, StoredName, GraphItemKind>> {
+        let item_name = name.into();
         let id_pair = self
             .graph_items
-            .get_value(item_kind, name)
-            .ok_or_else(|| NameIdError::NotExist(item_kind, name.to_string()))?;
+            .get_value(item_kind, item_name.clone())
+            .ok_or_else(|| NameIdError::NotExist(item_kind, item_name.into(), PhantomData))?;
         Ok(*id_pair)
     }
 
-    pub fn get_graph_item_name_by_item<I: GraphItemBase>(&'a self, item: &I) -> Option<&'a str> {
+    pub fn get_graph_item_name_by_item<I: GraphItemBase>(&self, item: &I) -> Option<&StoredName> {
         self.get_graph_item_name(
             item.get_kind(),
             item.get_belong_group_id(),
@@ -121,18 +131,18 @@ impl<'a> Resolver<'a> {
     }
 
     pub fn get_graph_item_name(
-        &'a self,
+        &self,
         item_kind: GraphItemKind,
         group_id: GroupId,
         item_id: ItemId,
-    ) -> Option<&'a str> {
+    ) -> Option<&StoredName> {
         self.graph_items.get_name(item_kind, (group_id, item_id))
     }
 
-    pub fn contains_name_graph_item<'b: 'a>(
-        &'a self,
+    pub fn contains_name_graph_item<S: Into<StoredName>>(
+        &self,
         item_kind: GraphItemKind,
-        name: &'b str,
+        name: S,
     ) -> bool {
         self.graph_items.contains_name(item_kind, name)
     }
@@ -145,13 +155,13 @@ impl<'a> Resolver<'a> {
     // for layout with graph item
     //
 
-    pub(crate) fn push_layout_value_for_graph_item<S: Into<String>>(
+    pub(crate) fn push_layout_value_for_graph_item<S: Into<Name>>(
         &mut self,
         item_kind: GraphItemKind,
         attribute_kind: AttributeKind,
         name: S,
         layout_item_id: ItemId,
-    ) -> Result<(), NameIdError<LayoutItemKind>> {
+    ) -> Result<(), NameIdError<Name, StoredName, LayoutItemKind>> {
         self.layouts.push_value(
             LayoutItemKind::new_with_item(item_kind, attribute_kind),
             name.into(),
@@ -159,35 +169,37 @@ impl<'a> Resolver<'a> {
         )
     }
 
-    pub fn get_layout_item_id_for_graph_item<'b: 'a>(
-        &'a self,
+    pub fn get_layout_item_id_for_graph_item<S: Into<StoredName>>(
+        &self,
         item_kind: GraphItemKind,
         attribute_kind: AttributeKind,
-        name: &'b str,
-    ) -> Result<&'a ItemId, NameIdError<LayoutItemKind>> {
+        name: S,
+    ) -> Result<ItemId, NameIdError<Name, StoredName, LayoutItemKind>> {
         let kind = LayoutItemKind::new_with_item(item_kind, attribute_kind);
+        let item_name = name.into();
         self.layouts
-            .get_value(kind, name)
-            .ok_or_else(|| NameIdError::NotExist(kind, name.to_string()))
+            .get_value(kind, item_name.clone())
+            .map(|i| *i)
+            .ok_or_else(|| NameIdError::NotExist(kind, item_name.into(), PhantomData))
     }
 
     pub fn get_layout_item_name_for_graph_item(
-        &'a self,
+        &self,
         item_kind: GraphItemKind,
         attribute_kind: AttributeKind,
         item_id: ItemId,
-    ) -> Option<&'a str> {
+    ) -> Option<&StoredName> {
         self.layouts.get_name(
             LayoutItemKind::new_with_item(item_kind, attribute_kind),
             item_id,
         )
     }
 
-    pub fn contains_name_layout_item_for_graph_item<'b: 'a>(
-        &'a self,
+    pub fn contains_name_layout_item_for_graph_item<S: Into<StoredName>>(
+        &self,
         item_kind: GraphItemKind,
         attribute_kind: AttributeKind,
-        name: &'b str,
+        name: S,
     ) -> bool {
         self.layouts.contains_name(
             LayoutItemKind::new_with_item(item_kind, attribute_kind),
@@ -208,12 +220,12 @@ impl<'a> Resolver<'a> {
     //  for layout without graph item
     //
 
-    pub(crate) fn push_layout_value<S: Into<String>>(
+    pub(crate) fn push_layout_value<S: Into<Name>>(
         &mut self,
         attribute_kind: AttributeKind,
         name: S,
         layout_item_id: ItemId,
-    ) -> Result<(), NameIdError<LayoutItemKind>> {
+    ) -> Result<(), NameIdError<Name, StoredName, LayoutItemKind>> {
         self.layouts.push_value(
             LayoutItemKind::new(attribute_kind),
             name.into(),
@@ -221,30 +233,32 @@ impl<'a> Resolver<'a> {
         )
     }
 
-    pub fn get_layout_item_id<'b: 'a>(
-        &'a self,
+    pub fn get_layout_item_id<S: Into<StoredName>>(
+        &self,
         attribute_kind: AttributeKind,
-        name: &'b str,
-    ) -> Result<&'a ItemId, NameIdError<LayoutItemKind>> {
+        name: S,
+    ) -> Result<ItemId, NameIdError<Name, StoredName, LayoutItemKind>> {
         let kind = LayoutItemKind::new(attribute_kind);
+        let item_name = name.into();
         self.layouts
-            .get_value(kind, name)
-            .ok_or_else(|| NameIdError::NotExist(kind, name.to_string()))
+            .get_value(kind, item_name.clone())
+            .map(|i| *i)
+            .ok_or_else(|| NameIdError::NotExist(kind, item_name.into(), PhantomData))
     }
 
     pub fn get_layout_item_name(
-        &'a self,
+        &self,
         attribute_kind: AttributeKind,
         item_id: ItemId,
-    ) -> Option<&'a str> {
+    ) -> Option<&StoredName> {
         self.layouts
             .get_name(LayoutItemKind::new(attribute_kind), item_id)
     }
 
-    pub fn contains_name_layout_item<'b: 'a>(
-        &'a self,
+    pub fn contains_name_layout_item<S: Into<StoredName>>(
+        &self,
         attribute_kind: AttributeKind,
-        name: &'b str,
+        name: S,
     ) -> bool {
         self.layouts
             .contains_name(LayoutItemKind::new(attribute_kind), name)
