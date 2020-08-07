@@ -10,12 +10,7 @@ pub trait ItemBuilderBase<Name: NameType<StoredName>, StoredName: StoredNameType
     type ItemError: ItemErrorBase<Name, StoredName>;
 }
 
-pub(crate) type ItemBuilderResult<
-    Name: NameType<StoredName>,
-    StoredName: StoredNameType<Name>,
-    Item,
-    ItemOption,
-> = (
+pub(crate) type ItemBuilderResult<Name, StoredName, Item, ItemOption> = (
     Option<(Item, ItemOption)>,
     Vec<GrafoError<Name, StoredName>>,
 );

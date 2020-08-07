@@ -3,7 +3,6 @@
 use std::collections::btree_map::{Iter, Range};
 use std::collections::BTreeMap;
 use std::ops::{Bound, RangeBounds};
-use std::sync::{Arc, Mutex};
 
 use crate::grafo::graph_item::{GraphBuilderErrorBase, GraphItemBase, GraphItemBuilderBase};
 use crate::grafo::GrafoError;
@@ -246,7 +245,7 @@ mod test {
         GraphBuilderErrorBase, GraphItemBase, GraphItemBuilderBase, ItemArena,
     };
     use crate::grafo::core::{NameIdError, Resolver};
-    use crate::grafo::{GrafoError, ResolverError};
+    use crate::grafo::GrafoError;
     use crate::util::alias::{GroupId, ItemId};
     use crate::util::item_base::{
         FromWithItemId, HasItemBuilderMethod, ItemBase, ItemBuilderBase, ItemBuilderResult,
@@ -254,6 +253,8 @@ mod test {
     };
     use crate::util::kind::test::graph_item_check_list;
     use crate::util::kind::{GraphItemKind, HasGraphItemKind};
+    use std::borrow::Cow;
+    use std::marker::PhantomData;
 
     const ITERATE_COUNT: usize = 10;
     const TARGET_KIND: GraphItemKind = GraphItemKind::Node;
@@ -282,8 +283,8 @@ mod test {
         NotFindGroup(ItemId),
     }
 
-    impl Into<GrafoError> for TargetBuilderError {
-        fn into(self) -> GrafoError {
+    impl<'a> Into<GrafoError<String, Cow<'a, str>>> for TargetBuilderError {
+        fn into(self) -> GrafoError<String, Cow<'a, str>> {
             unimplemented!()
         }
     }
@@ -300,12 +301,12 @@ mod test {
         }
     }
 
-    impl ItemBuilderBase for TargetItemBuilder {
+    impl<'a> ItemBuilderBase<String, Cow<'a, str>> for TargetItemBuilder {
         type Item = TargetItem;
         type ItemError = TargetBuilderError;
     }
 
-    impl GraphItemBuilderBase for TargetItemBuilder {
+    impl<'a> GraphItemBuilderBase<String, Cow<'a, str>> for TargetItemBuilder {
         fn set_belong_group<S: Into<String>>(&mut self, group: S) -> &mut Self {
             self.belong_group = Some(group.into());
             self
@@ -317,7 +318,7 @@ mod test {
         }
     }
 
-    impl TargetItemBuilder {
+    impl<'a> TargetItemBuilder {
         fn new() -> Self {
             TargetItemBuilder {
                 belong_group: None,
@@ -327,8 +328,8 @@ mod test {
         fn resolve_belong_group(
             &self,
             item_id: ItemId,
-            resolver: &Resolver,
-            errors: &mut Vec<GrafoError>,
+            resolver: &Resolver<String, Cow<'a, str>>,
+            errors: &mut Vec<GrafoError<String, Cow<'a, str>>>,
             belong_group: Option<&str>,
         ) -> Option<GroupId> {
             match belong_group {
@@ -341,7 +342,7 @@ mod test {
                 },
                 Some(belong_group_name) => {
                     let belong_group_result =
-                        resolver.get_graph_item_id_pair(GraphItemKind::Group, &belong_group_name);
+                        resolver.get_graph_item_id_pair(GraphItemKind::Group, belong_group_name);
                     match belong_group_result {
                         Ok((_belong_group_id, group_item_id)) => Some(group_item_id),
                         Err(err) => {
@@ -354,15 +355,15 @@ mod test {
         }
     }
 
-    impl HasItemBuilderMethod for TargetItemBuilder {
+    impl<'a> HasItemBuilderMethod<String, Cow<'a, str>> for TargetItemBuilder {
         type ItemOption = TargetItemOption;
         fn build(
             self,
             item_id: ItemId,
-            resolver: &Resolver,
-        ) -> ItemBuilderResult<TargetItem, TargetItemOption> {
+            resolver: &Resolver<String, Cow<'a, str>>,
+        ) -> ItemBuilderResult<String, Cow<'a, str>, TargetItem, TargetItemOption> {
             assert_ne!(TARGET_KIND, GraphItemKind::Group);
-            let mut errors: Vec<GrafoError> = Vec::new();
+            let mut errors: Vec<GrafoError<String, Cow<'a, str>>> = Vec::new();
 
             let group_id = (&self).resolve_belong_group(
                 item_id,
@@ -424,14 +425,17 @@ mod test {
 
     impl Error for TargetBuilderError {}
 
-    impl ItemErrorBase for TargetBuilderError {}
+    impl<'a> ItemErrorBase<String, Cow<'a, str>> for TargetBuilderError {}
 
-    impl FromWithItemId<NameIdError<GraphItemKind>> for TargetBuilderError {
-        fn from_with_id(item_id: usize, from: NameIdError<GraphItemKind>) -> Self {
+    impl<'a> FromWithItemId<NameIdError<String, Cow<'a, str>, GraphItemKind>> for TargetBuilderError {
+        fn from_with_id(
+            item_id: usize,
+            from: NameIdError<String, Cow<'a, str>, GraphItemKind>,
+        ) -> Self {
             unimplemented!()
         }
     }
-    impl GraphBuilderErrorBase for TargetBuilderError {}
+    impl<'a> GraphBuilderErrorBase<String, Cow<'a, str>> for TargetBuilderError {}
 
     #[test]
     fn is_empty() {
@@ -450,7 +454,7 @@ mod test {
                 &mut resolver,
                 builder,
                 |resolver, kind, group_id, item_id, option| {
-                    let mut errors: Vec<GrafoError> = Vec::new();
+                    let mut errors: Vec<GrafoError<String, Cow<str>>> = Vec::new();
                     if let TargetItemOption {
                         belong_group_id: _,
                         name: Some(name),
@@ -465,7 +469,7 @@ mod test {
                     (errors.is_empty(), errors)
                 },
             );
-            assert_eq!(Vec::<GrafoError>::new(), errors);
+            assert_eq!(Vec::<GrafoError<String, Cow<str>>>::new(), errors);
             assert!(result);
         }
         let arena = arena_mut;
@@ -495,7 +499,7 @@ mod test {
                 &mut resolver,
                 builder,
                 |resolver, kind, group_id, item_id, option| {
-                    let mut errors: Vec<GrafoError> = Vec::new();
+                    let mut errors: Vec<GrafoError<String, Cow<str>>> = Vec::new();
                     if let TargetItemOption {
                         belong_group_id: _,
                         name: Some(name),
@@ -511,7 +515,7 @@ mod test {
                     (errors.is_empty(), errors)
                 },
             );
-            assert_eq!(Vec::<GrafoError>::new(), errors);
+            assert_eq!(Vec::<GrafoError<String, Cow<str>>>::new(), errors);
             assert!(result);
         }
         let arena = arena_mut;
@@ -525,7 +529,11 @@ mod test {
                 } else {
                     assert_eq!(
                         ref_result,
-                        Err(NameIdError::NotExist(kind, format!("{}", index.1)))
+                        Err(NameIdError::NotExist(
+                            kind,
+                            format!("{}", index.1),
+                            PhantomData
+                        ))
                     );
                 }
             }
@@ -546,7 +554,7 @@ mod test {
                 &mut resolver,
                 builder,
                 |resolver, kind, group_id, item_id, option| {
-                    let mut errors: Vec<GrafoError> = Vec::new();
+                    let mut errors: Vec<GrafoError<String, Cow<str>>> = Vec::new();
                     if let TargetItemOption {
                         belong_group_id: _,
                         name: Some(name),
@@ -562,7 +570,7 @@ mod test {
                     (errors.is_empty(), errors)
                 },
             );
-            assert_eq!(Vec::<GrafoError>::new(), errors);
+            assert_eq!(Vec::<GrafoError<String, Cow<str>>>::new(), errors);
             assert!(result)
         }
         let arena = arena_mut;
@@ -593,7 +601,7 @@ mod test {
                 &mut resolver,
                 builder,
                 |resolver, kind, group_id, item_id, option| {
-                    let mut errors: Vec<GrafoError> = Vec::new();
+                    let mut errors: Vec<GrafoError<String, Cow<str>>> = Vec::new();
                     if let TargetItemOption {
                         belong_group_id: _,
                         name: Some(name),
@@ -609,7 +617,7 @@ mod test {
                     (errors.is_empty(), errors)
                 },
             );
-            assert_eq!(Vec::<GrafoError>::new(), errors);
+            assert_eq!(Vec::<GrafoError<String, Cow<str>>>::new(), errors);
             assert!(result);
         }
         let arena = arena_mut;
@@ -627,7 +635,11 @@ mod test {
                 } else {
                     assert_eq!(
                         ref_result,
-                        Err(NameIdError::NotExist(kind, format!("{}", index.1)))
+                        Err(NameIdError::NotExist(
+                            kind,
+                            format!("{}", index.1),
+                            PhantomData
+                        ))
                     );
                 }
             }

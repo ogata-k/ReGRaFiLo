@@ -12,7 +12,6 @@ use crate::util::item_base::{
 };
 use crate::util::kind::HasGraphItemKind;
 use crate::util::name_type::{NameType, StoredNameType};
-use std::borrow::Borrow;
 use std::marker::PhantomData;
 
 #[derive(Debug, Clone)]

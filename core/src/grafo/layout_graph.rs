@@ -11,7 +11,6 @@ use crate::util::alias::DEFAULT_ITEM_ID;
 use crate::util::item_base::FromWithItemId;
 use crate::util::kind::GraphItemKind;
 use crate::util::name_type::{NameType, StoredNameType};
-use std::borrow::Cow;
 
 #[derive(Debug, Clone)]
 pub struct GrafoBuilder<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> {
@@ -21,10 +20,6 @@ pub struct GrafoBuilder<Name: NameType<StoredName>, StoredName: StoredNameType<N
     // layout
     layout: Layout,
 }
-pub type NameStrGrafoBuilder<'a> = GrafoBuilder<String, Cow<'a, str>>;
-pub type NameTGrafoBuilder<T> = GrafoBuilder<T, T>;
-pub type NameUsizeGrafoBuilder = NameTGrafoBuilder<usize>;
-pub type NameU16GrafoBuilder = NameTGrafoBuilder<u16>;
 
 impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> Default
     for GrafoBuilder<Name, StoredName>
@@ -145,11 +140,6 @@ pub struct Grafo<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> {
     layout: Layout,
 }
 
-pub type NameStrGrafo<'a> = Grafo<String, Cow<'a, str>>;
-pub type NameTGrafo<T> = Grafo<T, T>;
-pub type NameUsizeGrafo = NameTGrafo<usize>;
-pub type NameU16Grafo = NameTGrafo<u16>;
-
 impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> Grafo<Name, StoredName> {
     // TODO 2 next push_group
     pub fn push_node(
@@ -188,6 +178,8 @@ mod test {
     use crate::grafo::graph_item::GraphItemBuilderBase;
     use crate::grafo::{GrafoBuilder, GrafoError, NameIdError};
     use crate::util::kind::GraphItemKind;
+    use std::borrow::Cow;
+    use std::marker::PhantomData;
 
     const ITERATE_COUNT: usize = 10;
 
@@ -205,7 +197,7 @@ mod test {
                 node_builder.set_name(format!("{}", i));
             }
             let (result, errors) = graph.push_node(node_builder);
-            assert_eq!(Vec::<GrafoError>::new(), errors);
+            assert_eq!(Vec::<GrafoError<String, Cow<str>>>::new(), errors);
             assert!(result);
         }
 
@@ -229,7 +221,7 @@ mod test {
         let mut node_builder_1 = NodeItemBuilder::new();
         node_builder_1.set_name("node");
         let (result, errors) = graph.push_node(node_builder_1);
-        assert_eq!(Vec::<GrafoError>::new(), errors);
+        assert_eq!(Vec::<GrafoError<String, Cow<str>>>::new(), errors);
         assert!(result);
 
         let mut node_builder_2 = NodeItemBuilder::new();
@@ -240,12 +232,12 @@ mod test {
             [
                 NodeItemError::NameIdError(
                     2,
-                    NameIdError::AlreadyExist(GraphItemKind::Node, "node".to_string())
+                    NameIdError::AlreadyExist(GraphItemKind::Node, "node".to_string(), PhantomData)
                 )
                 .into(),
                 NodeItemError::NameIdError(
                     2,
-                    NameIdError::Override(GraphItemKind::Node, "node".to_string())
+                    NameIdError::Override(GraphItemKind::Node, "node".to_string(), PhantomData)
                 )
                 .into(),
             ]
@@ -266,6 +258,6 @@ mod test {
         node_builder.set_belong_group("hoge");
         let (result, errors) = graph.push_node(node_builder);
         assert!(!result);
-        assert_ne!(Vec::<GrafoError>::new(), errors);
+        assert_ne!(Vec::<GrafoError<String, Cow<str>>>::new(), errors);
     }
 }

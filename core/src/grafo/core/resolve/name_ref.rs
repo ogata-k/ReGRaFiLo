@@ -1,6 +1,5 @@
 use crate::util::kind_key::KeyWithKind;
 use crate::util::name_type::{NameType, StoredNameType};
-use std::borrow::{Borrow, Cow};
 use std::collections::{BTreeMap, HashMap};
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
@@ -21,16 +20,6 @@ fn create_rev_key<Kind: NameRefKeyTrait, Value>(
     value: Value,
 ) -> KeyWithKind<Kind, Value> {
     KeyWithKind::new(kind, value)
-}
-
-fn key_to_str<
-    Name: NameType<StoredName>,
-    StoredName: StoredNameType<Name>,
-    Kind: Eq + Copy + Hash,
->(
-    key: &KeyWithKind<Kind, StoredName>,
-) -> &StoredName {
-    key.key.borrow()
 }
 
 #[derive(Debug, Eq, PartialEq, Clone)]
@@ -81,10 +70,8 @@ impl<
         self.reference_index.get(&create_key(kind, name.into()))
     }
 
-    pub fn get_name(&self, kind: Kind, value: Value) -> Option<&StoredName> {
-        self.rev_reference_index
-            .get(&create_rev_key(kind, value))
-            .map(|n| n.borrow())
+    pub fn get_name(&self, kind: Kind, value: Value) -> Option<&Name> {
+        self.rev_reference_index.get(&create_rev_key(kind, value))
     }
 
     pub fn contains_value(&self, kind: Kind, value: Value) -> bool {

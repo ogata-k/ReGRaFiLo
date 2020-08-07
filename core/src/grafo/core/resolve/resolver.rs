@@ -122,7 +122,7 @@ impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> Resolver<Name
         Ok(*id_pair)
     }
 
-    pub fn get_graph_item_name_by_item<I: GraphItemBase>(&self, item: &I) -> Option<&StoredName> {
+    pub fn get_graph_item_name_by_item<I: GraphItemBase>(&self, item: &I) -> Option<&Name> {
         self.get_graph_item_name(
             item.get_kind(),
             item.get_belong_group_id(),
@@ -135,7 +135,7 @@ impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> Resolver<Name
         item_kind: GraphItemKind,
         group_id: GroupId,
         item_id: ItemId,
-    ) -> Option<&StoredName> {
+    ) -> Option<&Name> {
         self.graph_items.get_name(item_kind, (group_id, item_id))
     }
 
@@ -179,7 +179,7 @@ impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> Resolver<Name
         let item_name = name.into();
         self.layouts
             .get_value(kind, item_name.clone())
-            .map(|i| *i)
+            .copied()
             .ok_or_else(|| NameIdError::NotExist(kind, item_name.into(), PhantomData))
     }
 
@@ -188,7 +188,7 @@ impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> Resolver<Name
         item_kind: GraphItemKind,
         attribute_kind: AttributeKind,
         item_id: ItemId,
-    ) -> Option<&StoredName> {
+    ) -> Option<&Name> {
         self.layouts.get_name(
             LayoutItemKind::new_with_item(item_kind, attribute_kind),
             item_id,
@@ -242,7 +242,7 @@ impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> Resolver<Name
         let item_name = name.into();
         self.layouts
             .get_value(kind, item_name.clone())
-            .map(|i| *i)
+            .copied()
             .ok_or_else(|| NameIdError::NotExist(kind, item_name.into(), PhantomData))
     }
 
@@ -250,7 +250,7 @@ impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> Resolver<Name
         &self,
         attribute_kind: AttributeKind,
         item_id: ItemId,
-    ) -> Option<&StoredName> {
+    ) -> Option<&Name> {
         self.layouts
             .get_name(LayoutItemKind::new(attribute_kind), item_id)
     }
