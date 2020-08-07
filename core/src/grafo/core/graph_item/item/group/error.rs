@@ -4,58 +4,40 @@ use crate::grafo::{GrafoError, NameIdError};
 use crate::util::alias::ItemId;
 use crate::util::item_base::{FromWithItemId, ItemErrorBase};
 use crate::util::kind::{GraphItemKind, HasGraphItemKind};
-use crate::util::name_type::{NameType, StoredNameType};
+use crate::util::name_type::NameType;
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Eq, PartialEq, Clone)]
-pub enum GroupItemError<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> {
+pub enum GroupItemError<Name: NameType> {
     // TODO
     FailResolveBelongGroup(ItemId),
-    NameIdError(ItemId, NameIdError<Name, StoredName, GraphItemKind>),
+    NameIdError(ItemId, NameIdError<Name, GraphItemKind>),
 }
 
-impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> HasGraphItemKind
-    for GroupItemError<Name, StoredName>
-{
+impl<Name: NameType> HasGraphItemKind for GroupItemError<Name> {
     fn kind() -> GraphItemKind {
         GroupItem::kind()
     }
 }
 
-impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> Display
-    for GroupItemError<Name, StoredName>
-{
+impl<Name: NameType> Display for GroupItemError<Name> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         unimplemented!()
     }
 }
 
-impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>>
-    Into<GrafoError<Name, StoredName>> for GroupItemError<Name, StoredName>
-{
-    fn into(self) -> GrafoError<Name, StoredName> {
+impl<Name: NameType> Into<GrafoError<Name>> for GroupItemError<Name> {
+    fn into(self) -> GrafoError<Name> {
         GrafoError::GroupItemError(self)
     }
 }
 
-impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> Error
-    for GroupItemError<Name, StoredName>
-{
-}
-impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> ItemErrorBase<Name, StoredName>
-    for GroupItemError<Name, StoredName>
-{
-}
-impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>>
-    FromWithItemId<NameIdError<Name, StoredName, GraphItemKind>>
-    for GroupItemError<Name, StoredName>
-{
-    fn from_with_id(item_id: ItemId, from: NameIdError<Name, StoredName, GraphItemKind>) -> Self {
+impl<Name: NameType> Error for GroupItemError<Name> {}
+impl<Name: NameType> ItemErrorBase<Name> for GroupItemError<Name> {}
+impl<Name: NameType> FromWithItemId<NameIdError<Name, GraphItemKind>> for GroupItemError<Name> {
+    fn from_with_id(item_id: ItemId, from: NameIdError<Name, GraphItemKind>) -> Self {
         unimplemented!()
     }
 }
-impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>>
-    GraphBuilderErrorBase<Name, StoredName> for GroupItemError<Name, StoredName>
-{
-}
+impl<Name: NameType> GraphBuilderErrorBase<Name> for GroupItemError<Name> {}

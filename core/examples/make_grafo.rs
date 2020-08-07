@@ -2,16 +2,16 @@ use std::time::SystemTime;
 
 use regrafilo_core::grafo::graph_item::node::NodeItemBuilder;
 use regrafilo_core::grafo::graph_item::GraphItemBuilderBase;
-use regrafilo_core::grafo::{NameTGrafo, NameTGrafoBuilder, NameTGrafoError};
+use regrafilo_core::grafo::{NameStrGrafo, NameStrGrafoBuilder, NameStrGrafoError};
 
 const ITERATE_COUNT: usize = 100;
 const SHOW: bool = false;
 
 // 下のNameXXXXGrafoYYYYのXXXXを適当なものにすればあとは簡単な修正で機能する。 ex NameStrGrafoBuilder
 // なおGrafoBuilderを生のまま使うことも可能
-type Graph = NameTGrafo<String>;
-type GraphBuilder = NameTGrafoBuilder<String>;
-type GraphError = NameTGrafoError<String>;
+type Graph = NameStrGrafo;
+type GraphBuilder = NameStrGrafoBuilder;
+type GraphError = NameStrGrafoError;
 
 fn main() {
     println!("iter count: {}", ITERATE_COUNT);

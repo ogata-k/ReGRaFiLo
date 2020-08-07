@@ -10,7 +10,7 @@ use crate::grafo::Resolver;
 use crate::util::alias::{GroupId, ItemId, DEFAULT_ITEM_ID};
 use crate::util::item_base::HasItemBuilderMethod;
 use crate::util::kind::GraphItemKind;
-use crate::util::name_type::{NameType, StoredNameType};
+use crate::util::name_type::NameType;
 
 /// item pool
 #[derive(Debug, Clone)]
@@ -51,27 +51,26 @@ impl<I: GraphItemBase> ItemArena<I> {
     /// push the item into arena with action for conclusion<br/>
     /// F: fn(item_kind, group_id, Result<(item_id, extension), err>)
     pub(crate) fn push<
-        Name: NameType<StoredName>,
-        StoredName: StoredNameType<Name>,
+        Name: NameType,
         F,
         O,
-        E: GraphBuilderErrorBase<Name, StoredName>,
-        B: GraphItemBuilderBase<Name, StoredName, Item = I, ItemError = E>
-            + HasItemBuilderMethod<Name, StoredName, Item = I, ItemOption = O, ItemError = E>,
+        E: GraphBuilderErrorBase<Name>,
+        B: GraphItemBuilderBase<Name, Item = I, ItemError = E>
+            + HasItemBuilderMethod<Name, Item = I, ItemOption = O, ItemError = E>,
     >(
         &mut self,
-        resolver: &mut Resolver<Name, StoredName>,
+        resolver: &mut Resolver<Name>,
         item_builder: B,
         action: F,
-    ) -> (bool, Vec<GrafoError<Name, StoredName>>)
+    ) -> (bool, Vec<GrafoError<Name>>)
     where
         F: FnOnce(
-            &mut Resolver<Name, StoredName>,
+            &mut Resolver<Name>,
             GraphItemKind,
             GroupId,
             ItemId,
             B::ItemOption,
-        ) -> (bool, Vec<GrafoError<Name, StoredName>>),
+        ) -> (bool, Vec<GrafoError<Name>>),
     {
         let push_id = self.get_push_id();
         let (item_option, mut errors) = item_builder.build(push_id, resolver);
@@ -148,24 +147,19 @@ impl<I: GraphItemBase + Default> ItemArena<I> {
     }
 
     /// push the item into arena with action for conclusion
-    pub(crate) fn push_default<
-        Name: NameType<StoredName>,
-        StoredName: StoredNameType<Name>,
-        F,
-        O: Default,
-    >(
+    pub(crate) fn push_default<Name: NameType, F, O: Default>(
         &mut self,
-        resolver: &mut Resolver<Name, StoredName>,
+        resolver: &mut Resolver<Name>,
         action: F,
-    ) -> (bool, Vec<GrafoError<Name, StoredName>>)
+    ) -> (bool, Vec<GrafoError<Name>>)
     where
         F: FnOnce(
-            &mut Resolver<Name, StoredName>,
+            &mut Resolver<Name>,
             GraphItemKind,
             GroupId,
             ItemId,
             O,
-        ) -> (bool, Vec<GrafoError<Name, StoredName>>),
+        ) -> (bool, Vec<GrafoError<Name>>),
     {
         let item = I::default();
         let group_id = item.get_belong_group_id();
@@ -181,27 +175,26 @@ impl<I: GraphItemBase + Default> ItemArena<I> {
 
     /// push the item into arena with action for conclusion<br/>
     pub(crate) fn push_user_item_as_default<
-        Name: NameType<StoredName>,
-        StoredName: StoredNameType<Name>,
+        Name: NameType,
         F,
         O,
-        E: GraphBuilderErrorBase<Name, StoredName>,
-        B: GraphItemBuilderBase<Name, StoredName, Item = I, ItemError = E>
-            + HasItemBuilderMethod<Name, StoredName, Item = I, ItemOption = O, ItemError = E>,
+        E: GraphBuilderErrorBase<Name>,
+        B: GraphItemBuilderBase<Name, Item = I, ItemError = E>
+            + HasItemBuilderMethod<Name, Item = I, ItemOption = O, ItemError = E>,
     >(
         &mut self,
-        resolver: &mut Resolver<Name, StoredName>,
+        resolver: &mut Resolver<Name>,
         item_builder: B,
         action: F,
-    ) -> (bool, Vec<GrafoError<Name, StoredName>>)
+    ) -> (bool, Vec<GrafoError<Name>>)
     where
         F: FnOnce(
-            &mut Resolver<Name, StoredName>,
+            &mut Resolver<Name>,
             GraphItemKind,
             GroupId,
             ItemId,
             B::ItemOption,
-        ) -> (bool, Vec<GrafoError<Name, StoredName>>),
+        ) -> (bool, Vec<GrafoError<Name>>),
     {
         let push_id = self.get_default_index();
         let (item_option, mut errors) = item_builder.build(push_id, resolver);
@@ -253,8 +246,6 @@ mod test {
     };
     use crate::util::kind::test::graph_item_check_list;
     use crate::util::kind::{GraphItemKind, HasGraphItemKind};
-    use std::borrow::Cow;
-    use std::marker::PhantomData;
 
     const ITERATE_COUNT: usize = 10;
     const TARGET_KIND: GraphItemKind = GraphItemKind::Node;
@@ -283,8 +274,8 @@ mod test {
         NotFindGroup(ItemId),
     }
 
-    impl<'a> Into<GrafoError<String, Cow<'a, str>>> for TargetBuilderError {
-        fn into(self) -> GrafoError<String, Cow<'a, str>> {
+    impl<'a> Into<GrafoError<String>> for TargetBuilderError {
+        fn into(self) -> GrafoError<String> {
             unimplemented!()
         }
     }
@@ -301,12 +292,12 @@ mod test {
         }
     }
 
-    impl<'a> ItemBuilderBase<String, Cow<'a, str>> for TargetItemBuilder {
+    impl<'a> ItemBuilderBase<String> for TargetItemBuilder {
         type Item = TargetItem;
         type ItemError = TargetBuilderError;
     }
 
-    impl<'a> GraphItemBuilderBase<String, Cow<'a, str>> for TargetItemBuilder {
+    impl<'a> GraphItemBuilderBase<String> for TargetItemBuilder {
         fn set_belong_group<S: Into<String>>(&mut self, group: S) -> &mut Self {
             self.belong_group = Some(group.into());
             self
@@ -328,8 +319,8 @@ mod test {
         fn resolve_belong_group(
             &self,
             item_id: ItemId,
-            resolver: &Resolver<String, Cow<'a, str>>,
-            errors: &mut Vec<GrafoError<String, Cow<'a, str>>>,
+            resolver: &Resolver<String>,
+            errors: &mut Vec<GrafoError<String>>,
             belong_group: Option<&str>,
         ) -> Option<GroupId> {
             match belong_group {
@@ -355,15 +346,15 @@ mod test {
         }
     }
 
-    impl<'a> HasItemBuilderMethod<String, Cow<'a, str>> for TargetItemBuilder {
+    impl<'a> HasItemBuilderMethod<String> for TargetItemBuilder {
         type ItemOption = TargetItemOption;
         fn build(
             self,
             item_id: ItemId,
-            resolver: &Resolver<String, Cow<'a, str>>,
-        ) -> ItemBuilderResult<String, Cow<'a, str>, TargetItem, TargetItemOption> {
+            resolver: &Resolver<String>,
+        ) -> ItemBuilderResult<String, TargetItem, TargetItemOption> {
             assert_ne!(TARGET_KIND, GraphItemKind::Group);
-            let mut errors: Vec<GrafoError<String, Cow<'a, str>>> = Vec::new();
+            let mut errors: Vec<GrafoError<String>> = Vec::new();
 
             let group_id = (&self).resolve_belong_group(
                 item_id,
@@ -425,17 +416,14 @@ mod test {
 
     impl Error for TargetBuilderError {}
 
-    impl<'a> ItemErrorBase<String, Cow<'a, str>> for TargetBuilderError {}
+    impl<'a> ItemErrorBase<String> for TargetBuilderError {}
 
-    impl<'a> FromWithItemId<NameIdError<String, Cow<'a, str>, GraphItemKind>> for TargetBuilderError {
-        fn from_with_id(
-            item_id: usize,
-            from: NameIdError<String, Cow<'a, str>, GraphItemKind>,
-        ) -> Self {
+    impl<'a> FromWithItemId<NameIdError<String, GraphItemKind>> for TargetBuilderError {
+        fn from_with_id(item_id: usize, from: NameIdError<String, GraphItemKind>) -> Self {
             unimplemented!()
         }
     }
-    impl<'a> GraphBuilderErrorBase<String, Cow<'a, str>> for TargetBuilderError {}
+    impl<'a> GraphBuilderErrorBase<String> for TargetBuilderError {}
 
     #[test]
     fn is_empty() {
@@ -446,7 +434,7 @@ mod test {
     fn with_name_count() {
         let mut arena_mut = ItemArena::<TargetItem>::new();
         let mut resolver = Resolver::default();
-        resolver.set_root_group_id(0);
+        resolver.set_root_group_id(0).unwrap();
         for i in 0..ITERATE_COUNT {
             let mut builder = TargetItemBuilder::new();
             builder.set_name(format!("{}", i));
@@ -454,7 +442,7 @@ mod test {
                 &mut resolver,
                 builder,
                 |resolver, kind, group_id, item_id, option| {
-                    let mut errors: Vec<GrafoError<String, Cow<str>>> = Vec::new();
+                    let mut errors: Vec<GrafoError<String>> = Vec::new();
                     if let TargetItemOption {
                         belong_group_id: _,
                         name: Some(name),
@@ -469,7 +457,7 @@ mod test {
                     (errors.is_empty(), errors)
                 },
             );
-            assert_eq!(Vec::<GrafoError<String, Cow<str>>>::new(), errors);
+            assert_eq!(Vec::<GrafoError<String>>::new(), errors);
             assert!(result);
         }
         let arena = arena_mut;
@@ -490,7 +478,7 @@ mod test {
     fn with_name_each_eq() {
         let mut arena_mut = ItemArena::<TargetItem>::new();
         let mut resolver = Resolver::default();
-        resolver.set_root_group_id(0);
+        resolver.set_root_group_id(0).unwrap();
 
         for i in 1..=ITERATE_COUNT {
             let mut builder = TargetItemBuilder::new();
@@ -499,7 +487,7 @@ mod test {
                 &mut resolver,
                 builder,
                 |resolver, kind, group_id, item_id, option| {
-                    let mut errors: Vec<GrafoError<String, Cow<str>>> = Vec::new();
+                    let mut errors: Vec<GrafoError<String>> = Vec::new();
                     if let TargetItemOption {
                         belong_group_id: _,
                         name: Some(name),
@@ -515,11 +503,11 @@ mod test {
                     (errors.is_empty(), errors)
                 },
             );
-            assert_eq!(Vec::<GrafoError<String, Cow<str>>>::new(), errors);
+            assert_eq!(Vec::<GrafoError<String>>::new(), errors);
             assert!(result);
         }
         let arena = arena_mut;
-        for (index, item) in (&arena).iter() {
+        for (index, _item) in (&arena).iter() {
             for kind in graph_item_check_list() {
                 let name = format!("{}", index.1);
                 let ref_result = resolver.get_graph_item_id_pair(kind, &name);
@@ -529,11 +517,7 @@ mod test {
                 } else {
                     assert_eq!(
                         ref_result,
-                        Err(NameIdError::NotExist(
-                            kind,
-                            format!("{}", index.1),
-                            PhantomData
-                        ))
+                        Err(NameIdError::NotExist(kind, format!("{}", index.1),))
                     );
                 }
             }
@@ -544,7 +528,7 @@ mod test {
     fn mixed_count() {
         let mut arena_mut = ItemArena::<TargetItem>::new();
         let mut resolver = Resolver::default();
-        resolver.set_root_group_id(0);
+        resolver.set_root_group_id(0).unwrap();
         for i in 1..=2 * ITERATE_COUNT {
             let mut builder = TargetItemBuilder::new();
             if i <= ITERATE_COUNT {
@@ -554,7 +538,7 @@ mod test {
                 &mut resolver,
                 builder,
                 |resolver, kind, group_id, item_id, option| {
-                    let mut errors: Vec<GrafoError<String, Cow<str>>> = Vec::new();
+                    let mut errors: Vec<GrafoError<String>> = Vec::new();
                     if let TargetItemOption {
                         belong_group_id: _,
                         name: Some(name),
@@ -570,7 +554,7 @@ mod test {
                     (errors.is_empty(), errors)
                 },
             );
-            assert_eq!(Vec::<GrafoError<String, Cow<str>>>::new(), errors);
+            assert_eq!(Vec::<GrafoError<String>>::new(), errors);
             assert!(result)
         }
         let arena = arena_mut;
@@ -591,7 +575,7 @@ mod test {
     fn mixed_each_eq() {
         let mut arena_mut = ItemArena::<TargetItem>::new();
         let mut resolver = Resolver::default();
-        resolver.set_root_group_id(0);
+        resolver.set_root_group_id(0).unwrap();
         for i in 1..=2 * ITERATE_COUNT {
             let mut builder = TargetItemBuilder::new();
             if i <= ITERATE_COUNT {
@@ -601,7 +585,7 @@ mod test {
                 &mut resolver,
                 builder,
                 |resolver, kind, group_id, item_id, option| {
-                    let mut errors: Vec<GrafoError<String, Cow<str>>> = Vec::new();
+                    let mut errors: Vec<GrafoError<String>> = Vec::new();
                     if let TargetItemOption {
                         belong_group_id: _,
                         name: Some(name),
@@ -617,11 +601,11 @@ mod test {
                     (errors.is_empty(), errors)
                 },
             );
-            assert_eq!(Vec::<GrafoError<String, Cow<str>>>::new(), errors);
+            assert_eq!(Vec::<GrafoError<String>>::new(), errors);
             assert!(result);
         }
         let arena = arena_mut;
-        for (index, item) in (&arena).iter() {
+        for (index, _item) in (&arena).iter() {
             for kind in graph_item_check_list() {
                 let name = format!("{}", index.1);
                 let ref_result = resolver.get_graph_item_id_pair(kind, &name);
@@ -635,11 +619,7 @@ mod test {
                 } else {
                     assert_eq!(
                         ref_result,
-                        Err(NameIdError::NotExist(
-                            kind,
-                            format!("{}", index.1),
-                            PhantomData
-                        ))
+                        Err(NameIdError::NotExist(kind, format!("{}", index.1),))
                     );
                 }
             }

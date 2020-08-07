@@ -6,8 +6,7 @@ use crate::grafo::{GrafoError, IdTree, NameIdError, NameRefIndex};
 use crate::util::alias::{GroupId, ItemId};
 use crate::util::either::Either;
 use crate::util::kind::{AttributeKind, GraphItemKind, LayoutItemKind};
-use crate::util::name_type::{NameType, StoredNameType};
-use std::marker::PhantomData;
+use crate::util::name_type::NameType;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ResolverError {
@@ -25,27 +24,23 @@ impl std::fmt::Display for ResolverError {
 
 impl Error for ResolverError {}
 
-impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>>
-    Into<GrafoError<Name, StoredName>> for ResolverError
-{
-    fn into(self) -> GrafoError<Name, StoredName> {
+impl<Name: NameType> Into<GrafoError<Name>> for ResolverError {
+    fn into(self) -> GrafoError<Name> {
         unimplemented!()
     }
 }
 
 /// reference indexes for names
 #[derive(Debug, Clone)]
-pub struct Resolver<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> {
+pub struct Resolver<Name: NameType> {
     group_id_tree: IdTree<GroupId>,
     /// names reference indexes name:(group_id, item_id)
-    graph_items: NameRefIndex<Name, StoredName, GraphItemKind, (GroupId, ItemId)>,
+    graph_items: NameRefIndex<Name, GraphItemKind, (GroupId, ItemId)>,
     /// layout reference indexes layout_type:value
-    layouts: NameRefIndex<Name, StoredName, LayoutItemKind, ItemId>,
+    layouts: NameRefIndex<Name, LayoutItemKind, ItemId>,
 }
 
-impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> Default
-    for Resolver<Name, StoredName>
-{
+impl<Name: NameType> Default for Resolver<Name> {
     fn default() -> Self {
         Self {
             group_id_tree: IdTree::None,
@@ -55,7 +50,7 @@ impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> Default
     }
 }
 
-impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> Resolver<Name, StoredName> {
+impl<Name: NameType> Resolver<Name> {
     pub fn new() -> Self {
         Default::default()
     }
@@ -78,13 +73,10 @@ impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> Resolver<Name
         }
     }
 
-    pub fn get_belong_group<S: Into<StoredName>>(
+    pub fn get_belong_group<S: Into<Name>>(
         &self,
         name: Option<S>,
-    ) -> Result<
-        (GroupId, ItemId),
-        Either<NameIdError<Name, StoredName, GraphItemKind>, ResolverError>,
-    > {
+    ) -> Result<(GroupId, ItemId), Either<NameIdError<Name, GraphItemKind>, ResolverError>> {
         // @fixme push以外は&Sと参照を受け取るようにしたい
         if let Some(n) = name {
             self.get_graph_item_id_pair(GraphItemKind::Group, n)
@@ -105,22 +97,22 @@ impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> Resolver<Name
         name: S,
         group_id: GroupId,
         item_id: ItemId,
-    ) -> Result<(), NameIdError<Name, StoredName, GraphItemKind>> {
+    ) -> Result<(), NameIdError<Name, GraphItemKind>> {
         self.graph_items
             .push_value(item_kind, name, (group_id, item_id))
     }
 
-    pub fn get_graph_item_id_pair<S: Into<StoredName>>(
+    pub fn get_graph_item_id_pair<S: Into<Name>>(
         &self,
         item_kind: GraphItemKind,
         name: S,
-    ) -> Result<(GroupId, ItemId), NameIdError<Name, StoredName, GraphItemKind>> {
+    ) -> Result<(GroupId, ItemId), NameIdError<Name, GraphItemKind>> {
         // @fixme push以外は&Sと参照を受け取るようにしたい
         let item_name = name.into();
         let id_pair = self
             .graph_items
             .get_value(item_kind, item_name.clone())
-            .ok_or_else(|| NameIdError::NotExist(item_kind, item_name.into(), PhantomData))?;
+            .ok_or_else(|| NameIdError::NotExist(item_kind, item_name.into()))?;
         Ok(*id_pair)
     }
 
@@ -141,7 +133,7 @@ impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> Resolver<Name
         self.graph_items.get_name(item_kind, (group_id, item_id))
     }
 
-    pub fn contains_name_graph_item<S: Into<StoredName>>(
+    pub fn contains_name_graph_item<S: Into<Name>>(
         &self,
         item_kind: GraphItemKind,
         name: S,
@@ -164,7 +156,7 @@ impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> Resolver<Name
         attribute_kind: AttributeKind,
         name: S,
         layout_item_id: ItemId,
-    ) -> Result<(), NameIdError<Name, StoredName, LayoutItemKind>> {
+    ) -> Result<(), NameIdError<Name, LayoutItemKind>> {
         // @fixme push以外は&Sと参照を受け取るようにしたい
         self.layouts.push_value(
             LayoutItemKind::new_with_item(item_kind, attribute_kind),
@@ -173,19 +165,19 @@ impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> Resolver<Name
         )
     }
 
-    pub fn get_layout_item_id_for_graph_item<S: Into<StoredName>>(
+    pub fn get_layout_item_id_for_graph_item<S: Into<Name>>(
         &self,
         item_kind: GraphItemKind,
         attribute_kind: AttributeKind,
         name: S,
-    ) -> Result<ItemId, NameIdError<Name, StoredName, LayoutItemKind>> {
+    ) -> Result<ItemId, NameIdError<Name, LayoutItemKind>> {
         // @fixme push以外は&Sと参照を受け取るようにしたい
         let kind = LayoutItemKind::new_with_item(item_kind, attribute_kind);
         let item_name = name.into();
         self.layouts
             .get_value(kind, item_name.clone())
             .copied()
-            .ok_or_else(|| NameIdError::NotExist(kind, item_name.into(), PhantomData))
+            .ok_or_else(|| NameIdError::NotExist(kind, item_name.into()))
     }
 
     pub fn get_layout_item_name_for_graph_item(
@@ -200,7 +192,7 @@ impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> Resolver<Name
         )
     }
 
-    pub fn contains_name_layout_item_for_graph_item<S: Into<StoredName>>(
+    pub fn contains_name_layout_item_for_graph_item<S: Into<Name>>(
         &self,
         item_kind: GraphItemKind,
         attribute_kind: AttributeKind,
@@ -231,7 +223,7 @@ impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> Resolver<Name
         attribute_kind: AttributeKind,
         name: S,
         layout_item_id: ItemId,
-    ) -> Result<(), NameIdError<Name, StoredName, LayoutItemKind>> {
+    ) -> Result<(), NameIdError<Name, LayoutItemKind>> {
         self.layouts.push_value(
             LayoutItemKind::new(attribute_kind),
             name.into(),
@@ -239,18 +231,18 @@ impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> Resolver<Name
         )
     }
 
-    pub fn get_layout_item_id<S: Into<StoredName>>(
+    pub fn get_layout_item_id<S: Into<Name>>(
         &self,
         attribute_kind: AttributeKind,
         name: S,
-    ) -> Result<ItemId, NameIdError<Name, StoredName, LayoutItemKind>> {
+    ) -> Result<ItemId, NameIdError<Name, LayoutItemKind>> {
         // @fixme push以外は&Sと参照を受け取るようにしたい
         let kind = LayoutItemKind::new(attribute_kind);
         let item_name = name.into();
         self.layouts
             .get_value(kind, item_name.clone())
             .copied()
-            .ok_or_else(|| NameIdError::NotExist(kind, item_name.into(), PhantomData))
+            .ok_or_else(|| NameIdError::NotExist(kind, item_name.into()))
     }
 
     pub fn get_layout_item_name(
@@ -262,7 +254,7 @@ impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> Resolver<Name
             .get_name(LayoutItemKind::new(attribute_kind), item_id)
     }
 
-    pub fn contains_name_layout_item<S: Into<StoredName>>(
+    pub fn contains_name_layout_item<S: Into<Name>>(
         &self,
         attribute_kind: AttributeKind,
         name: S,

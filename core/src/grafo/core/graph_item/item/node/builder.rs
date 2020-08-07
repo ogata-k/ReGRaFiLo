@@ -11,26 +11,21 @@ use crate::util::item_base::{
     FromWithItemId, HasItemBuilderMethod, ItemBuilderBase, ItemBuilderResult,
 };
 use crate::util::kind::HasGraphItemKind;
-use crate::util::name_type::{NameType, StoredNameType};
+use crate::util::name_type::NameType;
 use std::marker::PhantomData;
 
 #[derive(Debug, Clone)]
-pub struct NodeItemBuilder<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> {
-    stored_name: PhantomData<StoredName>,
+pub struct NodeItemBuilder<Name: NameType> {
     belong_group: Option<Name>,
     name: Option<Name>,
 }
 
-impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> ItemBuilderBase<Name, StoredName>
-    for NodeItemBuilder<Name, StoredName>
-{
+impl<Name: NameType> ItemBuilderBase<Name> for NodeItemBuilder<Name> {
     type Item = NodeItem;
-    type ItemError = NodeItemError<Name, StoredName>;
+    type ItemError = NodeItemError<Name>;
 }
 
-impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>>
-    GraphItemBuilderBase<Name, StoredName> for NodeItemBuilder<Name, StoredName>
-{
+impl<Name: NameType> GraphItemBuilderBase<Name> for NodeItemBuilder<Name> {
     fn set_belong_group<S: Into<Name>>(&mut self, group: S) -> &mut Self {
         self.belong_group = Some(group.into());
         self
@@ -42,25 +37,22 @@ impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>>
     }
 }
 
-impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>>
-    HasItemBuilderMethod<Name, StoredName> for NodeItemBuilder<Name, StoredName>
-{
-    type ItemOption = NodeItemOption<Name, StoredName>;
+impl<Name: NameType> HasItemBuilderMethod<Name> for NodeItemBuilder<Name> {
+    type ItemOption = NodeItemOption<Name>;
     fn build(
         self,
         item_id: ItemId,
-        resolver: &Resolver<Name, StoredName>,
-    ) -> ItemBuilderResult<Name, StoredName, Self::Item, Self::ItemOption> {
+        resolver: &Resolver<Name>,
+    ) -> ItemBuilderResult<Name, Self::Item, Self::ItemOption> {
         let NodeItemBuilder {
-            stored_name: _,
             belong_group: belong_group_name,
             name,
         } = self;
-        let mut errors: Vec<GrafoError<Name, StoredName>> = Vec::new();
+        let mut errors: Vec<GrafoError<Name>> = Vec::new();
         let belong_group: Option<(GroupId, ItemId)> =
             Self::resolve_belong_group(belong_group_name, item_id, resolver, &mut errors);
         let item: Option<NodeItem> = Self::resolve_item(item_id, &mut errors, belong_group);
-        let item_option: Option<NodeItemOption<Name, StoredName>> =
+        let item_option: Option<NodeItemOption<Name>> =
             Self::resolve_item_option(name, item_id, resolver, &mut errors);
 
         match (item, item_option) {
@@ -70,12 +62,9 @@ impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>>
     }
 }
 
-impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>>
-    NodeItemBuilder<Name, StoredName>
-{
+impl<Name: NameType> NodeItemBuilder<Name> {
     pub fn new() -> Self {
         Self {
-            stored_name: PhantomData,
             belong_group: None,
             name: None,
         }
@@ -84,8 +73,8 @@ impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>>
     fn resolve_belong_group(
         belong_group: Option<Name>,
         item_id: ItemId,
-        resolver: &Resolver<Name, StoredName>,
-        errors: &mut Vec<GrafoError<Name, StoredName>>,
+        resolver: &Resolver<Name>,
+        errors: &mut Vec<GrafoError<Name>>,
     ) -> Option<(GroupId, ItemId)> {
         // @fixme push以外は&Sと参照を受け取るようにしたい（参照に直せたら以前のself.hoge()形式に戻す. なおselfはここで奪う）
         match resolver.get_belong_group(belong_group) {
@@ -103,7 +92,7 @@ impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>>
 
     fn resolve_item(
         item_id: ItemId,
-        errors: &mut Vec<GrafoError<Name, StoredName>>,
+        errors: &mut Vec<GrafoError<Name>>,
         resolved_belong_group: Option<(GroupId, ItemId)>,
     ) -> Option<NodeItem> {
         // @fixme push以外は&Sと参照を受け取るようにしたい（参照に直せたら以前のself.hoge()形式に戻す）
@@ -123,24 +112,21 @@ impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>>
     fn resolve_item_option(
         name: Option<Name>,
         item_id: ItemId,
-        resolver: &Resolver<Name, StoredName>,
-        errors: &mut Vec<GrafoError<Name, StoredName>>,
-    ) -> Option<NodeItemOption<Name, StoredName>> {
+        resolver: &Resolver<Name>,
+        errors: &mut Vec<GrafoError<Name>>,
+    ) -> Option<NodeItemOption<Name>> {
         // @fixme push以外は&Sと参照を受け取るようにしたい（参照に直せたら以前のself.hoge()形式に戻す）
-        if let Some(n) = name.clone().map(|n| n.into()) {
+        if let Some(n) = name.clone() {
             if resolver.contains_name_graph_item(NodeItem::kind(), n.clone()) {
                 errors.push(
                     NodeItemError::from_with_id(
                         item_id,
-                        NameIdError::AlreadyExist(NodeItem::kind(), n.into(), PhantomData),
+                        NameIdError::AlreadyExist(NodeItem::kind(), n.into()),
                     )
                     .into(),
                 );
             }
         }
-        Some(NodeItemOption {
-            stored_name: PhantomData,
-            name,
-        })
+        Some(NodeItemOption { name })
     }
 }

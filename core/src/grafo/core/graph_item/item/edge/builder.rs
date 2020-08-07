@@ -6,27 +6,21 @@ use crate::grafo::core::graph_item::GraphItemBuilderBase;
 use crate::grafo::core::resolve::Resolver;
 use crate::util::alias::ItemId;
 use crate::util::item_base::{HasItemBuilderMethod, ItemBuilderBase, ItemBuilderResult};
-use crate::util::name_type::{NameType, StoredNameType};
-use std::marker::PhantomData;
+use crate::util::name_type::NameType;
 
 #[derive(Debug, Clone)]
-pub struct EdgeItemBuilder<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> {
+pub struct EdgeItemBuilder<Name: NameType> {
     // TODO
-    stored_name: PhantomData<StoredName>,
     belong_group: Option<Name>,
     name: Option<Name>,
 }
 
-impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> ItemBuilderBase<Name, StoredName>
-    for EdgeItemBuilder<Name, StoredName>
-{
+impl<Name: NameType> ItemBuilderBase<Name> for EdgeItemBuilder<Name> {
     type Item = EdgeItem;
-    type ItemError = EdgeItemError<Name, StoredName>;
+    type ItemError = EdgeItemError<Name>;
 }
 
-impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>>
-    GraphItemBuilderBase<Name, StoredName> for EdgeItemBuilder<Name, StoredName>
-{
+impl<Name: NameType> GraphItemBuilderBase<Name> for EdgeItemBuilder<Name> {
     fn set_belong_group<S: Into<Name>>(&mut self, group: S) -> &mut Self {
         unimplemented!()
     }
@@ -36,25 +30,20 @@ impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>>
     }
 }
 
-impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>>
-    HasItemBuilderMethod<Name, StoredName> for EdgeItemBuilder<Name, StoredName>
-{
-    type ItemOption = EdgeItemOption<Name, StoredName>;
+impl<Name: NameType> HasItemBuilderMethod<Name> for EdgeItemBuilder<Name> {
+    type ItemOption = EdgeItemOption<Name>;
     fn build(
         self,
         item_id: ItemId,
-        resolver: &Resolver<Name, StoredName>,
-    ) -> ItemBuilderResult<Name, StoredName, Self::Item, Self::ItemOption> {
+        resolver: &Resolver<Name>,
+    ) -> ItemBuilderResult<Name, Self::Item, Self::ItemOption> {
         unimplemented!()
     }
 }
 
-impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>>
-    EdgeItemBuilder<Name, StoredName>
-{
+impl<Name: NameType> EdgeItemBuilder<Name> {
     pub fn new() -> Self {
         Self {
-            stored_name: PhantomData,
             belong_group: None,
             name: None,
         }

@@ -1,18 +1,11 @@
-use crate::util::name_type::{NameType, StoredNameType};
-use std::marker::PhantomData;
+use crate::util::name_type::NameType;
 
-pub struct GroupItemOption<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> {
-    pub stored_name: PhantomData<StoredName>,
+pub struct GroupItemOption<Name: NameType> {
     pub name: Option<Name>,
 }
 
-impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> Default
-    for GroupItemOption<Name, StoredName>
-{
+impl<Name: NameType> Default for GroupItemOption<Name> {
     fn default() -> Self {
-        Self {
-            stored_name: PhantomData,
-            name: None,
-        }
+        Self { name: None }
     }
 }

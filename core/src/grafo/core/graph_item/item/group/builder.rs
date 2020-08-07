@@ -6,27 +6,21 @@ use crate::grafo::core::graph_item::GraphItemBuilderBase;
 use crate::grafo::core::resolve::Resolver;
 use crate::util::alias::ItemId;
 use crate::util::item_base::{HasItemBuilderMethod, ItemBuilderBase, ItemBuilderResult};
-use crate::util::name_type::{NameType, StoredNameType};
-use std::marker::PhantomData;
+use crate::util::name_type::NameType;
 
 #[derive(Debug, Clone)]
-pub struct GroupItemBuilder<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> {
+pub struct GroupItemBuilder<Name: NameType> {
     // TODO
-    stored_name: PhantomData<StoredName>,
     belong_group: Option<Name>,
     name: Option<Name>,
 }
 
-impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> ItemBuilderBase<Name, StoredName>
-    for GroupItemBuilder<Name, StoredName>
-{
+impl<Name: NameType> ItemBuilderBase<Name> for GroupItemBuilder<Name> {
     type Item = GroupItem;
-    type ItemError = GroupItemError<Name, StoredName>;
+    type ItemError = GroupItemError<Name>;
 }
 
-impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>>
-    GraphItemBuilderBase<Name, StoredName> for GroupItemBuilder<Name, StoredName>
-{
+impl<Name: NameType> GraphItemBuilderBase<Name> for GroupItemBuilder<Name> {
     fn set_belong_group<S: Into<Name>>(&mut self, group: S) -> &mut Self {
         unimplemented!()
     }
@@ -36,33 +30,26 @@ impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>>
     }
 }
 
-impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>>
-    HasItemBuilderMethod<Name, StoredName> for GroupItemBuilder<Name, StoredName>
-{
-    type ItemOption = GroupItemOption<Name, StoredName>;
+impl<Name: NameType> HasItemBuilderMethod<Name> for GroupItemBuilder<Name> {
+    type ItemOption = GroupItemOption<Name>;
     fn build(
         self,
         item_id: ItemId,
-        resolver: &Resolver<Name, StoredName>,
-    ) -> ItemBuilderResult<Name, StoredName, Self::Item, Self::ItemOption> {
+        resolver: &Resolver<Name>,
+    ) -> ItemBuilderResult<Name, Self::Item, Self::ItemOption> {
         unimplemented!()
     }
 }
 
-impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> Default
-    for GroupItemBuilder<Name, StoredName>
-{
+impl<Name: NameType> Default for GroupItemBuilder<Name> {
     fn default() -> Self {
         unimplemented!()
     }
 }
 
-impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>>
-    GroupItemBuilder<Name, StoredName>
-{
+impl<Name: NameType> GroupItemBuilder<Name> {
     pub fn new() -> Self {
         Self {
-            stored_name: PhantomData,
             belong_group: None,
             name: None,
         }
