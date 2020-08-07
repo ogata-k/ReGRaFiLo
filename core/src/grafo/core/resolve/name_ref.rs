@@ -67,6 +67,7 @@ impl<
 
     /// helper for getter of string attribute
     pub fn get_value<S: Into<StoredName>>(&self, kind: Kind, name: S) -> Option<&Value> {
+        // @fixme push以外は&Sと参照を受け取るようにしたい
         self.reference_index.get(&create_key(kind, name.into()))
     }
 
@@ -80,6 +81,7 @@ impl<
     }
 
     pub fn contains_name<S: Into<StoredName>>(&self, kind: Kind, name: S) -> bool {
+        // @fixme push以外は&Sと参照を受け取るようにしたい
         self.reference_index
             .contains_key(&create_key(kind, name.into().into().into()))
     }

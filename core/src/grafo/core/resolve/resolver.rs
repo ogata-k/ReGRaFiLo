@@ -85,6 +85,7 @@ impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> Resolver<Name
         (GroupId, ItemId),
         Either<NameIdError<Name, StoredName, GraphItemKind>, ResolverError>,
     > {
+        // @fixme push以外は&Sと参照を受け取るようにしたい
         if let Some(n) = name {
             self.get_graph_item_id_pair(GraphItemKind::Group, n)
                 .map_err(Either::Left)
@@ -114,6 +115,7 @@ impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> Resolver<Name
         item_kind: GraphItemKind,
         name: S,
     ) -> Result<(GroupId, ItemId), NameIdError<Name, StoredName, GraphItemKind>> {
+        // @fixme push以外は&Sと参照を受け取るようにしたい
         let item_name = name.into();
         let id_pair = self
             .graph_items
@@ -144,6 +146,7 @@ impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> Resolver<Name
         item_kind: GraphItemKind,
         name: S,
     ) -> bool {
+        // @fixme push以外は&Sと参照を受け取るようにしたい
         self.graph_items.contains_name(item_kind, name)
     }
 
@@ -162,6 +165,7 @@ impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> Resolver<Name
         name: S,
         layout_item_id: ItemId,
     ) -> Result<(), NameIdError<Name, StoredName, LayoutItemKind>> {
+        // @fixme push以外は&Sと参照を受け取るようにしたい
         self.layouts.push_value(
             LayoutItemKind::new_with_item(item_kind, attribute_kind),
             name.into(),
@@ -175,6 +179,7 @@ impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> Resolver<Name
         attribute_kind: AttributeKind,
         name: S,
     ) -> Result<ItemId, NameIdError<Name, StoredName, LayoutItemKind>> {
+        // @fixme push以外は&Sと参照を受け取るようにしたい
         let kind = LayoutItemKind::new_with_item(item_kind, attribute_kind);
         let item_name = name.into();
         self.layouts
@@ -201,6 +206,7 @@ impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> Resolver<Name
         attribute_kind: AttributeKind,
         name: S,
     ) -> bool {
+        // @fixme push以外は&Sと参照を受け取るようにしたい
         self.layouts.contains_name(
             LayoutItemKind::new_with_item(item_kind, attribute_kind),
             name,
@@ -238,6 +244,7 @@ impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> Resolver<Name
         attribute_kind: AttributeKind,
         name: S,
     ) -> Result<ItemId, NameIdError<Name, StoredName, LayoutItemKind>> {
+        // @fixme push以外は&Sと参照を受け取るようにしたい
         let kind = LayoutItemKind::new(attribute_kind);
         let item_name = name.into();
         self.layouts
@@ -260,6 +267,7 @@ impl<Name: NameType<StoredName>, StoredName: StoredNameType<Name>> Resolver<Name
         attribute_kind: AttributeKind,
         name: S,
     ) -> bool {
+        // @fixme push以外は&Sと参照を受け取るようにしたい
         self.layouts
             .contains_name(LayoutItemKind::new(attribute_kind), name)
     }

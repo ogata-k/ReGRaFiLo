@@ -185,7 +185,7 @@ mod test {
 
     #[test]
     fn push_node_success() {
-        let mut graph = GrafoBuilder::new().build_with_default();
+        let graph = GrafoBuilder::new().build_with_default();
         if graph.is_err() {
             panic!("errors: {:?}", graph.err().unwrap()); // in test panic
         }
@@ -248,7 +248,7 @@ mod test {
 
     #[test]
     fn build_node_fail() {
-        let mut graph = GrafoBuilder::new().build_with_default();
+        let graph = GrafoBuilder::new().build_with_default();
         if graph.is_err() {
             panic!("errors: {:?}", graph.err().unwrap()); // in test panic
         }
