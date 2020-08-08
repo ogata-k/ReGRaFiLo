@@ -112,7 +112,7 @@ impl<Name: NameType> Resolver<Name> {
         let id_pair = self
             .graph_items
             .get_value(item_kind, item_name.clone())
-            .ok_or_else(|| NameIdError::NotExist(item_kind, item_name.into()))?;
+            .ok_or_else(|| NameIdError::NotExist(item_kind, item_name))?;
         Ok(*id_pair)
     }
 
@@ -177,7 +177,7 @@ impl<Name: NameType> Resolver<Name> {
         self.layouts
             .get_value(kind, item_name.clone())
             .copied()
-            .ok_or_else(|| NameIdError::NotExist(kind, item_name.into()))
+            .ok_or_else(|| NameIdError::NotExist(kind, item_name))
     }
 
     pub fn get_layout_item_name_for_graph_item(
@@ -242,7 +242,7 @@ impl<Name: NameType> Resolver<Name> {
         self.layouts
             .get_value(kind, item_name.clone())
             .copied()
-            .ok_or_else(|| NameIdError::NotExist(kind, item_name.into()))
+            .ok_or_else(|| NameIdError::NotExist(kind, item_name))
     }
 
     pub fn get_layout_item_name(

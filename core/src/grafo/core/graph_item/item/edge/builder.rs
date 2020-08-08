@@ -42,6 +42,7 @@ impl<Name: NameType> HasItemBuilderMethod<Name> for EdgeItemBuilder<Name> {
 }
 
 impl<Name: NameType> EdgeItemBuilder<Name> {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self {
             belong_group: None,

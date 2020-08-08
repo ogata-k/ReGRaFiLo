@@ -68,7 +68,7 @@ impl<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKeyTrait>
     pub fn contains_name<S: Into<Name>>(&self, kind: Kind, name: S) -> bool {
         // @fixme push以外は&Sと参照を受け取るようにしたい
         self.reference_index
-            .contains_key(&create_key(kind, name.into().into()))
+            .contains_key(&create_key(kind, name.into()))
     }
 
     pub fn count_names_by(&self, kind: Kind) -> usize {
@@ -107,13 +107,13 @@ impl<Name: NameType, Kind: Debug + Display + NameRefKeyTrait, Value: NameRefKeyT
         let key = create_key(kind, item_name.clone());
         let rev_key = create_rev_key(kind, value);
         if self.reference_index.contains_key(&key) {
-            let s = item_name.clone().into();
+            let s = item_name.clone();
             self.reference_index.insert(key, value);
-            self.rev_reference_index.insert(rev_key, item_name.into());
+            self.rev_reference_index.insert(rev_key, item_name);
             return Err(NameIdError::Override(kind, s));
         }
         self.reference_index.insert(key, value);
-        self.rev_reference_index.insert(rev_key, item_name.into());
+        self.rev_reference_index.insert(rev_key, item_name);
         Ok(())
     }
 }

@@ -12,7 +12,6 @@ use crate::util::item_base::{
 };
 use crate::util::kind::HasGraphItemKind;
 use crate::util::name_type::NameType;
-use std::marker::PhantomData;
 
 #[derive(Debug, Clone)]
 pub struct NodeItemBuilder<Name: NameType> {
@@ -63,6 +62,7 @@ impl<Name: NameType> HasItemBuilderMethod<Name> for NodeItemBuilder<Name> {
 }
 
 impl<Name: NameType> NodeItemBuilder<Name> {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self {
             belong_group: None,
@@ -121,7 +121,7 @@ impl<Name: NameType> NodeItemBuilder<Name> {
                 errors.push(
                     NodeItemError::from_with_id(
                         item_id,
-                        NameIdError::AlreadyExist(NodeItem::kind(), n.into()),
+                        NameIdError::AlreadyExist(NodeItem::kind(), n),
                     )
                     .into(),
                 );
