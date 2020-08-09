@@ -170,18 +170,22 @@ impl<Name: NameType> Grafo<Name> {
 mod test {
     use crate::grafo::graph_item::node::{NodeItemBuilder, NodeItemError};
     use crate::grafo::graph_item::GraphItemBuilderBase;
-    use crate::grafo::{GrafoBuilder, GrafoError, NameIdError};
+    use crate::grafo::{NameIdError, NameStrGrafo, NameStrGrafoBuilder, NameStrGrafoError};
     use crate::util::kind::GraphItemKind;
+
+    type Graph = NameStrGrafo;
+    type GraphBuilder = NameStrGrafoBuilder;
+    type GraphError = NameStrGrafoError;
 
     const ITERATE_COUNT: usize = 10;
 
     #[test]
     fn push_node_success() {
-        let graph = GrafoBuilder::new().build_with_default();
+        let graph = GraphBuilder::new().build_with_default();
         if graph.is_err() {
             panic!("errors: {:?}", graph.err().unwrap()); // in test panic
         }
-        let mut graph = graph.unwrap();
+        let mut graph: Graph = graph.unwrap();
 
         for i in 0..2 * ITERATE_COUNT {
             let mut node_builder = NodeItemBuilder::new();
@@ -189,7 +193,7 @@ mod test {
                 node_builder.set_name(format!("{}", i));
             }
             let (result, errors) = graph.push_node(node_builder);
-            assert_eq!(Vec::<GrafoError<String>>::new(), errors);
+            assert_eq!(Vec::<GraphError>::new(), errors);
             assert!(result);
         }
 
@@ -204,16 +208,16 @@ mod test {
 
     #[test]
     fn push_node_success_has_error() {
-        let graph = GrafoBuilder::new().build_with_default();
+        let graph = GraphBuilder::new().build_with_default();
         if graph.is_err() {
             panic!("errors: {:?}", graph.err().unwrap()); // in test panic
         }
-        let mut graph = graph.unwrap();
+        let mut graph: Graph = graph.unwrap();
 
         let mut node_builder_1 = NodeItemBuilder::new();
         node_builder_1.set_name("node");
         let (result, errors) = graph.push_node(node_builder_1);
-        assert_eq!(Vec::<GrafoError<String>>::new(), errors);
+        assert_eq!(Vec::<GraphError>::new(), errors);
         assert!(result);
 
         let mut node_builder_2 = NodeItemBuilder::new();
@@ -240,16 +244,20 @@ mod test {
 
     #[test]
     fn build_node_fail() {
-        let graph = GrafoBuilder::new().build_with_default();
+        let graph = GraphBuilder::new().build_with_default();
         if graph.is_err() {
             panic!("errors: {:?}", graph.err().unwrap()); // in test panic
         }
-        let mut graph = graph.unwrap();
+        let mut graph: Graph = graph.unwrap();
 
         let mut node_builder = NodeItemBuilder::new();
         node_builder.set_belong_group("hoge");
         let (result, errors) = graph.push_node(node_builder);
         assert!(!result);
-        assert_ne!(Vec::<GrafoError<String>>::new(), errors);
+        assert_ne!(Vec::<GraphError>::new(), errors);
     }
+
+    // TODO Edge
+    // TODO Group
+    // TODO Whole
 }
