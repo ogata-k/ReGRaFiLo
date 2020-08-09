@@ -197,8 +197,7 @@ mod test {
         assert_eq!(
             graph
                 .resolver
-                .as_graph_item_ref(GraphItemKind::Node)
-                .count_usable_names(),
+                .count_usable_graph_item_names_by(GraphItemKind::Node),
             ITERATE_COUNT
         );
     }

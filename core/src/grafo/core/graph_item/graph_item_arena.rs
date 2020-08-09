@@ -332,9 +332,8 @@ mod test {
                     }
                 },
                 Some(belong_group_name) => {
-                    let belong_group_result = resolver
-                        .as_graph_item_ref(GraphItemKind::Group)
-                        .get_id_pair(belong_group_name);
+                    let belong_group_result =
+                        resolver.get_graph_item_id_pair(GraphItemKind::Group, belong_group_name);
                     match belong_group_result {
                         Ok((_belong_group_id, group_item_id)) => Some(group_item_id),
                         Err(err) => {
@@ -465,7 +464,7 @@ mod test {
         assert_eq!(arena.count(), ITERATE_COUNT);
         for target in graph_item_check_list() {
             assert_eq!(
-                resolver.as_graph_item_ref(target).count_usable_names(),
+                resolver.count_usable_graph_item_names_by(target),
                 if target == TARGET_KIND {
                     ITERATE_COUNT
                 } else {
@@ -511,7 +510,7 @@ mod test {
         for (index, _item) in (&arena).iter() {
             for kind in graph_item_check_list() {
                 let name = format!("{}", index.1);
-                let ref_result = resolver.as_graph_item_ref(kind).get_id_pair(&name);
+                let ref_result = resolver.get_graph_item_id_pair(kind, &name);
                 if let Ok(success) = ref_result {
                     // デフォルトがitem_id = 0占有
                     assert_eq!(success, *index);
@@ -562,7 +561,7 @@ mod test {
         assert_eq!(arena.count(), 2 * ITERATE_COUNT);
         for target in graph_item_check_list() {
             assert_eq!(
-                resolver.as_graph_item_ref(target).count_usable_names(),
+                resolver.count_usable_graph_item_names_by(target),
                 if target == TARGET_KIND {
                     ITERATE_COUNT
                 } else {
@@ -609,7 +608,7 @@ mod test {
         for (index, _item) in (&arena).iter() {
             for kind in graph_item_check_list() {
                 let name = format!("{}", index.1);
-                let ref_result = resolver.as_graph_item_ref(kind).get_id_pair(&name);
+                let ref_result = resolver.get_graph_item_id_pair(kind, &name);
                 if index.1 <= ITERATE_COUNT && kind == TARGET_KIND {
                     if let Ok(success) = &ref_result {
                         // デフォルトがitem_id = 0占有

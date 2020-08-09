@@ -58,14 +58,6 @@ impl<Name: NameType> Resolver<Name> {
         Default::default()
     }
 
-    pub fn as_graph_item_ref(&self, kind: GraphItemKind) -> GraphItemRef<Name> {
-        GraphItemRef::from_resolver(kind, self)
-    }
-
-    pub fn as_attribute_ref(&self, kind: AttributeKind) -> AttributeRef<Name> {
-        AttributeRef::from_resolver(kind, self)
-    }
-
     //
     // for root group
     //
@@ -98,10 +90,21 @@ impl<Name: NameType> Resolver<Name> {
                 Ok((root_id, root_id))
             }
             Some(n) => self
-                .as_graph_item_ref(GraphItemKind::Group)
-                .get_id_pair(n)
+                .get_graph_item_id_pair(GraphItemKind::Group, n)
                 .map_err(Either::Left),
         }
+    }
+
+    //
+    // for whole item resolve
+    //
+
+    pub fn count_usable_whole_layout_item_names(&self) -> usize {
+        self.layout_items.count_usable_names_all()
+    }
+
+    pub fn count_registered_whole_layout_names(&self) -> usize {
+        self.layout_items.count_registered_names_all()
     }
 
     //
@@ -119,6 +122,76 @@ impl<Name: NameType> Resolver<Name> {
             .push_value(item_kind, name, (group_id, item_id))
     }
 
+    pub fn get_graph_item_id_pair<S: ?Sized>(
+        &self,
+        item_kind: GraphItemKind,
+        name: &S,
+    ) -> Result<(GroupId, ItemId), NameIdError<Name, GraphItemKind>>
+    where
+        Name: Borrow<S>,
+        S: ToOwned<Owned = Name> + Hash + Eq,
+    {
+        let id_pair = self
+            .graph_items
+            .get_value(item_kind, name)
+            .ok_or_else(|| NameIdError::NotExist(item_kind, name.to_owned()))?;
+        Ok(*id_pair)
+    }
+
+    pub fn get_graph_item_name_by(
+        &self,
+        item_kind: GraphItemKind,
+        group_id: GroupId,
+        item_id: ItemId,
+    ) -> Option<&Name> {
+        self.graph_items.get_name(item_kind, (group_id, item_id))
+    }
+
+    pub fn get_graph_item_name_by_item<I: GraphItemBase>(&self, item: &I) -> Option<&Name> {
+        self.graph_items.get_name(
+            item.get_kind(),
+            (item.get_belong_group_id(), item.get_item_id()),
+        )
+    }
+
+    pub fn is_usable_graph_item_name<S: ?Sized>(&self, item_kind: GraphItemKind, name: &S) -> bool
+    where
+        Name: Borrow<S>,
+        S: ToOwned<Owned = Name> + Hash + Eq,
+    {
+        self.graph_items.is_usable_name(item_kind, name)
+    }
+
+    pub fn has_registered_graph_item_name(
+        &self,
+        item_kind: GraphItemKind,
+        group_id: GroupId,
+        item_id: ItemId,
+    ) -> bool {
+        self.graph_items
+            .has_registered_name(item_kind, (group_id, item_id))
+    }
+
+    pub fn count_usable_graph_item_names(&self) -> usize {
+        self.graph_items.count_usable_names_all()
+    }
+
+    pub fn count_registered_graph_item_names(&self) -> usize {
+        self.graph_items.count_registered_names_all()
+    }
+
+    pub fn count_usable_graph_item_names_by(&self, item_kind: GraphItemKind) -> usize {
+        self.graph_items.count_usable_names_by(item_kind)
+    }
+
+    pub fn count_registered_graph_item_names_by(&self, item_kind: GraphItemKind) -> usize {
+        self.graph_items.count_registered_names_by(item_kind)
+    }
+
+    //
+    // for layout with graph item
+    //
+
     pub(crate) fn push_graph_item_layout_value<S: Into<Name>>(
         &mut self,
         item_kind: GraphItemKind,
@@ -133,6 +206,100 @@ impl<Name: NameType> Resolver<Name> {
         )
     }
 
+    pub fn get_graph_item_layout_id<S: ?Sized>(
+        &self,
+        item_kind: GraphItemKind,
+        layout_kind: WithItemLayoutKind,
+        name: &S,
+    ) -> Result<ItemId, NameIdError<Name, LayoutItemKind>>
+    where
+        Name: Borrow<S>,
+        S: ToOwned<Owned = Name> + Hash + Eq,
+    {
+        let kind = LayoutItemKind::new_layout(item_kind, layout_kind);
+        self.layout_items
+            .get_value(kind, name)
+            .copied()
+            .ok_or_else(|| NameIdError::NotExist(kind, name.to_owned()))
+    }
+
+    pub fn get_graph_item_layout_name_by(
+        &self,
+        item_kind: GraphItemKind,
+        layout_kind: WithItemLayoutKind,
+        item_id: ItemId,
+    ) -> Option<&Name> {
+        self.layout_items
+            .get_name(LayoutItemKind::new_layout(item_kind, layout_kind), item_id)
+    }
+
+    pub fn get_graph_item_layout_name_by_item<I: GraphItemBase>(
+        &self,
+        layout_kind: WithItemLayoutKind,
+        item: &I,
+    ) -> Option<&Name> {
+        self.layout_items.get_name(
+            LayoutItemKind::WithItemAttribute(item.get_kind(), layout_kind),
+            item.get_item_id(),
+        )
+    }
+
+    pub fn is_usable_graph_item_layout_name<S: ?Sized>(
+        &self,
+        item_kind: GraphItemKind,
+        layout_kind: WithItemLayoutKind,
+        name: &S,
+    ) -> bool
+    where
+        Name: Borrow<S>,
+        S: ToOwned<Owned = Name> + Hash + Eq,
+    {
+        self.layout_items
+            .is_usable_name(LayoutItemKind::new_layout(item_kind, layout_kind), name)
+    }
+
+    pub fn has_registered_graph_item_layout_name(
+        &self,
+        item_kind: GraphItemKind,
+        layout_kind: WithItemLayoutKind,
+        item_id: ItemId,
+    ) -> bool {
+        self.layout_items
+            .has_registered_name(LayoutItemKind::new_layout(item_kind, layout_kind), item_id)
+    }
+
+    pub fn count_usable_graph_item_layout_names(&self) -> usize {
+        self.layout_items
+            .count_usable_names_filtered_by(|k| k.need_graph_item())
+    }
+
+    pub fn count_registered_graph_item_layout_names(&self) -> usize {
+        self.layout_items
+            .count_registered_names_filtered_by(|k| k.need_graph_item())
+    }
+
+    pub fn count_usable_graph_item_layout_names_by(
+        &self,
+        item_kind: GraphItemKind,
+        layout_kind: WithItemLayoutKind,
+    ) -> usize {
+        self.layout_items
+            .count_usable_names_by(LayoutItemKind::new_layout(item_kind, layout_kind))
+    }
+
+    pub fn count_registered_graph_item_layout_names_by(
+        &self,
+        item_kind: GraphItemKind,
+        layout_kind: WithItemLayoutKind,
+    ) -> usize {
+        self.layout_items
+            .count_registered_names_by(LayoutItemKind::new_layout(item_kind, layout_kind))
+    }
+
+    //
+    //  for layout without graph item
+    //
+
     pub(crate) fn push_attribute_value<S: Into<Name>>(
         &mut self,
         attribute_kind: AttributeKind,
@@ -146,27 +313,31 @@ impl<Name: NameType> Resolver<Name> {
         )
     }
 
-    // TODO graph_itemを使わない形にしたい
-    pub fn get_graph_item_name_by_item<I: GraphItemBase>(&self, item: &I) -> Option<&Name> {
-        self.graph_items.get_name(
-            item.get_kind(),
-            (item.get_belong_group_id(), item.get_item_id()),
-        )
-    }
-
-    // TODO layout_itemを使わない形にしたい
-    pub fn get_graph_item_layout_name_by_item<I: GraphItemBase>(
+    pub fn get_attribute_item_id<S: ?Sized>(
         &self,
-        layout_kind: WithItemLayoutKind,
-        item: &I,
-    ) -> Option<&Name> {
-        self.layout_items.get_name(
-            LayoutItemKind::WithItemAttribute(item.get_kind(), layout_kind),
-            item.get_item_id(),
-        )
+        attribute_kind: AttributeKind,
+        name: &S,
+    ) -> Result<ItemId, NameIdError<Name, LayoutItemKind>>
+    where
+        Name: Borrow<S>,
+        S: ToOwned<Owned = Name> + Hash + Eq,
+    {
+        let kind = LayoutItemKind::new_attribute(attribute_kind);
+        self.layout_items
+            .get_value(kind, name)
+            .copied()
+            .ok_or_else(|| NameIdError::NotExist(kind, name.to_owned()))
     }
 
-    // TODO layout_itemを使わない形にしたい
+    pub fn get_attribute_name_by(
+        &self,
+        attribute_kind: AttributeKind,
+        item_id: ItemId,
+    ) -> Option<&Name> {
+        self.layout_items
+            .get_name(LayoutItemKind::new_attribute(attribute_kind), item_id)
+    }
+
     pub fn get_attribute_name_by_item<I: LayoutItemBase>(&self, item: &I) -> Option<&Name> {
         self.layout_items.get_name(
             LayoutItemKind::IsolateAttribute(item.get_kind()),
@@ -174,228 +345,45 @@ impl<Name: NameType> Resolver<Name> {
         )
     }
 
-    pub fn count_usable_graph_item_names(&self) -> usize {
-        self.graph_items.count_usable_names_all()
-    }
-
-    pub fn count_usable_whole_layout_item_names(&self) -> usize {
-        self.layout_items.count_usable_names_all()
-    }
-
-    pub fn count_usable_graph_item_layout_names(&self) -> usize {
+    pub fn is_usable_attribute_name<S: ?Sized>(
+        &self,
+        attribute_kind: AttributeKind,
+        name: &S,
+    ) -> bool
+    where
+        Name: Borrow<S>,
+        S: ToOwned<Owned = Name> + Hash + Eq,
+    {
         self.layout_items
-            .count_usable_names_filtered_by(|k| k.need_graph_item())
+            .is_usable_name(LayoutItemKind::new_attribute(attribute_kind), name)
     }
 
-    pub fn count_usable_attribute_names(&self) -> usize {
+    pub fn has_registered_attribute_name(
+        &self,
+        attribute_kind: AttributeKind,
+        item_id: ItemId,
+    ) -> bool {
+        self.layout_items
+            .has_registered_name(LayoutItemKind::new_attribute(attribute_kind), item_id)
+    }
+
+    pub fn count_usable_whole_attribute_names(&self) -> usize {
         self.layout_items
             .count_usable_names_filtered_by(|k| k.is_attribute())
     }
 
-    pub fn count_registered_graph_item_names(&self) -> usize {
-        self.graph_items.count_registered_names_all()
-    }
-
-    pub fn count_registered_whole_layout_names(&self) -> usize {
-        self.layout_items.count_registered_names_all()
-    }
-
-    pub fn count_registered_graph_item_layout_names(&self) -> usize {
-        self.layout_items
-            .count_registered_names_filtered_by(|k| k.need_graph_item())
-    }
-
-    pub fn count_registered_attribute_names(&self) -> usize {
+    pub fn count_registered_whole_attribute_names(&self) -> usize {
         self.layout_items
             .count_registered_names_filtered_by(|k| k.is_attribute())
     }
-}
 
-// TODO 内部に持ってしまっているので外側に外せるようにしたい
-#[derive(Debug)]
-pub struct GraphItemRef<'a, Name: NameType> {
-    kind: GraphItemKind,
-    resolver: &'a Resolver<Name>,
-}
-
-impl<'a, Name: NameType> GraphItemRef<'a, Name> {
-    fn from_resolver(kind: GraphItemKind, resolver: &'a Resolver<Name>) -> Self {
-        Self { kind, resolver }
+    pub fn count_usable_attribute_names_by(&self, attribute_kind: AttributeKind) -> usize {
+        self.layout_items
+            .count_usable_names_by(LayoutItemKind::new_attribute(attribute_kind))
     }
 
-    pub fn as_attribute_ref(&self, kind: AttributeKind) -> AttributeRef<Name> {
-        AttributeRef::from_resolver(kind, self.resolver)
-    }
-
-    //
-    // for item
-    //
-
-    pub fn get_id_pair<S: ?Sized>(
-        &self,
-        name: &S,
-    ) -> Result<(GroupId, ItemId), NameIdError<Name, GraphItemKind>>
-    where
-        Name: Borrow<S>,
-        S: ToOwned<Owned = Name> + Hash + Eq,
-    {
-        let id_pair = self
-            .resolver
-            .graph_items
-            .get_value(self.kind, name)
-            .ok_or_else(|| NameIdError::NotExist(self.kind, name.to_owned()))?;
-        Ok(*id_pair)
-    }
-
-    pub fn get_name_by(&self, group_id: GroupId, item_id: ItemId) -> Option<&Name> {
-        self.resolver
-            .graph_items
-            .get_name(self.kind, (group_id, item_id))
-    }
-
-    pub fn is_usable_name<S: ?Sized>(&self, name: &S) -> bool
-    where
-        Name: Borrow<S>,
-        S: ToOwned<Owned = Name> + Hash + Eq,
-    {
-        self.resolver.graph_items.is_usable_name(self.kind, name)
-    }
-
-    pub fn has_registered_name(&self, group_id: GroupId, item_id: ItemId) -> bool {
-        self.resolver
-            .graph_items
-            .has_registered_name(self.kind, (group_id, item_id))
-    }
-
-    pub fn count_usable_names(&self) -> usize {
-        self.resolver.graph_items.count_usable_names_by(self.kind)
-    }
-
-    pub fn count_registered_names(&self) -> usize {
-        self.resolver
-            .graph_items
-            .count_registered_names_by(self.kind)
-    }
-
-    //
-    // for layout with graph item
-    //
-
-    pub fn get_layout_item_id<S: ?Sized>(
-        &self,
-        kind: WithItemLayoutKind,
-        name: &S,
-    ) -> Result<ItemId, NameIdError<Name, LayoutItemKind>>
-    where
-        Name: Borrow<S>,
-        S: ToOwned<Owned = Name> + Hash + Eq,
-    {
-        let kind = LayoutItemKind::new_layout(self.kind, kind);
-        self.resolver
-            .layout_items
-            .get_value(kind, name)
-            .copied()
-            .ok_or_else(|| NameIdError::NotExist(kind, name.to_owned()))
-    }
-
-    pub fn get_layout_name_by(&self, kind: WithItemLayoutKind, item_id: ItemId) -> Option<&Name> {
-        self.resolver
-            .layout_items
-            .get_name(LayoutItemKind::new_layout(self.kind, kind), item_id)
-    }
-
-    pub fn is_usable_layout_name<S: ?Sized>(&self, kind: WithItemLayoutKind, name: &S) -> bool
-    where
-        Name: Borrow<S>,
-        S: ToOwned<Owned = Name> + Hash + Eq,
-    {
-        self.resolver
-            .layout_items
-            .is_usable_name(LayoutItemKind::new_layout(self.kind, kind), name)
-    }
-
-    pub fn has_registered_layout_name(&self, kind: WithItemLayoutKind, item_id: ItemId) -> bool {
-        self.resolver
-            .layout_items
-            .has_registered_name(LayoutItemKind::new_layout(self.kind, kind), item_id)
-    }
-
-    pub fn count_usable_layout_names_by(&self, kind: WithItemLayoutKind) -> usize {
-        self.resolver
-            .layout_items
-            .count_usable_names_by(LayoutItemKind::new_layout(self.kind, kind))
-    }
-
-    pub fn count_registered_layout_names_by(&self, kind: WithItemLayoutKind) -> usize {
-        self.resolver
-            .layout_items
-            .count_registered_names_by(LayoutItemKind::new_layout(self.kind, kind))
-    }
-}
-
-// TODO 内部に持ってしまっているので外側に外せるようにしたい
-#[derive(Debug)]
-pub struct AttributeRef<'a, Name: NameType> {
-    kind: AttributeKind,
-    resolver: &'a Resolver<Name>,
-}
-
-impl<'a, Name: NameType> AttributeRef<'a, Name> {
-    fn from_resolver(kind: AttributeKind, resolver: &'a Resolver<Name>) -> Self {
-        Self { kind, resolver }
-    }
-
-    //
-    //  for layout without graph item
-    //
-
-    pub fn get_item_id<S: ?Sized>(
-        &self,
-        name: &S,
-    ) -> Result<ItemId, NameIdError<Name, LayoutItemKind>>
-    where
-        Name: Borrow<S>,
-        S: ToOwned<Owned = Name> + Hash + Eq,
-    {
-        let kind = LayoutItemKind::new_attribute(self.kind);
-        self.resolver
-            .layout_items
-            .get_value(kind, name)
-            .copied()
-            .ok_or_else(|| NameIdError::NotExist(kind, name.to_owned()))
-    }
-
-    pub fn get_name_by(&self, item_id: ItemId) -> Option<&Name> {
-        self.resolver
-            .layout_items
-            .get_name(LayoutItemKind::new_attribute(self.kind), item_id)
-    }
-
-    pub fn is_usable_name<S: ?Sized>(&self, name: &S) -> bool
-    where
-        Name: Borrow<S>,
-        S: ToOwned<Owned = Name> + Hash + Eq,
-    {
-        self.resolver
-            .layout_items
-            .is_usable_name(LayoutItemKind::new_attribute(self.kind), name)
-    }
-
-    pub fn has_registered_name(&self, item_id: ItemId) -> bool {
-        self.resolver
-            .layout_items
-            .has_registered_name(LayoutItemKind::new_attribute(self.kind), item_id)
-    }
-
-    pub fn count_usable_names_by(&self) -> usize {
-        self.resolver
-            .layout_items
-            .count_usable_names_by(LayoutItemKind::new_attribute(self.kind))
-    }
-
-    pub fn count_registered_names_by(&self) -> usize {
-        self.resolver
-            .layout_items
-            .count_registered_names_by(LayoutItemKind::new_attribute(self.kind))
+    pub fn count_registered_attribute_names_by(&self, attribute_kind: AttributeKind) -> usize {
+        self.layout_items
+            .count_registered_names_by(LayoutItemKind::new_attribute(attribute_kind))
     }
 }
