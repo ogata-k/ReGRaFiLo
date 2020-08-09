@@ -137,6 +137,10 @@ pub struct Grafo<Name: NameType> {
 }
 
 impl<Name: NameType> Grafo<Name> {
+    pub fn resolver(&self) -> &Resolver<Name> {
+        &self.resolver
+    }
+
     // TODO 2 next push_group
     pub fn push_node(&mut self, builder: NodeItemBuilder<Name>) -> (bool, Vec<GrafoError<Name>>) {
         self.node_arena.push(
@@ -193,7 +197,7 @@ mod test {
         assert_eq!(
             graph
                 .resolver
-                .count_names_graph_item_by(GraphItemKind::Node),
+                .count_usable_names_graph_item_by(GraphItemKind::Node),
             ITERATE_COUNT
         );
     }
@@ -220,12 +224,12 @@ mod test {
             [
                 NodeItemError::NameIdError(
                     2,
-                    NameIdError::AlreadyExist(GraphItemKind::Node, "node".to_string())
+                    NameIdError::AlreadyExist(GraphItemKind::Node, "node".to_string()),
                 )
                 .into(),
                 NodeItemError::NameIdError(
                     2,
-                    NameIdError::Override(GraphItemKind::Node, "node".to_string())
+                    NameIdError::Override(GraphItemKind::Node, "node".to_string()),
                 )
                 .into(),
             ]

@@ -25,6 +25,8 @@ impl<Name: NameType, Kind> Display for NameIdError<Name, Kind> {
 
 impl<Name: NameType, Kind: Debug + Display> Error for NameIdError<Name, Kind> {}
 
+/// The value associated with the name is overwritten and registered.<br/>
+/// However, the name can be restored from the registered value.
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct NameRefIndex<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKeyTrait> {
     // @todo (A, B).borrow() == (&A, &B) とできるなら
@@ -33,6 +35,7 @@ pub struct NameRefIndex<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKey
     rev_reference_index: HashMap<KeyWithKind<Kind, Value>, Name>,
 }
 
+// TODO 分割したい
 impl<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKeyTrait>
     NameRefIndex<Name, Kind, Value>
 {
@@ -54,12 +57,12 @@ impl<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKeyTrait>
         self.rev_reference_index.get(&KeyWithKind::new(kind, value))
     }
 
-    pub fn contains_value(&self, kind: Kind, value: Value) -> bool {
+    pub fn has_registered_name(&self, kind: Kind, value: Value) -> bool {
         self.rev_reference_index
             .contains_key(&KeyWithKind::new(kind, value))
     }
 
-    pub fn contains_name<S: ?Sized>(&self, kind: Kind, name: &S) -> bool
+    pub fn is_usable_name<S: ?Sized>(&self, kind: Kind, name: &S) -> bool
     where
         Name: Borrow<S>,
         S: Hash + Eq,
@@ -70,31 +73,28 @@ impl<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKeyTrait>
         }
     }
 
-    pub fn count_names_by(&self, kind: Kind) -> usize {
-        self.reference_index.iter().fold(0, |acc, (map_kind, map)| {
-            if &kind == map_kind {
-                acc + map.iter().count()
-            } else {
-                acc
-            }
-        })
-    }
-
-    pub fn count_name_all(&self) -> usize {
+    pub fn count_usable_names_by(&self, kind: Kind) -> usize {
         self.reference_index
             .iter()
+            .filter(|(k, _)| *k == &kind)
             .fold(0, |acc, (_, map)| acc + map.iter().count())
     }
 
-    pub fn count_values_by(&self, kind: Kind) -> usize {
+    pub fn count_registered_names_by(&self, kind: Kind) -> usize {
         self.rev_reference_index
             .keys()
             .filter(|k| k.is_kind(kind))
             .count()
     }
 
-    pub fn count_value_all(&self) -> usize {
-        self.rev_reference_index.keys().count()
+    pub fn count_usable_names_all(&self) -> usize {
+        self.reference_index
+            .iter()
+            .fold(0, |acc, (_, map)| acc + map.iter().count())
+    }
+
+    pub fn count_registered_names_all(&self) -> usize {
+        self.rev_reference_index.iter().count()
     }
 }
 
@@ -109,20 +109,17 @@ impl<Name: NameType, Kind: Debug + Display + NameRefKeyTrait, Value: NameRefKeyT
     ) -> Result<(), NameIdError<Name, Kind>> {
         let item_name = name.into();
         let rev_key = KeyWithKind::new(kind, value);
-        if self.contains_name(kind, &item_name) {
-            self.reference_index
-                .entry(kind)
-                .or_insert(HashMap::new())
-                .insert(item_name.clone(), value);
-            self.rev_reference_index.insert(rev_key, item_name.clone());
-            return Err(NameIdError::Override(kind, item_name));
-        }
+        let result = if self.is_usable_name(kind, &item_name) {
+            Err(NameIdError::Override(kind, item_name.clone()))
+        } else {
+            Ok(())
+        };
         self.reference_index
             .entry(kind)
-            .or_insert(HashMap::new())
+            .or_insert_with(HashMap::new)
             .insert(item_name.clone(), value);
         self.rev_reference_index.insert(rev_key, item_name);
-        Ok(())
+        result
     }
 }
 

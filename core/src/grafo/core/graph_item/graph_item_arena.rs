@@ -464,7 +464,7 @@ mod test {
         assert_eq!(arena.count(), ITERATE_COUNT);
         for target in graph_item_check_list() {
             assert_eq!(
-                resolver.count_names_graph_item_by(target),
+                resolver.count_usable_names_graph_item_by(target),
                 if target == TARGET_KIND {
                     ITERATE_COUNT
                 } else {
@@ -561,7 +561,7 @@ mod test {
         assert_eq!(arena.count(), 2 * ITERATE_COUNT);
         for target in graph_item_check_list() {
             assert_eq!(
-                resolver.count_names_graph_item_by(target),
+                resolver.count_usable_names_graph_item_by(target),
                 if target == TARGET_KIND {
                     ITERATE_COUNT
                 } else {
