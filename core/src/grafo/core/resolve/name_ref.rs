@@ -57,11 +57,6 @@ impl<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKeyTrait>
         self.rev_reference_index.get(&KeyWithKind::new(kind, value))
     }
 
-    pub fn has_registered_name(&self, kind: Kind, value: Value) -> bool {
-        self.rev_reference_index
-            .contains_key(&KeyWithKind::new(kind, value))
-    }
-
     pub fn is_usable_name<S: ?Sized>(&self, kind: Kind, name: &S) -> bool
     where
         Name: Borrow<S>,
@@ -73,28 +68,45 @@ impl<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKeyTrait>
         }
     }
 
-    pub fn count_usable_names_by(&self, kind: Kind) -> usize {
+    pub fn has_registered_name(&self, kind: Kind, value: Value) -> bool {
+        self.rev_reference_index
+            .contains_key(&KeyWithKind::new(kind, value))
+    }
+
+    pub fn count_usable_names_filtered_by<P>(&self, predicate: P) -> usize
+    where
+        P: Fn(&Kind) -> bool,
+    {
         self.reference_index
             .iter()
-            .filter(|(k, _)| *k == &kind)
+            .filter(|(k, _)| predicate(*k))
             .fold(0, |acc, (_, map)| acc + map.iter().count())
     }
 
-    pub fn count_registered_names_by(&self, kind: Kind) -> usize {
-        self.rev_reference_index
-            .keys()
-            .filter(|k| k.is_kind(kind))
-            .count()
+    pub fn count_usable_names_by(&self, kind: Kind) -> usize {
+        self.count_usable_names_filtered_by(|k| k == &kind)
     }
 
     pub fn count_usable_names_all(&self) -> usize {
-        self.reference_index
-            .iter()
-            .fold(0, |acc, (_, map)| acc + map.iter().count())
+        self.count_usable_names_filtered_by(|_| true)
+    }
+
+    pub fn count_registered_names_filtered_by<P>(&self, predicate: P) -> usize
+    where
+        P: Fn(&Kind) -> bool,
+    {
+        self.rev_reference_index
+            .keys()
+            .filter(|k| predicate(&k.kind))
+            .count()
+    }
+
+    pub fn count_registered_names_by(&self, kind: Kind) -> usize {
+        self.count_registered_names_filtered_by(|k| k == &kind)
     }
 
     pub fn count_registered_names_all(&self) -> usize {
-        self.rev_reference_index.iter().count()
+        self.count_registered_names_filtered_by(|_| true)
     }
 }
 

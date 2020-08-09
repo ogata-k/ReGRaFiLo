@@ -115,7 +115,10 @@ impl<Name: NameType> NodeItemBuilder<Name> {
             name,
         } = self;
         if let Some(n) = &name {
-            if resolver.is_usable_name_graph_item(NodeItem::kind(), n) {
+            if resolver
+                .as_graph_item_ref(NodeItem::kind())
+                .is_usable_name(n)
+            {
                 errors.push(
                     NodeItemError::from_with_id(
                         item_id,

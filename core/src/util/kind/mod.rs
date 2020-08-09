@@ -1,8 +1,6 @@
-mod attribute_kind;
 mod graph_item_kind;
 mod layout_item_kind;
 
-pub use attribute_kind::*;
 pub use graph_item_kind::*;
 pub use layout_item_kind::*;
 
