@@ -27,7 +27,7 @@ impl Into<ResolverError> for IdTreeError<GroupId> {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum IdTree<Id: Eq + Copy> {
     Root(IdTreeRoot<Id>),
     None,
@@ -82,7 +82,7 @@ impl<Id: Debug + Eq + Copy> IdTree<Id> {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct IdTreeRoot<Id: Eq + Copy> {
     root: UniqueTree<Id>,
 }
@@ -109,7 +109,7 @@ impl<Id: Debug + Eq + Copy> IdTreeRoot<Id> {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 struct UniqueTree<Id: Eq + Copy> {
     node: Id,
     children: Vec<Box<UniqueTree<Id>>>,

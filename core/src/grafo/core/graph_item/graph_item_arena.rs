@@ -13,7 +13,7 @@ use crate::util::kind::GraphItemKind;
 use crate::util::name_type::NameType;
 
 /// item pool
-#[derive(Debug, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct ItemArena<I> {
     id_counter: ItemId,
     /// (GroupId, ItemId) => Item

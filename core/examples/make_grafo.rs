@@ -29,7 +29,10 @@ fn main() {
         errors.extend(_errors);
     }
     let end = SystemTime::now();
-    println!("diff: {}ms", end.duration_since(start).unwrap().as_millis());
+    println!(
+        "diff: {:.3}ms",
+        end.duration_since(start).unwrap().as_micros() as f32 / 1000.0
+    );
 
     if SHOW {
         if result {

@@ -1,4 +1,4 @@
-#[derive(Debug, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct Layout {
     // TODO layout item store
 }

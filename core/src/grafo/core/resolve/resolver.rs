@@ -7,6 +7,8 @@ use crate::util::alias::{GroupId, ItemId};
 use crate::util::either::Either;
 use crate::util::kind::{AttributeKind, GraphItemKind, LayoutItemKind};
 use crate::util::name_type::NameType;
+use std::borrow::Borrow;
+use std::hash::Hash;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ResolverError {
@@ -31,7 +33,7 @@ impl<Name: NameType> Into<GrafoError<Name>> for ResolverError {
 }
 
 /// reference indexes for names
-#[derive(Debug, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct Resolver<Name: NameType> {
     group_id_tree: IdTree<GroupId>,
     /// names reference indexes name:(group_id, item_id)
@@ -73,17 +75,22 @@ impl<Name: NameType> Resolver<Name> {
         }
     }
 
-    pub fn get_belong_group<S: Into<Name>>(
+    pub fn get_belong_group<S: ?Sized>(
         &self,
-        name: Option<S>,
-    ) -> Result<(GroupId, ItemId), Either<NameIdError<Name, GraphItemKind>, ResolverError>> {
-        // @fixme push以外は&Sと参照を受け取るようにしたい
-        if let Some(n) = name {
-            self.get_graph_item_id_pair(GraphItemKind::Group, n)
-                .map_err(Either::Left)
-        } else {
-            let root_id = self.get_root_group_id().map_err(Either::Right)?;
-            Ok((root_id, root_id))
+        name: Option<&S>,
+    ) -> Result<(GroupId, ItemId), Either<NameIdError<Name, GraphItemKind>, ResolverError>>
+    where
+        Name: Borrow<S>,
+        S: ToOwned<Owned = Name> + Hash + Eq,
+    {
+        match name {
+            None => {
+                let root_id = self.get_root_group_id().map_err(Either::Right)?;
+                Ok((root_id, root_id))
+            }
+            Some(n) => self
+                .get_graph_item_id_pair(GraphItemKind::Group, n)
+                .map_err(Either::Left),
         }
     }
 
@@ -102,17 +109,19 @@ impl<Name: NameType> Resolver<Name> {
             .push_value(item_kind, name, (group_id, item_id))
     }
 
-    pub fn get_graph_item_id_pair<S: Into<Name>>(
+    pub fn get_graph_item_id_pair<S: ?Sized>(
         &self,
         item_kind: GraphItemKind,
-        name: S,
-    ) -> Result<(GroupId, ItemId), NameIdError<Name, GraphItemKind>> {
-        // @fixme push以外は&Sと参照を受け取るようにしたい
-        let item_name = name.into();
+        name: &S,
+    ) -> Result<(GroupId, ItemId), NameIdError<Name, GraphItemKind>>
+    where
+        Name: Borrow<S>,
+        S: ToOwned<Owned = Name> + Hash + Eq,
+    {
         let id_pair = self
             .graph_items
-            .get_value(item_kind, item_name.clone())
-            .ok_or_else(|| NameIdError::NotExist(item_kind, item_name))?;
+            .get_value(item_kind, name)
+            .ok_or_else(|| NameIdError::NotExist(item_kind, name.to_owned()))?;
         Ok(*id_pair)
     }
 
@@ -133,12 +142,11 @@ impl<Name: NameType> Resolver<Name> {
         self.graph_items.get_name(item_kind, (group_id, item_id))
     }
 
-    pub fn contains_name_graph_item<S: Into<Name>>(
-        &self,
-        item_kind: GraphItemKind,
-        name: S,
-    ) -> bool {
-        // @fixme push以外は&Sと参照を受け取るようにしたい
+    pub fn contains_name_graph_item<S: ?Sized>(&self, item_kind: GraphItemKind, name: &S) -> bool
+    where
+        Name: Borrow<S>,
+        S: ToOwned<Owned = Name> + Hash + Eq,
+    {
         self.graph_items.contains_name(item_kind, name)
     }
 
@@ -157,7 +165,6 @@ impl<Name: NameType> Resolver<Name> {
         name: S,
         layout_item_id: ItemId,
     ) -> Result<(), NameIdError<Name, LayoutItemKind>> {
-        // @fixme push以外は&Sと参照を受け取るようにしたい
         self.layouts.push_value(
             LayoutItemKind::new_with_item(item_kind, attribute_kind),
             name.into(),
@@ -165,19 +172,21 @@ impl<Name: NameType> Resolver<Name> {
         )
     }
 
-    pub fn get_layout_item_id_for_graph_item<S: Into<Name>>(
+    pub fn get_layout_item_id_for_graph_item<S: ?Sized>(
         &self,
         item_kind: GraphItemKind,
         attribute_kind: AttributeKind,
-        name: S,
-    ) -> Result<ItemId, NameIdError<Name, LayoutItemKind>> {
-        // @fixme push以外は&Sと参照を受け取るようにしたい
+        name: &S,
+    ) -> Result<ItemId, NameIdError<Name, LayoutItemKind>>
+    where
+        Name: Borrow<S>,
+        S: ToOwned<Owned = Name> + Hash + Eq,
+    {
         let kind = LayoutItemKind::new_with_item(item_kind, attribute_kind);
-        let item_name = name.into();
         self.layouts
-            .get_value(kind, item_name.clone())
+            .get_value(kind, name)
             .copied()
-            .ok_or_else(|| NameIdError::NotExist(kind, item_name))
+            .ok_or_else(|| NameIdError::NotExist(kind, name.to_owned()))
     }
 
     pub fn get_layout_item_name_for_graph_item(
@@ -192,13 +201,16 @@ impl<Name: NameType> Resolver<Name> {
         )
     }
 
-    pub fn contains_name_layout_item_for_graph_item<S: Into<Name>>(
+    pub fn contains_name_layout_item_for_graph_item<S: ?Sized>(
         &self,
         item_kind: GraphItemKind,
         attribute_kind: AttributeKind,
-        name: S,
-    ) -> bool {
-        // @fixme push以外は&Sと参照を受け取るようにしたい
+        name: &S,
+    ) -> bool
+    where
+        Name: Borrow<S>,
+        S: ToOwned<Owned = Name> + Hash + Eq,
+    {
         self.layouts.contains_name(
             LayoutItemKind::new_with_item(item_kind, attribute_kind),
             name,
@@ -231,18 +243,20 @@ impl<Name: NameType> Resolver<Name> {
         )
     }
 
-    pub fn get_layout_item_id<S: Into<Name>>(
+    pub fn get_layout_item_id<S: ?Sized>(
         &self,
         attribute_kind: AttributeKind,
-        name: S,
-    ) -> Result<ItemId, NameIdError<Name, LayoutItemKind>> {
-        // @fixme push以外は&Sと参照を受け取るようにしたい
+        name: &S,
+    ) -> Result<ItemId, NameIdError<Name, LayoutItemKind>>
+    where
+        Name: Borrow<S>,
+        S: ToOwned<Owned = Name> + Hash + Eq,
+    {
         let kind = LayoutItemKind::new(attribute_kind);
-        let item_name = name.into();
         self.layouts
-            .get_value(kind, item_name.clone())
+            .get_value(kind, name)
             .copied()
-            .ok_or_else(|| NameIdError::NotExist(kind, item_name))
+            .ok_or_else(|| NameIdError::NotExist(kind, name.to_owned()))
     }
 
     pub fn get_layout_item_name(
@@ -254,12 +268,15 @@ impl<Name: NameType> Resolver<Name> {
             .get_name(LayoutItemKind::new(attribute_kind), item_id)
     }
 
-    pub fn contains_name_layout_item<S: Into<Name>>(
+    pub fn contains_name_layout_item<S: ?Sized>(
         &self,
         attribute_kind: AttributeKind,
-        name: S,
-    ) -> bool {
-        // @fixme push以外は&Sと参照を受け取るようにしたい
+        name: &S,
+    ) -> bool
+    where
+        Name: Borrow<S>,
+        S: ToOwned<Owned = Name> + Hash + Eq,
+    {
         self.layouts
             .contains_name(LayoutItemKind::new(attribute_kind), name)
     }

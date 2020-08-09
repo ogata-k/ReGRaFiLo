@@ -43,16 +43,12 @@ impl<Name: NameType> HasItemBuilderMethod<Name> for NodeItemBuilder<Name> {
         item_id: ItemId,
         resolver: &Resolver<Name>,
     ) -> ItemBuilderResult<Name, Self::Item, Self::ItemOption> {
-        let NodeItemBuilder {
-            belong_group: belong_group_name,
-            name,
-        } = self;
         let mut errors: Vec<GrafoError<Name>> = Vec::new();
         let belong_group: Option<(GroupId, ItemId)> =
-            Self::resolve_belong_group(belong_group_name, item_id, resolver, &mut errors);
-        let item: Option<NodeItem> = Self::resolve_item(item_id, &mut errors, belong_group);
+            self.resolve_belong_group(item_id, resolver, &mut errors);
+        let item: Option<NodeItem> = self.resolve_item(item_id, &mut errors, belong_group);
         let item_option: Option<NodeItemOption<Name>> =
-            Self::resolve_item_option(name, item_id, resolver, &mut errors);
+            self.into_item_option(item_id, resolver, &mut errors);
 
         match (item, item_option) {
             (Some(i), Some(o)) => (Some((i, o)), errors),
@@ -71,13 +67,12 @@ impl<Name: NameType> NodeItemBuilder<Name> {
     }
 
     fn resolve_belong_group(
-        belong_group: Option<Name>,
+        &self,
         item_id: ItemId,
         resolver: &Resolver<Name>,
         errors: &mut Vec<GrafoError<Name>>,
     ) -> Option<(GroupId, ItemId)> {
-        // @fixme push以外は&Sと参照を受け取るようにしたい（参照に直せたら以前のself.hoge()形式に戻す. なおselfはここで奪う）
-        match resolver.get_belong_group(belong_group) {
+        match resolver.get_belong_group(self.belong_group.as_ref()) {
             Ok(group) => Some(group),
             Err(Either::Left(e)) => {
                 errors.push(NodeItemError::from_with_id(item_id, e).into());
@@ -91,11 +86,11 @@ impl<Name: NameType> NodeItemBuilder<Name> {
     }
 
     fn resolve_item(
+        &self,
         item_id: ItemId,
         errors: &mut Vec<GrafoError<Name>>,
         resolved_belong_group: Option<(GroupId, ItemId)>,
     ) -> Option<NodeItem> {
-        // @fixme push以外は&Sと参照を受け取るようにしたい（参照に直せたら以前のself.hoge()形式に戻す）
         let mut validate = true;
         if resolved_belong_group.is_none() {
             errors.push(NodeItemError::FailResolveBelongGroup(item_id).into());
@@ -109,24 +104,28 @@ impl<Name: NameType> NodeItemBuilder<Name> {
         }
     }
 
-    fn resolve_item_option(
-        name: Option<Name>,
+    fn into_item_option(
+        self,
         item_id: ItemId,
         resolver: &Resolver<Name>,
         errors: &mut Vec<GrafoError<Name>>,
     ) -> Option<NodeItemOption<Name>> {
-        // @fixme push以外は&Sと参照を受け取るようにしたい（参照に直せたら以前のself.hoge()形式に戻す）
-        if let Some(n) = name.clone() {
-            if resolver.contains_name_graph_item(NodeItem::kind(), n.clone()) {
+        let NodeItemBuilder {
+            belong_group: _,
+            name,
+        } = self;
+        if let Some(n) = &name {
+            if resolver.contains_name_graph_item(NodeItem::kind(), n) {
                 errors.push(
                     NodeItemError::from_with_id(
                         item_id,
-                        NameIdError::AlreadyExist(NodeItem::kind(), n),
+                        NameIdError::AlreadyExist(NodeItem::kind(), n.to_owned()),
                     )
                     .into(),
                 );
             }
         }
+
         Some(NodeItemOption { name })
     }
 }

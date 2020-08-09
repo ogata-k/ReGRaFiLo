@@ -122,7 +122,7 @@ impl<Name: NameType> GrafoBuilder<Name> {
 }
 
 /// Grafo is Graph with Layout
-#[derive(Debug, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct Grafo<Name: NameType> {
     // structure resolver
     resolver: Resolver<Name>,
