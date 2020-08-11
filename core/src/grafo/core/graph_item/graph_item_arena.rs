@@ -247,7 +247,7 @@ mod test {
     use crate::util::kind::test::graph_item_check_list;
     use crate::util::kind::{GraphItemKind, HasGraphItemKind};
 
-    const ITERATE_COUNT: usize = 10;
+    const ITERATE_COUNT: ItemId = 10;
     const TARGET_KIND: GraphItemKind = GraphItemKind::Node;
 
     #[derive(Debug, Eq, PartialEq, Clone)]
@@ -393,13 +393,13 @@ mod test {
     }
 
     impl ItemBase for TargetItem {
-        fn get_item_id(&self) -> usize {
+        fn get_item_id(&self) -> ItemId {
             self.item_id
         }
     }
 
     impl GraphItemBase for TargetItem {
-        fn get_belong_group_id(&self) -> usize {
+        fn get_belong_group_id(&self) -> ItemId {
             self.belong_group_id
         }
     }
@@ -419,7 +419,7 @@ mod test {
     impl<'a> ItemErrorBase<String> for TargetBuilderError {}
 
     impl<'a> FromWithItemId<NameIdError<String, GraphItemKind>> for TargetBuilderError {
-        fn from_with_id(item_id: usize, from: NameIdError<String, GraphItemKind>) -> Self {
+        fn from_with_id(item_id: ItemId, from: NameIdError<String, GraphItemKind>) -> Self {
             unimplemented!()
         }
     }
@@ -461,12 +461,12 @@ mod test {
             assert!(result);
         }
         let arena = arena_mut;
-        assert_eq!(arena.count(), ITERATE_COUNT);
+        assert_eq!(arena.count(), ITERATE_COUNT as usize);
         for target in graph_item_check_list() {
             assert_eq!(
                 resolver.count_usable_graph_item_names_by(target),
                 if target == TARGET_KIND {
-                    ITERATE_COUNT
+                    ITERATE_COUNT as usize
                 } else {
                     0
                 }
@@ -558,12 +558,12 @@ mod test {
             assert!(result)
         }
         let arena = arena_mut;
-        assert_eq!(arena.count(), 2 * ITERATE_COUNT);
+        assert_eq!(arena.count(), 2 * ITERATE_COUNT as usize);
         for target in graph_item_check_list() {
             assert_eq!(
                 resolver.count_usable_graph_item_names_by(target),
                 if target == TARGET_KIND {
-                    ITERATE_COUNT
+                    ITERATE_COUNT as usize
                 } else {
                     0
                 }
