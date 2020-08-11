@@ -44,7 +44,7 @@ impl<Name: NameType> HasItemBuilderMethod<Name> for NodeItemBuilder<Name> {
         resolver: &Resolver<Name>,
     ) -> ItemBuilderResult<Name, Self::Item, Self::ItemOption> {
         let mut errors: Vec<GrafoError<Name>> = Vec::new();
-        let belong_group: Option<(GroupId, ItemId)> =
+        let belong_group: Option<ItemId> =
             self.resolve_belong_group(item_id, resolver, &mut errors);
         let item: Option<NodeItem> = self.resolve_item(item_id, &mut errors, belong_group);
         let item_option: Option<NodeItemOption<Name>> =
@@ -71,7 +71,7 @@ impl<Name: NameType> NodeItemBuilder<Name> {
         item_id: ItemId,
         resolver: &Resolver<Name>,
         errors: &mut Vec<GrafoError<Name>>,
-    ) -> Option<(GroupId, ItemId)> {
+    ) -> Option<ItemId> {
         match resolver.get_belong_group(self.belong_group.as_ref()) {
             Ok(group) => Some(group),
             Err(Either::Left(e)) => {
@@ -89,7 +89,7 @@ impl<Name: NameType> NodeItemBuilder<Name> {
         &self,
         item_id: ItemId,
         errors: &mut Vec<GrafoError<Name>>,
-        resolved_belong_group: Option<(GroupId, ItemId)>,
+        resolved_belong_group: Option<ItemId>,
     ) -> Option<NodeItem> {
         let mut validate = true;
         if resolved_belong_group.is_none() {
@@ -98,7 +98,7 @@ impl<Name: NameType> NodeItemBuilder<Name> {
         }
 
         if validate {
-            Some(NodeItem::new(resolved_belong_group.unwrap().1, item_id))
+            Some(NodeItem::new(resolved_belong_group.unwrap(), item_id))
         } else {
             None
         }

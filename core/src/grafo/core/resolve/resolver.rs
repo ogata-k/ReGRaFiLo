@@ -79,7 +79,7 @@ impl<Name: NameType> Resolver<Name> {
     pub fn get_belong_group<S: ?Sized>(
         &self,
         name: Option<&S>,
-    ) -> Result<(GroupId, ItemId), Either<NameIdError<Name, GraphItemKind>, ResolverError>>
+    ) -> Result<GroupId, Either<NameIdError<Name, GraphItemKind>, ResolverError>>
     where
         Name: Borrow<S>,
         S: ToOwned<Owned = Name> + Hash + Eq,
@@ -87,10 +87,11 @@ impl<Name: NameType> Resolver<Name> {
         match name {
             None => {
                 let root_id = self.get_root_group_id().map_err(Either::Right)?;
-                Ok((root_id, root_id))
+                Ok(root_id)
             }
             Some(n) => self
                 .get_graph_item_id_pair(GraphItemKind::Group, n)
+                .map(|(_, item_id)| item_id)
                 .map_err(Either::Left),
         }
     }

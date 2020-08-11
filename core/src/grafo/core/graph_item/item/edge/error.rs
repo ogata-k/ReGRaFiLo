@@ -12,7 +12,11 @@ use std::fmt::{Display, Formatter};
 pub enum EdgeItemError<Name: NameType> {
     // TODO
     FailResolveBelongGroup(ItemId),
+    FailResolveStartEndpoint(),
+    FailResolveEndEndpoint(),
     NameIdError(ItemId, NameIdError<Name, GraphItemKind>),
+    NotSpecifyBelongGroupAsEndpoint(ItemId, Option<Name>),
+    NotSpecifyEndpoint(ItemId),
 }
 
 impl<Name: NameType> HasGraphItemKind for EdgeItemError<Name> {

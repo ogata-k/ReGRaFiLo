@@ -11,8 +11,8 @@ pub struct EdgeItem {
     // TODO Align can use RelativeAlign and AbsoluteAlign
     belong_group_id: GroupId,
     item_id: ItemId,
-    start: (GraphItemKind, ItemId),
-    end: (GraphItemKind, ItemId),
+    start: (GraphItemKind, (GroupId, ItemId)),
+    end: (GraphItemKind, (GroupId, ItemId)),
 }
 
 impl HasGraphItemKind for EdgeItem {
@@ -34,11 +34,25 @@ impl GraphItemBase for EdgeItem {
 }
 
 impl EdgeItem {
-    pub(crate) fn get_start_item_kind_id(&self) -> (GraphItemKind, ItemId) {
+    pub(crate) fn new(
+        belong_group: GroupId,
+        item_id: ItemId,
+        start: (GraphItemKind, (GroupId, ItemId)),
+        end: (GraphItemKind, (GroupId, ItemId)),
+    ) -> Self {
+        Self {
+            belong_group_id: belong_group,
+            item_id,
+            start,
+            end,
+        }
+    }
+
+    pub(crate) fn get_start_item_kind_id(&self) -> (GraphItemKind, (GroupId, ItemId)) {
         self.start
     }
 
-    pub(crate) fn get_end_item_kind_id(&self) -> (GraphItemKind, ItemId) {
+    pub(crate) fn get_end_item_kind_id(&self) -> (GraphItemKind, (GroupId, ItemId)) {
         self.end
     }
 }
