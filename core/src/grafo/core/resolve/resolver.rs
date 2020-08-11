@@ -131,11 +131,9 @@ impl<Name: NameType> Resolver<Name> {
         Name: Borrow<S>,
         S: ToOwned<Owned = Name> + Hash + Eq,
     {
-        let id_pair = self
-            .graph_items
+        self.graph_items
             .get_value(item_kind, name)
-            .ok_or_else(|| NameIdError::NotExist(item_kind, name.to_owned()))?;
-        Ok(*id_pair)
+            .ok_or_else(|| NameIdError::NotExist(item_kind, name.to_owned()))
     }
 
     pub fn get_graph_item_name_by(
@@ -219,7 +217,6 @@ impl<Name: NameType> Resolver<Name> {
         let kind = LayoutItemKind::new_layout(item_kind, layout_kind);
         self.layout_items
             .get_value(kind, name)
-            .copied()
             .ok_or_else(|| NameIdError::NotExist(kind, name.to_owned()))
     }
 
@@ -325,7 +322,6 @@ impl<Name: NameType> Resolver<Name> {
         let kind = LayoutItemKind::new_attribute(attribute_kind);
         self.layout_items
             .get_value(kind, name)
-            .copied()
             .ok_or_else(|| NameIdError::NotExist(kind, name.to_owned()))
     }
 

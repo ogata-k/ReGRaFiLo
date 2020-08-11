@@ -45,12 +45,12 @@ impl<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKeyTrait>
     }
 
     /// helper for getter of string attribute
-    pub fn get_value<S: ?Sized>(&self, kind: Kind, name: &S) -> Option<&Value>
+    pub fn get_value<S: ?Sized>(&self, kind: Kind, name: &S) -> Option<Value>
     where
         Name: Borrow<S>,
         S: Hash + Eq,
     {
-        self.reference_index.get(&kind)?.get(name)
+        self.reference_index.get(&kind)?.get(name).copied()
     }
 
     pub fn get_name(&self, kind: Kind, value: Value) -> Option<&Name> {
@@ -143,5 +143,44 @@ impl<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKeyTrait> Default
             reference_index: Default::default(),
             rev_reference_index: Default::default(),
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::grafo::{NameIdError, NameRefIndex};
+    use crate::util::alias::ItemId;
+    use crate::util::kind::GraphItemKind;
+
+    #[test]
+    fn name_override() {
+        let mut name_ref: NameRefIndex<String, GraphItemKind, ItemId> = NameRefIndex::new();
+        assert_eq!(
+            Ok(()),
+            name_ref.push_value(GraphItemKind::Node, "node".to_string(), 1)
+        );
+        assert_eq!(
+            Err(NameIdError::Override(
+                GraphItemKind::Node,
+                "node".to_string()
+            )),
+            name_ref.push_value(GraphItemKind::Node, "node".to_string(), 2)
+        );
+        assert_eq!(Some(2), name_ref.get_value(GraphItemKind::Node, "node"));
+    }
+
+    #[test]
+    fn name_not_override() {
+        let mut name_ref: NameRefIndex<String, GraphItemKind, ItemId> = NameRefIndex::new();
+        assert_eq!(
+            Ok(()),
+            name_ref.push_value(GraphItemKind::Node, "item".to_string(), 1)
+        );
+        assert_eq!(
+            Ok(()),
+            name_ref.push_value(GraphItemKind::Edge, "item".to_string(), 2)
+        );
+        assert_eq!(Some(1), name_ref.get_value(GraphItemKind::Node, "item"));
+        assert_eq!(Some(2), name_ref.get_value(GraphItemKind::Edge, "item"));
     }
 }
