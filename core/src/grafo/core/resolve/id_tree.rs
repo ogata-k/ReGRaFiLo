@@ -208,6 +208,7 @@ mod test {
         IdTree::None
     }
 
+    #[allow(unused_must_use)]
     fn new_tree_template() -> IdTree<u8> {
         //
         //       0
