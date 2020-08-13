@@ -1,7 +1,8 @@
-use crate::grafo::ResolverError;
-use crate::util::alias::GroupId;
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
+
+use crate::grafo::ResolverError;
+use crate::util::alias::GroupId;
 
 /// This Error is always panic!!
 #[derive(Debug, Eq, PartialEq, Clone)]
@@ -10,11 +11,13 @@ pub enum IdTreeError<Id> {
     NotFindParentId(Id),
     AlreadyExistId(Id),
 }
+
 impl<Id: Debug + Display> Display for IdTreeError<Id> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         unimplemented!()
     }
 }
+
 impl<Id: Debug + Display> Error for IdTreeError<Id> {}
 
 impl Into<ResolverError> for IdTreeError<GroupId> {
@@ -64,19 +67,27 @@ impl<Id: Eq + Copy> IdTree<Id> {
             IdTree::None => false,
         }
     }
+
+    /// get parent and ancestors id without target id
+    pub fn get_ancestor_ids(&self, id: Id) -> Option<Vec<Id>> {
+        match self {
+            IdTree::Root(tree) => tree.get_ancestor_ids(id),
+            IdTree::None => None,
+        }
+    }
 }
 
 impl<Id: Debug + Eq + Copy> IdTree<Id> {
-    pub fn get_root_id(&self) -> Result<Id, IdTreeError<Id>> {
+    pub fn push_id(&mut self, parent: Id, child: Id) -> Result<(), IdTreeError<Id>> {
         match self {
-            IdTree::Root(root) => Ok(root.get_root_id()),
+            IdTree::Root(root) => root.push_id(parent, child),
             IdTree::None => Err(IdTreeError::<Id>::NotInitialized),
         }
     }
 
-    pub fn push_id(&mut self, parent: Id, child: Id) -> Result<(), IdTreeError<Id>> {
+    pub fn get_root_id(&self) -> Result<Id, IdTreeError<Id>> {
         match self {
-            IdTree::Root(root) => root.push_id(parent, child),
+            IdTree::Root(root) => Ok(root.get_root_id()),
             IdTree::None => Err(IdTreeError::<Id>::NotInitialized),
         }
     }
@@ -100,6 +111,16 @@ impl<Id: Eq + Copy> IdTreeRoot<Id> {
 
     fn get_root_id(&self) -> Id {
         self.root.node
+    }
+
+    /// get ids from root to target id without target id
+    fn get_ancestor_ids(&self, target_id: Id) -> Option<Vec<Id>> {
+        let mut ids: Vec<Id> = Vec::new();
+        if self.root.collect_ids_self_to(&mut ids, target_id) {
+            Some(ids)
+        } else {
+            None
+        }
     }
 }
 
@@ -147,6 +168,20 @@ impl<Id: Eq + Copy> UniqueTree<Id> {
         }
         None
     }
+
+    /// get ids from root to target id without target id
+    fn collect_ids_self_to(&self, collected_ids: &mut Vec<Id>, target_id: Id) -> bool {
+        if target_id == self.node {
+            return true;
+        }
+        for child in self.children.iter() {
+            if child.collect_ids_self_to(collected_ids, target_id) {
+                collected_ids.insert(0, self.node);
+                return true;
+            }
+        }
+        false
+    }
 }
 
 impl<Id: Debug + Eq + Copy> UniqueTree<Id> {
@@ -162,5 +197,85 @@ impl<Id: Debug + Eq + Copy> UniqueTree<Id> {
             return Ok(());
         }
         Err(IdTreeError::NotFindParentId(parent))
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::grafo::IdTree;
+
+    fn new_none_tree() -> IdTree<u8> {
+        IdTree::None
+    }
+
+    fn new_tree_template() -> IdTree<u8> {
+        //
+        //       0
+        //     / | \
+        //    1  2  3
+        //   /|  |
+        //  4 5  6
+        //  |
+        //  7
+        //
+
+        let mut tree = IdTree::new(0);
+        tree.push_id(0, 1);
+        tree.push_id(0, 2);
+        tree.push_id(0, 3);
+        tree.push_id(1, 4);
+        tree.push_id(1, 5);
+        tree.push_id(2, 6);
+        tree.push_id(4, 7);
+        tree
+    }
+
+    #[test]
+    fn not_found_ancestor_in_none_tree() {
+        let tree = new_none_tree();
+        assert!(!tree.contains_id(0));
+        assert_eq!(tree.get_ancestor_ids(0), None);
+    }
+
+    #[test]
+    fn not_found_ancestor_in_tree_template() {
+        let tree = new_tree_template();
+        assert!(!tree.contains_id(100));
+        assert_eq!(tree.get_ancestor_ids(100), None);
+    }
+
+    #[test]
+    fn found_root() {
+        let tree = new_tree_template();
+        assert!(tree.contains_id(0));
+        assert_eq!(tree.get_ancestor_ids(0), Some(vec!()));
+    }
+
+    #[test]
+    fn found_ancestor1() {
+        let tree = new_tree_template();
+        assert!(tree.contains_id(4));
+        assert_eq!(tree.get_ancestor_ids(4), Some(vec!(0, 1)));
+    }
+
+    #[test]
+    fn found_ancestor2() {
+        let tree = new_tree_template();
+        assert!(tree.contains_id(5));
+        assert_eq!(tree.get_ancestor_ids(5), Some(vec!(0, 1)));
+    }
+
+    #[test]
+    fn found_ancestor3() {
+        let tree = new_tree_template();
+        assert!(tree.contains_id(3));
+        assert_eq!(tree.get_ancestor_ids(3), Some(vec!(0)));
+    }
+
+    #[test]
+    fn found_deep_ancestor() {
+        let tree = new_tree_template();
+        assert!(tree.contains_id(7));
+        assert_eq!(tree.get_ancestor_ids(7), Some(vec!(0, 1, 4)));
     }
 }

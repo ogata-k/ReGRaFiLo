@@ -110,18 +110,35 @@ impl<Name: NameType> EdgeItemBuilder<Name> {
     ) -> Option<(GraphItemKind, (GroupId, ItemId))> {
         if let Some((kind, name)) = endpoint {
             match resolver.get_graph_item_id_pair(*kind, &name) {
-                Ok((endpoint_group_id, item_id)) => {
-                    if group_id == endpoint_group_id {
-                        errors.push(
-                            EdgeItemError::NotSpecifyBelongGroupAsEndpoint(
-                                item_id,
-                                self.belong_group.clone(),
-                            )
-                            .into(),
-                        );
-                        None
+                Ok((endpoint_group_id, endpoint_item_id)) => {
+                    if *kind == GraphItemKind::Group {
+                        let mut cannot_specify = group_id == endpoint_item_id;
+                        if !cannot_specify {
+                            match resolver.get_ancestor_ids(endpoint_item_id) {
+                                None => {
+                                    // not stored graph id in id_tree
+                                    cannot_specify = true;
+                                }
+                                Some(ancestor_ids) => {
+                                    cannot_specify = ancestor_ids.contains(&group_id);
+                                }
+                            }
+                        }
+
+                        if cannot_specify {
+                            errors.push(
+                                EdgeItemError::CannotSpecifyBelongGroupAsEndpoint(
+                                    item_id,
+                                    self.belong_group.clone(),
+                                )
+                                .into(),
+                            );
+                            None
+                        } else {
+                            Some((*kind, (endpoint_group_id, endpoint_item_id)))
+                        }
                     } else {
-                        Some((*kind, (endpoint_group_id, item_id)))
+                        Some((*kind, (endpoint_group_id, endpoint_item_id)))
                     }
                 }
                 Err(e) => {

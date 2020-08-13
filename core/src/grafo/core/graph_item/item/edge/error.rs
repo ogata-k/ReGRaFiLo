@@ -15,7 +15,7 @@ pub enum EdgeItemError<Name: NameType> {
     FailResolveStartEndpoint(),
     FailResolveEndEndpoint(),
     NameIdError(ItemId, NameIdError<Name, GraphItemKind>),
-    NotSpecifyBelongGroupAsEndpoint(ItemId, Option<Name>),
+    CannotSpecifyBelongGroupAsEndpoint(ItemId, Option<Name>),
     NotSpecifyEndpoint(ItemId),
 }
 

@@ -96,6 +96,11 @@ impl<Name: NameType> Resolver<Name> {
         }
     }
 
+    /// get parent and ancestors id
+    pub fn get_ancestor_ids(&self, group_id: GroupId) -> Option<Vec<GroupId>> {
+        self.group_id_tree.get_ancestor_ids(group_id)
+    }
+
     //
     // for whole item resolve
     //
