@@ -10,7 +10,6 @@ use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum EdgeItemError<Name: NameType> {
-    // TODO
     FailResolveBelongGroup(ItemId),
     FailResolveStartEndpoint(),
     FailResolveEndEndpoint(),
@@ -41,7 +40,7 @@ impl<Name: NameType> Error for EdgeItemError<Name> {}
 impl<Name: NameType> ItemErrorBase<Name> for EdgeItemError<Name> {}
 impl<Name: NameType> FromWithItemId<NameIdError<Name, GraphItemKind>> for EdgeItemError<Name> {
     fn from_with_id(item_id: ItemId, from: NameIdError<Name, GraphItemKind>) -> Self {
-        unimplemented!()
+        EdgeItemError::NameIdError(item_id, from)
     }
 }
 impl<Name: NameType> GraphBuilderErrorBase<Name> for EdgeItemError<Name> {}

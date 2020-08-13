@@ -12,11 +12,9 @@ use crate::util::item_base::{
 };
 use crate::util::kind::{GraphItemKind, HasGraphItemKind};
 use crate::util::name_type::NameType;
-use std::borrow::Borrow;
 
 #[derive(Debug, Clone)]
 pub struct EdgeItemBuilder<Name: NameType> {
-    // TODO
     belong_group: Option<Name>,
     name: Option<Name>,
     start: Option<(GraphItemKind, Name)>,
@@ -117,6 +115,17 @@ impl<Name: NameType> EdgeItemBuilder<Name> {
                             match resolver.get_ancestor_ids(endpoint_item_id) {
                                 None => {
                                     // not stored graph id in id_tree
+                                    // usually unreachable!!
+                                    errors.push(
+                                        EdgeItemError::from_with_id(
+                                            item_id,
+                                            NameIdError::NotExist(
+                                                GraphItemKind::Group,
+                                                name.clone(),
+                                            ),
+                                        )
+                                        .into(),
+                                    );
                                     cannot_specify = true;
                                 }
                                 Some(ancestor_ids) => {
