@@ -6,7 +6,7 @@ use crate::util::item_base::ItemBase;
 use crate::util::kind::{GraphItemKind, HasGraphItemKind};
 
 /// Group item
-#[derive(Debug, Eq, PartialEq, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub struct GroupItem {
     // todo
     belong_group_id: GroupId,

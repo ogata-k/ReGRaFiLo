@@ -6,7 +6,7 @@ use crate::util::item_base::ItemBase;
 use crate::util::kind::{GraphItemKind, HasGraphItemKind};
 
 /// Edge Item
-#[derive(Debug, Eq, PartialEq, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub struct EdgeItem {
     // TODO Align can use RelativeAlign and AbsoluteAlign
     belong_group_id: GroupId,
@@ -48,11 +48,11 @@ impl EdgeItem {
         }
     }
 
-    pub(crate) fn get_start_item_kind_id(&self) -> (GraphItemKind, (GroupId, ItemId)) {
+    pub fn get_start_item_id(&self) -> (GraphItemKind, (GroupId, ItemId)) {
         self.start
     }
 
-    pub(crate) fn get_end_item_kind_id(&self) -> (GraphItemKind, (GroupId, ItemId)) {
+    pub fn get_end_item_id(&self) -> (GraphItemKind, (GroupId, ItemId)) {
         self.end
     }
 }

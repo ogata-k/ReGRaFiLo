@@ -256,7 +256,7 @@ mod test {
         name: Option<String>,
     }
 
-    #[derive(Debug, Eq, PartialEq, Clone)]
+    #[derive(Debug, Eq, PartialEq, Clone, Copy)]
     struct TargetItem {
         belong_group_id: GroupId,
         item_id: ItemId,
