@@ -28,11 +28,13 @@ impl<Name: NameType> ItemBuilderBase<Name> for EdgeItemBuilder<Name> {
 
 impl<Name: NameType> GraphItemBuilderBase<Name> for EdgeItemBuilder<Name> {
     fn set_belong_group<S: Into<Name>>(&mut self, group: S) -> &mut Self {
-        unimplemented!()
+        self.belong_group = Some(group.into());
+        self
     }
 
     fn set_name<S: Into<Name>>(&mut self, name: S) -> &mut Self {
-        unimplemented!()
+        self.name = Some(name.into());
+        self
     }
 }
 
@@ -68,17 +70,8 @@ impl<Name: NameType> HasItemBuilderMethod<Name> for EdgeItemBuilder<Name> {
     }
 }
 
+// resolver
 impl<Name: NameType> EdgeItemBuilder<Name> {
-    #[allow(clippy::new_without_default)]
-    pub fn new() -> Self {
-        Self {
-            belong_group: None,
-            name: None,
-            start: None,
-            end: None,
-        }
-    }
-
     fn resolve_belong_group(
         &self,
         item_id: ItemId,
@@ -222,5 +215,27 @@ impl<Name: NameType> EdgeItemBuilder<Name> {
         }
 
         Some(EdgeItemOption { name })
+    }
+}
+
+impl<Name: NameType> EdgeItemBuilder<Name> {
+    #[allow(clippy::new_without_default)]
+    pub fn new() -> Self {
+        Self {
+            belong_group: None,
+            name: None,
+            start: None,
+            end: None,
+        }
+    }
+
+    pub fn set_start_endpoint<S: Into<Name>>(&mut self, kind: GraphItemKind, name: S) -> &mut Self {
+        self.start = Some((kind, name.into()));
+        self
+    }
+
+    pub fn set_end_endpoint<S: Into<Name>>(&mut self, kind: GraphItemKind, name: S) -> &mut Self {
+        self.end = Some((kind, name.into()));
+        self
     }
 }

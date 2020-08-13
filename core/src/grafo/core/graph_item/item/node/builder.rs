@@ -57,15 +57,8 @@ impl<Name: NameType> HasItemBuilderMethod<Name> for NodeItemBuilder<Name> {
     }
 }
 
+// resolver
 impl<Name: NameType> NodeItemBuilder<Name> {
-    #[allow(clippy::new_without_default)]
-    pub fn new() -> Self {
-        Self {
-            belong_group: None,
-            name: None,
-        }
-    }
-
     fn resolve_belong_group(
         &self,
         item_id: ItemId,
@@ -127,5 +120,15 @@ impl<Name: NameType> NodeItemBuilder<Name> {
         }
 
         Some(NodeItemOption { name })
+    }
+}
+
+impl<Name: NameType> NodeItemBuilder<Name> {
+    #[allow(clippy::new_without_default)]
+    pub fn new() -> Self {
+        Self {
+            belong_group: None,
+            name: None,
+        }
     }
 }

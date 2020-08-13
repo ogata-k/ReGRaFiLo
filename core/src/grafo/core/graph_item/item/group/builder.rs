@@ -47,6 +47,9 @@ impl<Name: NameType> Default for GroupItemBuilder<Name> {
     }
 }
 
+// resolver
+impl<Name: NameType> GroupItemBuilder<Name> {}
+
 impl<Name: NameType> GroupItemBuilder<Name> {
     pub fn new() -> Self {
         Self {
