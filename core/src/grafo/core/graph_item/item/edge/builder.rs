@@ -49,12 +49,26 @@ impl<Name: NameType> HasItemBuilderMethod<Name> for EdgeItemBuilder<Name> {
         let belong_group: Option<ItemId> =
             self.resolve_belong_group(item_id, resolver, &mut errors);
         let start: Option<(GraphItemKind, (GroupId, ItemId))> = if let Some(bg) = belong_group {
-            self.resolve_endpoint(bg, item_id, &self.start, resolver, &mut errors)
+            self.resolve_endpoint(
+                bg,
+                item_id,
+                &self.start,
+                resolver,
+                &mut errors,
+                EdgeItemError::NotSpecifyStartEndpoint,
+            )
         } else {
             None
         };
         let end: Option<(GraphItemKind, (GroupId, ItemId))> = if let Some(bg) = belong_group {
-            self.resolve_endpoint(bg, item_id, &self.end, resolver, &mut errors)
+            self.resolve_endpoint(
+                bg,
+                item_id,
+                &self.end,
+                resolver,
+                &mut errors,
+                EdgeItemError::NotSpecifyEndEndpoint,
+            )
         } else {
             None
         };
@@ -91,14 +105,18 @@ impl<Name: NameType> EdgeItemBuilder<Name> {
         }
     }
 
-    fn resolve_endpoint(
+    fn resolve_endpoint<F>(
         &self,
         group_id: GroupId,
         item_id: ItemId,
         endpoint: &Option<(GraphItemKind, Name)>,
         resolver: &Resolver<Name>,
         errors: &mut Vec<GrafoError<Name>>,
-    ) -> Option<(GraphItemKind, (GroupId, ItemId))> {
+        not_specify_error: F,
+    ) -> Option<(GraphItemKind, (GroupId, ItemId))>
+    where
+        F: FnOnce(ItemId) -> EdgeItemError<Name>,
+    {
         if let Some((kind, name)) = endpoint {
             match resolver.get_graph_item_id_pair(*kind, &name) {
                 Ok((endpoint_group_id, endpoint_item_id)) => {
@@ -131,7 +149,7 @@ impl<Name: NameType> EdgeItemBuilder<Name> {
                             errors.push(
                                 EdgeItemError::CannotSpecifyBelongGroupAsEndpoint(
                                     item_id,
-                                    self.belong_group.clone(),
+                                    name.clone(),
                                 )
                                 .into(),
                             );
@@ -149,7 +167,7 @@ impl<Name: NameType> EdgeItemBuilder<Name> {
                 }
             }
         } else {
-            errors.push(EdgeItemError::NotSpecifyEndpoint(item_id).into());
+            errors.push(not_specify_error(item_id).into());
             None
         }
     }
@@ -168,13 +186,13 @@ impl<Name: NameType> EdgeItemBuilder<Name> {
             validate = false;
         }
 
-        if start.is_none() {
-            errors.push(EdgeItemError::FailResolveStartEndpoint().into());
+        if resolved_belong_group.is_some() && start.is_none() {
+            errors.push(EdgeItemError::FailResolveStartEndpoint(item_id).into());
             validate = false;
         }
 
-        if end.is_none() {
-            errors.push(EdgeItemError::FailResolveEndEndpoint().into());
+        if resolved_belong_group.is_some() && end.is_none() {
+            errors.push(EdgeItemError::FailResolveEndEndpoint(item_id).into());
             validate = false;
         }
 
