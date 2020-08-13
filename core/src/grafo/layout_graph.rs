@@ -57,7 +57,6 @@ impl<Name: NameType> GrafoBuilder<Name> {
                     return (false, vec![e.into()]);
                 }
 
-                // TODO action before insert
                 (true, errors)
             },
         );
@@ -101,7 +100,6 @@ impl<Name: NameType> GrafoBuilder<Name> {
                     return (false, vec![e.into()]);
                 }
 
-                // TODO action before insert
                 (true, errors)
             },
         );
@@ -141,7 +139,8 @@ impl<Name: NameType> Grafo<Name> {
         &self.resolver
     }
 
-    // TODO 2 next push_group
+    // TODO push_group
+
     pub fn push_node(&mut self, builder: NodeItemBuilder<Name>) -> (bool, Vec<GrafoError<Name>>) {
         self.node_arena.push(
             &mut self.resolver,
@@ -163,7 +162,8 @@ impl<Name: NameType> Grafo<Name> {
             },
         )
     }
-    // TODO 3 push_edge
+
+    // TODO edge
 }
 
 #[cfg(test)]
