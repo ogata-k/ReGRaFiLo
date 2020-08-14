@@ -78,9 +78,9 @@ impl<Id: Eq + Copy> IdTree<Id> {
 }
 
 impl<Id: Debug + Eq + Copy> IdTree<Id> {
-    pub fn push_id(&mut self, parent: Id, child: Id) -> Result<(), IdTreeError<Id>> {
+    pub fn insert_id(&mut self, parent: Id, child: Id) -> Result<(), IdTreeError<Id>> {
         match self {
-            IdTree::Root(root) => root.push_id(parent, child),
+            IdTree::Root(root) => root.insert_id(parent, child),
             IdTree::None => Err(IdTreeError::<Id>::NotInitialized),
         }
     }
@@ -125,8 +125,8 @@ impl<Id: Eq + Copy> IdTreeRoot<Id> {
 }
 
 impl<Id: Debug + Eq + Copy> IdTreeRoot<Id> {
-    fn push_id(&mut self, parent: Id, child: Id) -> Result<(), IdTreeError<Id>> {
-        self.root.push_id(parent, child)
+    fn insert_id(&mut self, parent: Id, child: Id) -> Result<(), IdTreeError<Id>> {
+        self.root.insert_id(parent, child)
     }
 }
 
@@ -185,7 +185,7 @@ impl<Id: Eq + Copy> UniqueTree<Id> {
 }
 
 impl<Id: Debug + Eq + Copy> UniqueTree<Id> {
-    fn push_id(&mut self, parent: Id, child: Id) -> Result<(), IdTreeError<Id>> {
+    fn insert_id(&mut self, parent: Id, child: Id) -> Result<(), IdTreeError<Id>> {
         if self.contains_id(child) {
             return Err(IdTreeError::AlreadyExistId(child));
         }
@@ -221,13 +221,13 @@ mod test {
         //
 
         let mut tree = IdTree::new(0);
-        tree.push_id(0, 1);
-        tree.push_id(0, 2);
-        tree.push_id(0, 3);
-        tree.push_id(1, 4);
-        tree.push_id(1, 5);
-        tree.push_id(2, 6);
-        tree.push_id(4, 7);
+        tree.insert_id(0, 1);
+        tree.insert_id(0, 2);
+        tree.insert_id(0, 3);
+        tree.insert_id(1, 4);
+        tree.insert_id(1, 5);
+        tree.insert_id(2, 6);
+        tree.insert_id(4, 7);
         tree
     }
 

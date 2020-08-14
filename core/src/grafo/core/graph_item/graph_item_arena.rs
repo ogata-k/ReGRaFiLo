@@ -449,7 +449,7 @@ mod test {
                     } = option
                     {
                         if let Err(err) =
-                            resolver.push_graph_item_value(kind, name, group_id, item_id)
+                            resolver.push_graph_item_value_or_override(kind, name, group_id, item_id)
                         {
                             errors.push(TargetBuilderError::from_with_id(item_id, err).into());
                         }
@@ -494,7 +494,7 @@ mod test {
                     } = option
                     {
                         if let Err(err) =
-                            resolver.push_graph_item_value(kind, name, group_id, item_id)
+                            resolver.push_graph_item_value_or_override(kind, name, group_id, item_id)
                         {
                             errors.push(TargetBuilderError::from_with_id(item_id, err).into());
                         }
@@ -545,7 +545,7 @@ mod test {
                     } = option
                     {
                         if let Err(err) =
-                            resolver.push_graph_item_value(kind, name, group_id, item_id)
+                            resolver.push_graph_item_value_or_override(kind, name, group_id, item_id)
                         {
                             errors.push(TargetBuilderError::from_with_id(item_id, err).into());
                         }
@@ -592,7 +592,7 @@ mod test {
                     } = option
                     {
                         if let Err(err) =
-                            resolver.push_graph_item_value(kind, name, group_id, item_id)
+                            resolver.push_graph_item_value_or_override(kind, name, group_id, item_id)
                         {
                             errors.push(TargetBuilderError::from_with_id(item_id, err).into());
                         }

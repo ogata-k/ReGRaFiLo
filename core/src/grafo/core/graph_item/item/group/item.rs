@@ -8,7 +8,6 @@ use crate::util::kind::{GraphItemKind, HasGraphItemKind};
 /// Group item
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub struct GroupItem {
-    // todo
     belong_group_id: GroupId,
     item_id: ItemId,
 }
@@ -36,6 +35,15 @@ impl Default for GroupItem {
         Self {
             belong_group_id: DEFAULT_ITEM_ID,
             item_id: DEFAULT_ITEM_ID,
+        }
+    }
+}
+
+impl GroupItem {
+    pub(crate) fn new(belong_group: GroupId, item_id: ItemId) -> Self {
+        Self {
+            belong_group_id: belong_group,
+            item_id,
         }
     }
 }

@@ -69,6 +69,16 @@ impl<Name: NameType> Resolver<Name> {
         Ok(())
     }
 
+    pub(crate) fn insert_group(
+        &mut self,
+        parent: GroupId,
+        child: GroupId,
+    ) -> Result<(), ResolverError> {
+        self.group_id_tree
+            .insert_id(parent, child)
+            .map_err(|e| e.into())
+    }
+
     pub(crate) fn get_root_group_id(&self) -> Result<GroupId, ResolverError> {
         match self.group_id_tree.get_root_id() {
             Ok(id) => Ok(id),
@@ -117,7 +127,7 @@ impl<Name: NameType> Resolver<Name> {
     // for graph item
     //
 
-    pub(crate) fn push_graph_item_value<S: Into<Name>>(
+    pub(crate) fn push_graph_item_value_or_override<S: Into<Name>>(
         &mut self,
         item_kind: GraphItemKind,
         name: S,
@@ -125,7 +135,7 @@ impl<Name: NameType> Resolver<Name> {
         item_id: ItemId,
     ) -> Result<(), NameIdError<Name, GraphItemKind>> {
         self.graph_items
-            .push_value(item_kind, name, (group_id, item_id))
+            .push_value_or_override(item_kind, name, (group_id, item_id))
     }
 
     pub fn get_graph_item_id_pair<S: ?Sized>(
@@ -203,7 +213,7 @@ impl<Name: NameType> Resolver<Name> {
         name: S,
         layout_item_id: ItemId,
     ) -> Result<(), NameIdError<Name, LayoutItemKind>> {
-        self.layout_items.push_value(
+        self.layout_items.push_value_or_override(
             LayoutItemKind::new_layout(item_kind, layout_kind),
             name.into(),
             layout_item_id,
@@ -309,7 +319,7 @@ impl<Name: NameType> Resolver<Name> {
         name: S,
         layout_item_id: ItemId,
     ) -> Result<(), NameIdError<Name, LayoutItemKind>> {
-        self.layout_items.push_value(
+        self.layout_items.push_value_or_override(
             LayoutItemKind::new_attribute(attribute_kind),
             name,
             layout_item_id,

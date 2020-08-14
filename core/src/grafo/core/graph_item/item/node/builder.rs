@@ -44,7 +44,7 @@ impl<Name: NameType> HasItemBuilderMethod<Name> for NodeItemBuilder<Name> {
         resolver: &Resolver<Name>,
     ) -> ItemBuilderResult<Name, Self::Item, Self::ItemOption> {
         let mut errors: Vec<GrafoError<Name>> = Vec::new();
-        let belong_group: Option<ItemId> =
+        let belong_group: Option<GroupId> =
             self.resolve_belong_group(item_id, resolver, &mut errors);
         let item: Option<NodeItem> = self.resolve_item(item_id, &mut errors, belong_group);
         let item_option: Option<NodeItemOption<Name>> =
@@ -114,7 +114,7 @@ impl<Name: NameType> NodeItemBuilder<Name> {
                 errors.push(
                     NodeItemError::from_with_id(
                         item_id,
-                        NameIdError::AlreadyExist(NodeItem::kind(), n.to_owned()),
+                        NameIdError::AlreadyExist(NodeItem::kind(), n.clone()),
                     )
                     .into(),
                 );

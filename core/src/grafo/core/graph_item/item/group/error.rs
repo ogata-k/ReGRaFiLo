@@ -10,7 +10,6 @@ use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum GroupItemError<Name: NameType> {
-    // TODO
     FailResolveBelongGroup(ItemId, Option<Name>),
     NameIdError(ItemId, NameIdError<Name, GraphItemKind>),
 }
@@ -37,7 +36,7 @@ impl<Name: NameType> Error for GroupItemError<Name> {}
 impl<Name: NameType> ItemErrorBase<Name> for GroupItemError<Name> {}
 impl<Name: NameType> FromWithItemId<NameIdError<Name, GraphItemKind>> for GroupItemError<Name> {
     fn from_with_id(item_id: ItemId, from: NameIdError<Name, GraphItemKind>) -> Self {
-        unimplemented!()
+        Self::NameIdError(item_id, from)
     }
 }
 impl<Name: NameType> GraphBuilderErrorBase<Name> for GroupItemError<Name> {}

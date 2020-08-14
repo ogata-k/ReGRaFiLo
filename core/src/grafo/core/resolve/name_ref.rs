@@ -35,7 +35,6 @@ pub struct NameRefIndex<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKey
     rev_reference_index: HashMap<KeyWithKind<Kind, Value>, Name>,
 }
 
-// TODO 分割したい
 impl<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKeyTrait>
     NameRefIndex<Name, Kind, Value>
 {
@@ -113,7 +112,7 @@ impl<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKeyTrait>
 impl<Name: NameType, Kind: Debug + Display + NameRefKeyTrait, Value: NameRefKeyTrait>
     NameRefIndex<Name, Kind, Value>
 {
-    pub fn push_value<S: Into<Name>>(
+    pub fn push_value_or_override<S: Into<Name>>(
         &mut self,
         kind: Kind,
         name: S,
@@ -157,14 +156,14 @@ mod test {
         let mut name_ref: NameRefIndex<String, GraphItemKind, ItemId> = NameRefIndex::new();
         assert_eq!(
             Ok(()),
-            name_ref.push_value(GraphItemKind::Node, "node".to_string(), 1)
+            name_ref.push_value_or_override(GraphItemKind::Node, "node".to_string(), 1)
         );
         assert_eq!(
             Err(NameIdError::Override(
                 GraphItemKind::Node,
                 "node".to_string()
             )),
-            name_ref.push_value(GraphItemKind::Node, "node".to_string(), 2)
+            name_ref.push_value_or_override(GraphItemKind::Node, "node".to_string(), 2)
         );
         assert_eq!(Some(2), name_ref.get_value(GraphItemKind::Node, "node"));
     }
@@ -174,11 +173,11 @@ mod test {
         let mut name_ref: NameRefIndex<String, GraphItemKind, ItemId> = NameRefIndex::new();
         assert_eq!(
             Ok(()),
-            name_ref.push_value(GraphItemKind::Node, "item".to_string(), 1)
+            name_ref.push_value_or_override(GraphItemKind::Node, "item".to_string(), 1)
         );
         assert_eq!(
             Ok(()),
-            name_ref.push_value(GraphItemKind::Edge, "item".to_string(), 2)
+            name_ref.push_value_or_override(GraphItemKind::Edge, "item".to_string(), 2)
         );
         assert_eq!(Some(1), name_ref.get_value(GraphItemKind::Node, "item"));
         assert_eq!(Some(2), name_ref.get_value(GraphItemKind::Edge, "item"));
