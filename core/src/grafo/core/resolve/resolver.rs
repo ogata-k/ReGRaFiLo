@@ -29,7 +29,7 @@ impl Error for ResolverError {}
 
 impl<Name: NameType> Into<GrafoError<Name>> for ResolverError {
     fn into(self) -> GrafoError<Name> {
-        unimplemented!()
+        GrafoError::ResolverError(self)
     }
 }
 

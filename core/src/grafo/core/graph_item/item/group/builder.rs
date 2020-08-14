@@ -5,7 +5,7 @@ use crate::grafo::core::graph_item::item::group::GroupItemOption;
 use crate::grafo::core::graph_item::GraphItemBuilderBase;
 use crate::grafo::core::resolve::Resolver;
 use crate::grafo::{GrafoError, NameIdError};
-use crate::util::alias::{GroupId, ItemId};
+use crate::util::alias::{GroupId, ItemId, DEFAULT_ITEM_ID};
 use crate::util::either::Either;
 use crate::util::item_base::{
     FromWithItemId, HasItemBuilderMethod, ItemBuilderBase, ItemBuilderResult,
@@ -74,6 +74,16 @@ impl<Name: NameType> GroupItemBuilder<Name> {
         resolver: &Resolver<Name>,
         errors: &mut Vec<GrafoError<Name>>,
     ) -> Option<ItemId> {
+        if item_id == DEFAULT_ITEM_ID {
+            return if let Some(n) = &self.belong_group {
+                errors.push(
+                    GroupItemError::CannotSpecifyBelongGroupForRoot(item_id, n.clone()).into(),
+                );
+                None
+            } else {
+                Some(item_id)
+            };
+        }
         match resolver.get_belong_group(self.belong_group.as_ref()) {
             Ok(group) => Some(group),
             Err(Either::Left(e)) => {
@@ -95,9 +105,12 @@ impl<Name: NameType> GroupItemBuilder<Name> {
     ) -> Option<GroupItem> {
         let mut validate = true;
         if resolved_belong_group.is_none() {
-            errors.push(
-                GroupItemError::FailResolveBelongGroup(item_id, self.belong_group.clone()).into(),
-            );
+            if item_id != DEFAULT_ITEM_ID {
+                errors.push(
+                    GroupItemError::FailResolveBelongGroup(item_id, self.belong_group.clone())
+                        .into(),
+                );
+            }
             validate = false;
         }
 

@@ -1,6 +1,7 @@
 use crate::grafo::graph_item::edge::EdgeItemError;
 use crate::grafo::graph_item::group::GroupItemError;
 use crate::grafo::graph_item::node::NodeItemError;
+use crate::grafo::ResolverError;
 use crate::util::name_type::NameType;
 use std::error::Error;
 use std::fmt::Formatter;
@@ -8,6 +9,7 @@ use std::fmt::Formatter;
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum GrafoError<Name: NameType> {
     FailBuildGrafo,
+    ResolverError(ResolverError),
     GroupItemError(GroupItemError<Name>),
     NodeItemError(NodeItemError<Name>),
     EdgeItemError(EdgeItemError<Name>),

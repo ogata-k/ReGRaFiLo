@@ -10,6 +10,7 @@ use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum GroupItemError<Name: NameType> {
+    CannotSpecifyBelongGroupForRoot(ItemId, Name),
     FailResolveBelongGroup(ItemId, Option<Name>),
     NameIdError(ItemId, NameIdError<Name, GraphItemKind>),
 }
