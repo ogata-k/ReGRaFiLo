@@ -10,7 +10,7 @@ use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum NodeItemError<Name: NameType> {
-    FailResolveBelongGroup(ItemId),
+    FailResolveBelongGroup(ItemId, Option<Name>),
     NameIdError(ItemId, NameIdError<Name, GraphItemKind>),
 }
 

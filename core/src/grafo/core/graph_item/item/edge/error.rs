@@ -10,13 +10,13 @@ use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum EdgeItemError<Name: NameType> {
-    FailResolveBelongGroup(ItemId),
-    NotSpecifyStartEndpoint(ItemId),
-    FailResolveStartEndpoint(ItemId),
-    NotSpecifyEndEndpoint(ItemId),
-    FailResolveEndEndpoint(ItemId),
+    FailResolveBelongGroup(ItemId, Option<Name>),
+    NotSpecifyStartEndpoint(ItemId, Option<(GraphItemKind, Name)>),
+    FailResolveStartEndpoint(ItemId, Option<(GraphItemKind, Name)>),
+    NotSpecifyEndEndpoint(ItemId, Option<(GraphItemKind, Name)>),
+    FailResolveEndEndpoint(ItemId, Option<(GraphItemKind, Name)>),
     NameIdError(ItemId, NameIdError<Name, GraphItemKind>),
-    CannotSpecifyBelongGroupAsEndpoint(ItemId, Name),
+    CannotSpecifyBelongGroupAsEndpoint(ItemId, (GraphItemKind, Name)),
 }
 
 impl<Name: NameType> HasGraphItemKind for EdgeItemError<Name> {

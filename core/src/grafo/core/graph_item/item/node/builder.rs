@@ -86,7 +86,9 @@ impl<Name: NameType> NodeItemBuilder<Name> {
     ) -> Option<NodeItem> {
         let mut validate = true;
         if resolved_belong_group.is_none() {
-            errors.push(NodeItemError::FailResolveBelongGroup(item_id).into());
+            errors.push(
+                NodeItemError::FailResolveBelongGroup(item_id, self.belong_group.clone()).into(),
+            );
             validate = false;
         }
 

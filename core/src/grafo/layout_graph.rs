@@ -342,7 +342,7 @@ mod test {
                     NameIdError::NotExist(GraphItemKind::Group, "hoge".to_string())
                 )
                 .into(),
-                NodeItemError::FailResolveBelongGroup(1).into(),
+                NodeItemError::FailResolveBelongGroup(1, Some("hoge".to_string())).into(),
             ]
         );
     }
@@ -581,7 +581,7 @@ mod test {
                     NameIdError::NotExist(GraphItemKind::Group, "hoge".to_string())
                 )
                 .into(),
-                EdgeItemError::FailResolveBelongGroup(1).into(),
+                EdgeItemError::FailResolveBelongGroup(1, Some("hoge".to_string())).into(),
             ]
         );
     }
@@ -608,9 +608,16 @@ mod test {
         assert_eq!(
             errors,
             vec![
-                EdgeItemError::CannotSpecifyBelongGroupAsEndpoint(1, "root group".to_string())
-                    .into(),
-                EdgeItemError::FailResolveEndEndpoint(1).into(),
+                EdgeItemError::CannotSpecifyBelongGroupAsEndpoint(
+                    1,
+                    (GraphItemKind::Group, "root group".to_string())
+                )
+                .into(),
+                EdgeItemError::FailResolveEndEndpoint(
+                    1,
+                    Some((GraphItemKind::Group, "root group".to_string()))
+                )
+                .into(),
             ]
         );
     }
@@ -642,7 +649,11 @@ mod test {
                     NameIdError::NotExist(GraphItemKind::Node, "not exist".to_string())
                 )
                 .into(),
-                EdgeItemError::FailResolveEndEndpoint(1).into(),
+                EdgeItemError::FailResolveEndEndpoint(
+                    1,
+                    Some((GraphItemKind::Node, "not exist".to_string()))
+                )
+                .into(),
             ]
         );
     }
@@ -668,8 +679,8 @@ mod test {
         assert_eq!(
             errors,
             vec![
-                EdgeItemError::NotSpecifyEndEndpoint(1).into(),
-                EdgeItemError::FailResolveEndEndpoint(1).into(),
+                EdgeItemError::NotSpecifyEndEndpoint(1, None).into(),
+                EdgeItemError::FailResolveEndEndpoint(1, None).into(),
             ]
         );
     }
@@ -687,10 +698,10 @@ mod test {
         assert_eq!(
             errors,
             vec![
-                EdgeItemError::NotSpecifyStartEndpoint(1).into(),
-                EdgeItemError::NotSpecifyEndEndpoint(1).into(),
-                EdgeItemError::FailResolveStartEndpoint(1).into(),
-                EdgeItemError::FailResolveEndEndpoint(1).into(),
+                EdgeItemError::NotSpecifyStartEndpoint(1, None).into(),
+                EdgeItemError::NotSpecifyEndEndpoint(1, None).into(),
+                EdgeItemError::FailResolveStartEndpoint(1, None).into(),
+                EdgeItemError::FailResolveEndEndpoint(1, None).into(),
             ]
         );
     }

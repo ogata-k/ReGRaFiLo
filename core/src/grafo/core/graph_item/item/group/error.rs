@@ -11,7 +11,7 @@ use std::fmt::{Display, Formatter};
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum GroupItemError<Name: NameType> {
     // TODO
-    FailResolveBelongGroup(ItemId),
+    FailResolveBelongGroup(ItemId, Option<Name>),
     NameIdError(ItemId, NameIdError<Name, GraphItemKind>),
 }
 
