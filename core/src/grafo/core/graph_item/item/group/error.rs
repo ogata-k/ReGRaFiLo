@@ -27,12 +27,6 @@ impl<Name: NameType> Display for GroupItemError<Name> {
     }
 }
 
-impl<Name: NameType> Into<GrafoError<Name>> for GroupItemError<Name> {
-    fn into(self) -> GrafoError<Name> {
-        GrafoError::GroupItemError(self)
-    }
-}
-
 impl<Name: NameType> Error for GroupItemError<Name> {}
 impl<Name: NameType> ItemErrorBase<Name> for GroupItemError<Name> {}
 impl<Name: NameType> FromWithItemId<NameIdError<Name, GraphItemKind>> for GroupItemError<Name> {

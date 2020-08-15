@@ -26,12 +26,6 @@ impl<Name: NameType> Display for NodeItemError<Name> {
     }
 }
 
-impl<Name: NameType> Into<GrafoError<Name>> for NodeItemError<Name> {
-    fn into(self) -> GrafoError<Name> {
-        GrafoError::NodeItemError(self)
-    }
-}
-
 impl<Name: NameType> Error for NodeItemError<Name> {}
 
 impl<Name: NameType> ItemErrorBase<Name> for NodeItemError<Name> {}

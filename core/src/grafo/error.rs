@@ -1,10 +1,11 @@
+use std::error::Error;
+use std::fmt::Formatter;
+
 use crate::grafo::graph_item::edge::EdgeItemError;
 use crate::grafo::graph_item::group::GroupItemError;
 use crate::grafo::graph_item::node::NodeItemError;
 use crate::grafo::ResolverError;
 use crate::util::name_type::NameType;
-use std::error::Error;
-use std::fmt::Formatter;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum GrafoError<Name: NameType> {
@@ -22,3 +23,27 @@ impl<Name: NameType> std::fmt::Display for GrafoError<Name> {
 }
 
 impl<Name: NameType> Error for GrafoError<Name> {}
+
+impl<Name: NameType> From<ResolverError> for GrafoError<Name> {
+    fn from(e: ResolverError) -> Self {
+        Self::ResolverError(e)
+    }
+}
+
+impl<Name: NameType> From<GroupItemError<Name>> for GrafoError<Name> {
+    fn from(e: GroupItemError<Name>) -> Self {
+        Self::GroupItemError(e)
+    }
+}
+
+impl<Name: NameType> From<NodeItemError<Name>> for GrafoError<Name> {
+    fn from(e: NodeItemError<Name>) -> Self {
+        Self::NodeItemError(e)
+    }
+}
+
+impl<Name: NameType> From<EdgeItemError<Name>> for GrafoError<Name> {
+    fn from(e: EdgeItemError<Name>) -> Self {
+        Self::EdgeItemError(e)
+    }
+}

@@ -274,9 +274,9 @@ mod test {
         NotFindGroup(ItemId),
     }
 
-    impl<'a> Into<GrafoError<String>> for TargetBuilderError {
-        fn into(self) -> GrafoError<String> {
-            unimplemented!()
+    impl From<TargetBuilderError> for GrafoError<String> {
+        fn from(_: TargetBuilderError) -> GrafoError<String> {
+            unreachable!()
         }
     }
 
@@ -292,12 +292,12 @@ mod test {
         }
     }
 
-    impl<'a> ItemBuilderBase<String> for TargetItemBuilder {
+    impl ItemBuilderBase<String> for TargetItemBuilder {
         type Item = TargetItem;
         type ItemError = TargetBuilderError;
     }
 
-    impl<'a> GraphItemBuilderBase<String> for TargetItemBuilder {
+    impl GraphItemBuilderBase<String> for TargetItemBuilder {
         fn set_belong_group<S: Into<String>>(&mut self, group: S) -> &mut Self {
             self.belong_group = Some(group.into());
             self
@@ -309,7 +309,7 @@ mod test {
         }
     }
 
-    impl<'a> TargetItemBuilder {
+    impl TargetItemBuilder {
         fn new() -> Self {
             TargetItemBuilder {
                 belong_group: None,
@@ -346,7 +346,7 @@ mod test {
         }
     }
 
-    impl<'a> HasItemBuilderMethod<String> for TargetItemBuilder {
+    impl HasItemBuilderMethod<String> for TargetItemBuilder {
         type ItemOption = TargetItemOption;
         fn build(
             self,
@@ -416,14 +416,14 @@ mod test {
 
     impl Error for TargetBuilderError {}
 
-    impl<'a> ItemErrorBase<String> for TargetBuilderError {}
+    impl ItemErrorBase<String> for TargetBuilderError {}
 
-    impl<'a> FromWithItemId<NameIdError<String, GraphItemKind>> for TargetBuilderError {
-        fn from_with_id(item_id: ItemId, from: NameIdError<String, GraphItemKind>) -> Self {
+    impl FromWithItemId<NameIdError<String, GraphItemKind>> for TargetBuilderError {
+        fn from_with_id(_: ItemId, _: NameIdError<String, GraphItemKind>) -> Self {
             unimplemented!()
         }
     }
-    impl<'a> GraphBuilderErrorBase<String> for TargetBuilderError {}
+    impl GraphBuilderErrorBase<String> for TargetBuilderError {}
 
     #[test]
     fn is_empty() {

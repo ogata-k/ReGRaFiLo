@@ -31,12 +31,6 @@ impl<Name: NameType> Display for EdgeItemError<Name> {
     }
 }
 
-impl<Name: NameType> Into<GrafoError<Name>> for EdgeItemError<Name> {
-    fn into(self) -> GrafoError<Name> {
-        GrafoError::EdgeItemError(self)
-    }
-}
-
 impl<Name: NameType> Error for EdgeItemError<Name> {}
 impl<Name: NameType> ItemErrorBase<Name> for EdgeItemError<Name> {}
 impl<Name: NameType> FromWithItemId<NameIdError<Name, GraphItemKind>> for EdgeItemError<Name> {

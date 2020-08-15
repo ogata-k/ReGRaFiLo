@@ -20,16 +20,6 @@ impl<Id: Debug + Display> Display for IdTreeError<Id> {
 
 impl<Id: Debug + Display> Error for IdTreeError<Id> {}
 
-impl Into<ResolverError> for IdTreeError<GroupId> {
-    fn into(self) -> ResolverError {
-        match self {
-            IdTreeError::NotInitialized => ResolverError::NotInitialized,
-            IdTreeError::NotFindParentId(id) => ResolverError::NotFindParentId(id),
-            IdTreeError::AlreadyExistId(id) => ResolverError::AlreadyExistId(id),
-        }
-    }
-}
-
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum IdTree<Id: Eq + Copy> {
     Root(IdTreeRoot<Id>),

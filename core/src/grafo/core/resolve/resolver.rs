@@ -3,7 +3,7 @@ use std::fmt::Formatter;
 
 use crate::grafo::core::graph_item::GraphItemBase;
 use crate::grafo::layout_item::LayoutItemBase;
-use crate::grafo::{GrafoError, IdTree, NameIdError, NameRefIndex};
+use crate::grafo::{IdTree, IdTreeError, NameIdError, NameRefIndex};
 use crate::util::alias::{GroupId, ItemId};
 use crate::util::either::Either;
 use crate::util::kind::{AttributeKind, GraphItemKind, LayoutItemKind, WithItemLayoutKind};
@@ -27,9 +27,13 @@ impl std::fmt::Display for ResolverError {
 
 impl Error for ResolverError {}
 
-impl<Name: NameType> Into<GrafoError<Name>> for ResolverError {
-    fn into(self) -> GrafoError<Name> {
-        GrafoError::ResolverError(self)
+impl From<IdTreeError<GroupId>> for ResolverError {
+    fn from(e: IdTreeError<GroupId>) -> ResolverError {
+        match e {
+            IdTreeError::NotInitialized => ResolverError::NotInitialized,
+            IdTreeError::NotFindParentId(id) => ResolverError::NotFindParentId(id),
+            IdTreeError::AlreadyExistId(id) => ResolverError::AlreadyExistId(id),
+        }
     }
 }
 
