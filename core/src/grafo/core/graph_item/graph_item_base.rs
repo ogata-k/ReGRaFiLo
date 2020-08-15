@@ -13,7 +13,7 @@ pub trait GraphItemBuilderBase<Name: NameType>: ItemBuilderBase<Name> {
 }
 
 /// Item's base set
-pub trait GraphItemBase: ItemBase + HasGraphItemKind {
+pub trait GraphItemBase: Copy + ItemBase + HasGraphItemKind {
     fn get_belong_group_id(&self) -> GroupId;
 }
 

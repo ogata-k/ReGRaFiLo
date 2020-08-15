@@ -22,7 +22,7 @@ pub(crate) trait HasItemBuilderMethod<Name: NameType>: ItemBuilderBase<Name> {
     ) -> ItemBuilderResult<Name, Self::Item, Self::ItemOption>;
 }
 
-pub trait ItemBase: Copy {
+pub trait ItemBase {
     fn get_item_id(&self) -> ItemId;
 }
 
