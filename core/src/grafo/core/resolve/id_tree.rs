@@ -1,8 +1,5 @@
 use std::error::Error;
-use std::fmt::{Debug, Display, Formatter};
-
-use crate::grafo::ResolverError;
-use crate::util::alias::GroupId;
+use std::fmt::Debug;
 
 /// This Error is always panic!!
 #[derive(Debug, Eq, PartialEq, Clone)]
@@ -12,18 +9,28 @@ pub enum IdTreeError<Id> {
     AlreadyExistId(Id),
 }
 
-impl<Id: Debug + Display> Display for IdTreeError<Id> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<Id: std::fmt::Display> std::fmt::Display for IdTreeError<Id> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        //TODO
         unimplemented!()
     }
 }
 
-impl<Id: Debug + Display> Error for IdTreeError<Id> {}
+impl<Id: Debug + std::fmt::Display> Error for IdTreeError<Id> {}
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum IdTree<Id: Eq + Copy> {
     Root(IdTreeRoot<Id>),
     None,
+}
+
+impl<Id: Eq + Copy + std::fmt::Display> std::fmt::Display for IdTree<Id> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            IdTree::Root(t) => write!(f, "Tree{}", t),
+            IdTree::None => write!(f, "Empty"),
+        }
+    }
 }
 
 impl<Id: Eq + Copy> Default for IdTree<Id> {
@@ -88,6 +95,16 @@ pub struct IdTreeRoot<Id: Eq + Copy> {
     root: UniqueTree<Id>,
 }
 
+impl<Id: Eq + Copy + std::fmt::Display> std::fmt::Display for IdTreeRoot<Id> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.root.children.is_empty() {
+            write!(f, "({})", self.root)
+        } else {
+            write!(f, "{}", self.root)
+        }
+    }
+}
+
 impl<Id: Eq + Copy> IdTreeRoot<Id> {
     fn new(root: Id) -> Self {
         Self {
@@ -124,6 +141,32 @@ impl<Id: Debug + Eq + Copy> IdTreeRoot<Id> {
 struct UniqueTree<Id: Eq + Copy> {
     node: Id,
     children: Vec<Box<UniqueTree<Id>>>,
+}
+
+impl<Id: Eq + Copy + std::fmt::Display> std::fmt::Display for UniqueTree<Id> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.children.len() {
+            0 => write!(f, "{}", self.node),
+            1 => {
+                let child = &self.children[0];
+                match child.children.len() {
+                    0 => write!(f, "({}: {})", self.node, child.node),
+                    _ => write!(f, "({}: {})", self.node, child),
+                }
+            }
+            _ => {
+                write!(f, "({}: (", self.node)?;
+                for (i, child) in self.children.iter().enumerate() {
+                    if i == 0 {
+                        write!(f, "{}", child)?;
+                    } else {
+                        write!(f, ", {}", child)?;
+                    }
+                }
+                write!(f, "))")
+            }
+        }
+    }
 }
 
 impl<Id: Eq + Copy> UniqueTree<Id> {
@@ -194,7 +237,7 @@ impl<Id: Debug + Eq + Copy> UniqueTree<Id> {
 mod test {
     use crate::grafo::IdTree;
 
-    fn new_none_tree() -> IdTree<u8> {
+    fn new_empty_tree() -> IdTree<u8> {
         IdTree::None
     }
 
@@ -223,7 +266,7 @@ mod test {
 
     #[test]
     fn not_found_ancestor_in_none_tree() {
-        let tree = new_none_tree();
+        let tree = new_empty_tree();
         assert!(!tree.contains_id(0));
         assert_eq!(tree.get_ancestor_ids(0), None);
     }
@@ -233,6 +276,50 @@ mod test {
         let tree = new_tree_template();
         assert!(!tree.contains_id(100));
         assert_eq!(tree.get_ancestor_ids(100), None);
+    }
+
+    #[test]
+    fn empty_tree_to_string() {
+        let tree = new_empty_tree();
+        assert_eq!(tree.to_string(), "Empty".to_string());
+    }
+
+    #[test]
+    fn only_root_tree_to_string() {
+        let tree = IdTree::new(0);
+        assert_eq!(tree.to_string(), "Tree(0)".to_string());
+    }
+
+    #[test]
+    fn root_has_one_child_tree_to_string() {
+        let mut tree = IdTree::new(0);
+        tree.insert_id(0, 1).unwrap();
+        assert_eq!(tree.to_string(), "Tree(0: 1)".to_string());
+    }
+
+    #[test]
+    fn root_has_two_child_tree_to_string() {
+        let mut tree = IdTree::new(0);
+        tree.insert_id(0, 1).unwrap();
+        tree.insert_id(0, 2).unwrap();
+        assert_eq!(tree.to_string(), "Tree(0: (1, 2))".to_string());
+    }
+
+    #[test]
+    fn root_has_child_has_child_tree_to_string() {
+        let mut tree = IdTree::new(0);
+        tree.insert_id(0, 1).unwrap();
+        tree.insert_id(1, 2).unwrap();
+        assert_eq!(tree.to_string(), "Tree(0: (1: 2))".to_string());
+    }
+
+    #[test]
+    fn not_empty_tree_to_string() {
+        let tree = new_tree_template();
+        assert_eq!(
+            tree.to_string(),
+            "Tree(0: ((1: ((4: 7), 5)), (2: 6), 3))".to_string()
+        );
     }
 
     #[test]

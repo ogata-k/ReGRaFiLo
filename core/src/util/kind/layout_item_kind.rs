@@ -1,5 +1,4 @@
 use crate::util::kind::GraphItemKind;
-use std::fmt::{Display, Formatter};
 
 /// kind of Attribute
 #[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Hash)]
@@ -8,15 +7,9 @@ pub enum AttributeKind {
     Group,
 }
 
-fn item_kind_to_str(attribute_kind: &AttributeKind) -> &str {
-    match attribute_kind {
-        AttributeKind::Form => "Form",
-        AttributeKind::Group => "Group",
-    }
-}
-
-impl Display for AttributeKind {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl std::fmt::Display for AttributeKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // TODO
         unimplemented!()
     }
 }
@@ -33,10 +26,24 @@ pub enum WithItemLayoutKind {
     // TODO
 }
 
+impl std::fmt::Display for WithItemLayoutKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // TODO
+        unimplemented!()
+    }
+}
+
 #[derive(Debug, Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Hash)]
 pub enum LayoutItemKind {
     IsolateAttribute(AttributeKind),
     WithItemAttribute(GraphItemKind, WithItemLayoutKind),
+}
+
+impl std::fmt::Display for LayoutItemKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // TODO
+        unimplemented!()
+    }
 }
 
 impl LayoutItemKind {
@@ -60,11 +67,5 @@ impl LayoutItemKind {
             LayoutItemKind::IsolateAttribute(_) => false,
             LayoutItemKind::WithItemAttribute(_, _) => true,
         }
-    }
-}
-
-impl Display for LayoutItemKind {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        unimplemented!()
     }
 }

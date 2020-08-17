@@ -8,3 +8,10 @@ impl Default for Layout {
         Self {}
     }
 }
+
+impl std::fmt::Display for Layout {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // TODO
+        unimplemented!()
+    }
+}

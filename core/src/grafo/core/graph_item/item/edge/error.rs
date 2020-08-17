@@ -1,12 +1,11 @@
 use crate::grafo::core::graph_item::item::edge::EdgeItem;
 use crate::grafo::core::graph_item::GraphBuilderErrorBase;
-use crate::grafo::{GrafoError, NameIdError};
+use crate::grafo::NameIdError;
 use crate::util::alias::ItemId;
 use crate::util::item_base::{FromWithItemId, ItemErrorBase};
 use crate::util::kind::{GraphItemKind, HasGraphItemKind};
 use crate::util::name_type::NameType;
 use std::error::Error;
-use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum EdgeItemError<Name: NameType> {
@@ -25,8 +24,9 @@ impl<Name: NameType> HasGraphItemKind for EdgeItemError<Name> {
     }
 }
 
-impl<Name: NameType> Display for EdgeItemError<Name> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl<Name: NameType> std::fmt::Display for EdgeItemError<Name> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // TODO
         unimplemented!()
     }
 }

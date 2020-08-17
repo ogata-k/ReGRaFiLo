@@ -13,6 +13,7 @@ use crate::util::alias::{GroupId, ItemId, DEFAULT_ITEM_ID};
 use crate::util::item_base::FromWithItemId;
 use crate::util::kind::GraphItemKind;
 use crate::util::name_type::NameType;
+use crate::util::writer::WriteAsJson;
 
 #[derive(Debug, Clone)]
 pub struct GrafoBuilder<Name: NameType> {
@@ -20,6 +21,7 @@ pub struct GrafoBuilder<Name: NameType> {
     resolver: Resolver<Name>,
 
     // layout
+    // TODO Check もし必要ならItemArenaのように分ける
     layout: Layout,
 }
 
@@ -175,7 +177,28 @@ pub struct Grafo<Name: NameType> {
     edge_arena: ItemArena<EdgeItem>,
 
     // layout
+    // TODO Check もし必要ならItemArenaのように分ける
     layout: Layout,
+}
+
+impl<Name: NameType> WriteAsJson for Grafo<Name> {
+    fn write_as_json(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{{\"resolver\": ")?;
+        self.resolver.write_as_json(f)?;
+        write!(f, ", \"node_items\": ")?;
+        self.node_arena.write_as_json(f)?;
+        write!(f, ", \"edge_items\": ")?;
+        self.edge_arena.write_as_json(f)?;
+        // TODO layout
+        write!(f, "}}")
+    }
+}
+
+impl<Name: NameType> std::fmt::Display for Grafo<Name> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Grafo")?;
+        self.write_as_json(f)
+    }
 }
 
 impl<Name: NameType> Grafo<Name> {

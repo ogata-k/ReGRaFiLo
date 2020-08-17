@@ -18,6 +18,7 @@ pub enum GrafoError<Name: NameType> {
 
 impl<Name: NameType> std::fmt::Display for GrafoError<Name> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        // TODO
         unimplemented!()
     }
 }

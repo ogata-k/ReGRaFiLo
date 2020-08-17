@@ -1,6 +1,6 @@
 //! item pool
 
-use std::collections::btree_map::{Iter, Range};
+use std::collections::btree_map::Range;
 use std::collections::BTreeMap;
 use std::ops::{Bound, RangeBounds};
 
@@ -11,6 +11,7 @@ use crate::util::alias::{GroupId, ItemId, DEFAULT_ITEM_ID};
 use crate::util::item_base::HasItemBuilderMethod;
 use crate::util::kind::GraphItemKind;
 use crate::util::name_type::NameType;
+use crate::util::writer::WriteAsJson;
 
 /// item pool
 #[derive(Debug, Eq, PartialEq, Clone)]
@@ -18,6 +19,38 @@ pub struct ItemArena<I> {
     id_counter: ItemId,
     /// (GroupId, ItemId) => Item
     arena: BTreeMap<(GroupId, ItemId), I>,
+}
+
+impl<I> Default for ItemArena<I> {
+    /// initialize without log
+    fn default() -> Self {
+        ItemArena {
+            id_counter: DEFAULT_ITEM_ID,
+            arena: Default::default(),
+        }
+    }
+}
+
+impl<I: WriteAsJson + GraphItemBase> WriteAsJson for ItemArena<I> {
+    fn write_as_json(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{{\"items\": [")?;
+        for (i, (_, _, item)) in self.iter().enumerate() {
+            if i == 0 {
+                item.write_as_json(f)?;
+            } else {
+                write!(f, ", ")?;
+                item.write_as_json(f)?;
+            }
+        }
+        write!(f, "]}}")
+    }
+}
+
+impl<I: std::fmt::Display + WriteAsJson + GraphItemBase> std::fmt::Display for ItemArena<I> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "GraphItemArena")?;
+        self.write_as_json(f)
+    }
 }
 
 fn range_with_group(group_id: GroupId, bound: Bound<&ItemId>) -> Bound<(GroupId, ItemId)> {
@@ -107,14 +140,13 @@ impl<I: GraphItemBase> ItemArena<I> {
 
     /// iter by filtering group_id
     pub fn filter_by_group<'a>(&'a self, group_id: GroupId) -> impl Iterator + 'a {
-        self.iter()
-            .filter_map(move |((item_group_id, _item_id), item)| {
-                if item_group_id == &group_id {
-                    Some(item)
-                } else {
-                    None
-                }
-            })
+        self.iter().filter_map(move |(item_group_id, _, item)| {
+            if item_group_id == group_id {
+                Some(item)
+            } else {
+                None
+            }
+        })
     }
 
     //
@@ -136,8 +168,10 @@ impl<I: GraphItemBase> ItemArena<I> {
     //
 
     /// to iterator
-    pub fn iter(&self) -> Iter<(GroupId, ItemId), I> {
-        self.arena.iter()
+    pub fn iter<'a>(&'a self) -> impl Iterator<Item = (GroupId, ItemId, &I)> + 'a {
+        self.arena
+            .iter()
+            .map(|(&(group_id, item_id), item)| (group_id, item_id, item))
     }
 }
 
@@ -219,20 +253,9 @@ impl<I: GraphItemBase + Default> ItemArena<I> {
     }
 }
 
-impl<I> Default for ItemArena<I> {
-    /// initialize without log
-    fn default() -> Self {
-        ItemArena {
-            id_counter: DEFAULT_ITEM_ID,
-            arena: Default::default(),
-        }
-    }
-}
-
 #[cfg(test)]
 mod test {
     use std::error::Error;
-    use std::fmt::{Display, Formatter};
 
     use crate::grafo::core::graph_item::{
         GraphBuilderErrorBase, GraphItemBase, GraphItemBuilderBase, ItemArena,
@@ -404,8 +427,8 @@ mod test {
         }
     }
 
-    impl Display for TargetBuilderError {
-        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    impl std::fmt::Display for TargetBuilderError {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             use TargetBuilderError::*;
             match &self {
                 BuildFail(id) => write!(f, "id: {} fail build item", id),
@@ -423,6 +446,7 @@ mod test {
             unimplemented!()
         }
     }
+
     impl GraphBuilderErrorBase<String> for TargetBuilderError {}
 
     #[test]
@@ -507,17 +531,17 @@ mod test {
             assert!(result);
         }
         let arena = arena_mut;
-        for (index, _item) in (&arena).iter() {
+        for (group_id, item_id, _) in (&arena).iter() {
             for kind in graph_item_check_list() {
-                let name = format!("{}", index.1);
+                let name = format!("{}", item_id);
                 let ref_result = resolver.get_graph_item_id_pair(kind, &name);
                 if let Ok(success) = ref_result {
                     // デフォルトがitem_id = 0占有
-                    assert_eq!(success, *index);
+                    assert_eq!(success, (group_id, item_id));
                 } else {
                     assert_eq!(
                         ref_result,
-                        Err(NameIdError::NotExist(kind, format!("{}", index.1),))
+                        Err(NameIdError::NotExist(kind, format!("{}", item_id)))
                     );
                 }
             }
@@ -605,21 +629,21 @@ mod test {
             assert!(result);
         }
         let arena = arena_mut;
-        for (index, _item) in (&arena).iter() {
+        for (group_id, item_id, _) in (&arena).iter() {
             for kind in graph_item_check_list() {
-                let name = format!("{}", index.1);
+                let name = format!("{}", item_id);
                 let ref_result = resolver.get_graph_item_id_pair(kind, &name);
-                if index.1 <= ITERATE_COUNT && kind == TARGET_KIND {
+                if item_id <= ITERATE_COUNT && kind == TARGET_KIND {
                     if let Ok(success) = &ref_result {
                         // デフォルトがitem_id = 0占有
-                        assert_eq!(success, index);
+                        assert_eq!(success, &(group_id, item_id));
                     } else {
                         unreachable!("over count and not exist the name \"{}\"", name)
                     }
                 } else {
                     assert_eq!(
                         ref_result,
-                        Err(NameIdError::NotExist(kind, format!("{}", index.1),))
+                        Err(NameIdError::NotExist(kind, format!("{}", item_id)))
                     );
                 }
             }

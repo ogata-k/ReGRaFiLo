@@ -4,12 +4,32 @@ use crate::grafo::core::graph_item::GraphItemBase;
 use crate::util::alias::{GroupId, ItemId, DEFAULT_ITEM_ID};
 use crate::util::item_base::ItemBase;
 use crate::util::kind::{GraphItemKind, HasGraphItemKind};
+use crate::util::writer::WriteAsJson;
 
 /// Group item
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub struct GroupItem {
     belong_group_id: GroupId,
     item_id: ItemId,
+}
+
+impl WriteAsJson for GroupItem {
+    fn write_as_json(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{{\"kind\": \"{}\", \"belong_group_id\": {}, \"item_id\": {}}}",
+            &self.get_kind(),
+            &self.belong_group_id,
+            &self.item_id
+        )
+    }
+}
+
+impl std::fmt::Display for GroupItem {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Group")?;
+        self.write_as_json(f)
+    }
 }
 
 impl HasGraphItemKind for GroupItem {

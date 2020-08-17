@@ -1,5 +1,6 @@
+use std::borrow::Borrow;
 use std::error::Error;
-use std::fmt::Formatter;
+use std::hash::Hash;
 
 use crate::grafo::core::graph_item::GraphItemBase;
 use crate::grafo::layout_item::LayoutItemBase;
@@ -8,8 +9,7 @@ use crate::util::alias::{GroupId, ItemId};
 use crate::util::either::Either;
 use crate::util::kind::{AttributeKind, GraphItemKind, LayoutItemKind, WithItemLayoutKind};
 use crate::util::name_type::NameType;
-use std::borrow::Borrow;
-use std::hash::Hash;
+use crate::util::writer::WriteAsJson;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ResolverError {
@@ -20,7 +20,8 @@ pub enum ResolverError {
 }
 
 impl std::fmt::Display for ResolverError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // TODO
         unimplemented!()
     }
 }
@@ -54,6 +55,27 @@ impl<Name: NameType> Default for Resolver<Name> {
             graph_items: NameRefIndex::new(),
             layout_items: NameRefIndex::new(),
         }
+    }
+}
+
+impl<Name: NameType> WriteAsJson for Resolver<Name> {
+    fn write_as_json(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{{\"group_tree\": \"{}\", \"graph_items\": ",
+            self.group_id_tree
+        )?;
+        self.graph_items.write_as_json(f)?;
+        write!(f, ", \"layout_items\": ")?;
+        self.layout_items.write_as_json(f)?;
+        write!(f, "}}")
+    }
+}
+
+impl<Name: NameType> std::fmt::Display for Resolver<Name> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "ReferenceResolver",)?;
+        self.write_as_json(f)
     }
 }
 
@@ -113,6 +135,10 @@ impl<Name: NameType> Resolver<Name> {
     /// get parent and ancestors id
     pub fn get_ancestor_ids(&self, group_id: GroupId) -> Option<Vec<GroupId>> {
         self.group_id_tree.get_ancestor_ids(group_id)
+    }
+
+    pub fn group_tree_to_string(&self) -> String {
+        self.group_id_tree.to_string()
     }
 
     //

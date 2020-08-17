@@ -6,3 +6,4 @@ pub mod item_base;
 pub mod kind;
 pub(crate) mod kind_key;
 pub mod name_type;
+pub(crate) mod writer;
