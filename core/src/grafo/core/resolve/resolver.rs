@@ -21,8 +21,16 @@ pub enum ResolverError {
 
 impl std::fmt::Display for ResolverError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // TODO
-        unimplemented!()
+        match self {
+            ResolverError::FailSetRootGraphId => write!(f, "fail set group as root group"),
+            ResolverError::NotInitialized => write!(f, "hierarchy of group is not initialized"),
+            ResolverError::NotFindParentId(group_id) => {
+                write!(f, "not found parent group by id {}", group_id)
+            }
+            ResolverError::AlreadyExistId(group_id) => {
+                write!(f, "group with id {} already exist", group_id)
+            }
+        }
     }
 }
 

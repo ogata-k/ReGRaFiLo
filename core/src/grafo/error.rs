@@ -18,8 +18,13 @@ pub enum GrafoError<Name: NameType> {
 
 impl<Name: NameType> std::fmt::Display for GrafoError<Name> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        // TODO next
-        unimplemented!()
+        match self {
+            GrafoError::FailBuildGrafo => write!(f, "fail build Grafo"),
+            GrafoError::ResolverError(e) => write!(f, "{}", e),
+            GrafoError::GroupItemError(e) => write!(f, "{}", e),
+            GrafoError::NodeItemError(e) => write!(f, "{}", e),
+            GrafoError::EdgeItemError(e) => write!(f, "{}", e),
+        }
     }
 }
 

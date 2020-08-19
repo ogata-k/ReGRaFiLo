@@ -11,8 +11,11 @@ pub enum IdTreeError<Id> {
 
 impl<Id: std::fmt::Display> std::fmt::Display for IdTreeError<Id> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        //TODO
-        unimplemented!()
+        match self {
+            IdTreeError::NotInitialized => write!(f, "hierarchy of ids is not initialized"),
+            IdTreeError::NotFindParentId(id) => write!(f, "not found parent by id {}", id),
+            IdTreeError::AlreadyExistId(id) => write!(f, "insert id {} already exist", id),
+        }
     }
 }
 

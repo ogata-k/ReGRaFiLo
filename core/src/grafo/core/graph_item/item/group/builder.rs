@@ -76,9 +76,7 @@ impl<Name: NameType> GroupItemBuilder<Name> {
     ) -> Option<ItemId> {
         if item_id == DEFAULT_ITEM_ID {
             return if let Some(n) = &self.belong_group {
-                errors.push(
-                    GroupItemError::CannotSpecifyBelongGroupForRoot(item_id, n.clone()).into(),
-                );
+                errors.push(GroupItemError::CannotSpecifyBelongGroupForRoot(n.clone()).into());
                 None
             } else {
                 Some(item_id)

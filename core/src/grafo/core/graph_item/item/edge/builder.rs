@@ -140,7 +140,7 @@ impl<Name: NameType> EdgeItemBuilder<Name> {
                             errors.push(
                                 EdgeItemError::CannotSpecifyBelongGroupAsEndpoint(
                                     item_id,
-                                    (*kind, name.clone()),
+                                    name.clone(),
                                 )
                                 .into(),
                             );

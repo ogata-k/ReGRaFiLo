@@ -9,7 +9,7 @@ use std::error::Error;
 
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum GroupItemError<Name: NameType> {
-    CannotSpecifyBelongGroupForRoot(ItemId, Name),
+    CannotSpecifyBelongGroupForRoot(Name),
     FailResolveBelongGroup(ItemId, Option<Name>),
     NameIdError(ItemId, NameIdError<Name, GraphItemKind>),
 }
@@ -22,8 +22,20 @@ impl<Name: NameType> HasGraphItemKind for GroupItemError<Name> {
 
 impl<Name: NameType> std::fmt::Display for GroupItemError<Name> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // TODO
-        unimplemented!()
+        match self {
+            GroupItemError::CannotSpecifyBelongGroupForRoot(name) => {
+                write!(f, "cannot specify belong group \"{}\" for root group", name)
+            }
+            GroupItemError::FailResolveBelongGroup(item_id, None) => {
+                write!(f, "not specify belong group for group {}", item_id)
+            }
+            GroupItemError::FailResolveBelongGroup(item_id, Some(name)) => write!(
+                f,
+                "not found belong group \"{}\" for group {}",
+                name, item_id
+            ),
+            GroupItemError::NameIdError(item_id, e) => write!(f, "{} for group {}", e, item_id),
+        }
     }
 }
 

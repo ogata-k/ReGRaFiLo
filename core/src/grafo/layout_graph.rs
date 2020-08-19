@@ -331,7 +331,7 @@ mod test {
         assert_eq!(
             GraphBuilder::new().build_with_user_group(group_builder),
             Err(vec![
-                GroupItemError::CannotSpecifyBelongGroupForRoot(0, "root".to_string()).into(),
+                GroupItemError::CannotSpecifyBelongGroupForRoot("root".to_string()).into(),
                 GrafoError::FailBuildGrafo,
             ])
         );
@@ -999,11 +999,8 @@ mod test {
         assert_eq!(
             errors,
             vec![
-                EdgeItemError::CannotSpecifyBelongGroupAsEndpoint(
-                    1,
-                    (GraphItemKind::Group, "root group".to_string()),
-                )
-                .into(),
+                EdgeItemError::CannotSpecifyBelongGroupAsEndpoint(1, "root group".to_string(),)
+                    .into(),
                 EdgeItemError::FailResolveEndEndpoint(
                     1,
                     Some((GraphItemKind::Group, "root group".to_string())),

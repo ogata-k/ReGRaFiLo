@@ -21,8 +21,26 @@ pub enum NameIdError<Name: NameType, Kind> {
 
 impl<Name: NameType, Kind: std::fmt::Display> std::fmt::Display for NameIdError<Name, Kind> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // TODO
-        unimplemented!()
+        match self {
+            NameIdError::AlreadyExist(kind, name) => write!(
+                f,
+                "{} \"{}\" already exist",
+                kind.to_string().to_lowercase(),
+                name
+            ),
+            NameIdError::Override(kind, name) => write!(
+                f,
+                "override \"{}\" as {} item",
+                name,
+                kind.to_string().to_lowercase()
+            ),
+            NameIdError::NotExist(kind, name) => write!(
+                f,
+                "{} \"{}\" not exist",
+                kind.to_string().to_lowercase(),
+                name
+            ),
+        }
     }
 }
 
