@@ -4,7 +4,7 @@ use crate::grafo::core::graph_item::GraphItemBase;
 use crate::util::alias::{GroupId, ItemId};
 use crate::util::item_base::ItemBase;
 use crate::util::kind::{GraphItemKind, HasGraphItemKind};
-use crate::util::writer::WriteAsJson;
+use crate::util::writer::DisplayAsJson;
 
 /// Node Item
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
@@ -13,8 +13,8 @@ pub struct NodeItem {
     item_id: ItemId,
 }
 
-impl WriteAsJson for NodeItem {
-    fn write_as_json(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl DisplayAsJson for NodeItem {
+    fn fmt_as_json(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "{{\"kind\": \"{}\", \"belong_group_id\": {}, \"item_id\": {}}}",
@@ -28,7 +28,7 @@ impl WriteAsJson for NodeItem {
 impl std::fmt::Display for NodeItem {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Node")?;
-        self.write_as_json(f)
+        self.fmt_as_json(f)
     }
 }
 

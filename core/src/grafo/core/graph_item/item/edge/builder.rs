@@ -4,6 +4,7 @@ use crate::grafo::core::graph_item::edge::{EdgeItem, EdgeItemError};
 use crate::grafo::core::graph_item::item::edge::EdgeItemOption;
 use crate::grafo::core::graph_item::GraphItemBuilderBase;
 use crate::grafo::core::resolve::Resolver;
+use crate::grafo::graph_item::edge::Endpoint;
 use crate::grafo::{GrafoError, NameIdError};
 use crate::util::alias::{GroupId, ItemId};
 use crate::util::either::Either;
@@ -190,11 +191,13 @@ impl<Name: NameType> EdgeItemBuilder<Name> {
         }
 
         if validate {
+            let (s_kind, (s_belong_group, s_item_id)) = start.unwrap();
+            let (e_kind, (e_belong_group, e_item_id)) = end.unwrap();
             Some(EdgeItem::new(
                 resolved_belong_group.unwrap(),
                 item_id,
-                start.unwrap(),
-                end.unwrap(),
+                Endpoint::new(s_kind, s_belong_group, s_item_id),
+                Endpoint::new(e_kind, e_belong_group, e_item_id),
             ))
         } else {
             None

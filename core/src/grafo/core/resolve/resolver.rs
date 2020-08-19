@@ -9,7 +9,7 @@ use crate::util::alias::{GroupId, ItemId};
 use crate::util::either::Either;
 use crate::util::kind::{AttributeKind, GraphItemKind, LayoutItemKind, WithItemLayoutKind};
 use crate::util::name_type::NameType;
-use crate::util::writer::WriteAsJson;
+use crate::util::writer::DisplayAsJson;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ResolverError {
@@ -58,16 +58,16 @@ impl<Name: NameType> Default for Resolver<Name> {
     }
 }
 
-impl<Name: NameType> WriteAsJson for Resolver<Name> {
-    fn write_as_json(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl<Name: NameType> DisplayAsJson for Resolver<Name> {
+    fn fmt_as_json(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
             "{{\"group_tree\": \"{}\", \"graph_items\": ",
             self.group_id_tree
         )?;
-        self.graph_items.write_as_json(f)?;
+        self.graph_items.fmt_as_json(f)?;
         write!(f, ", \"layout_items\": ")?;
-        self.layout_items.write_as_json(f)?;
+        self.layout_items.fmt_as_json(f)?;
         write!(f, "}}")
     }
 }
@@ -75,7 +75,7 @@ impl<Name: NameType> WriteAsJson for Resolver<Name> {
 impl<Name: NameType> std::fmt::Display for Resolver<Name> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "ReferenceResolver",)?;
-        self.write_as_json(f)
+        self.fmt_as_json(f)
     }
 }
 

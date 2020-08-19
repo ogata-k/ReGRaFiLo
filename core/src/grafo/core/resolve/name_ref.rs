@@ -6,7 +6,7 @@ use std::hash::Hash;
 use crate::util::alias::{GroupId, ItemId};
 use crate::util::kind_key::KeyWithKind;
 use crate::util::name_type::NameType;
-use crate::util::writer::WriteAsJson;
+use crate::util::writer::DisplayAsJson;
 
 pub trait NameRefKeyTrait: Eq + Copy + Hash + Ord {}
 
@@ -49,10 +49,10 @@ impl<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKeyTrait> Default
     }
 }
 
-impl<Name: NameType, Kind: NameRefKeyTrait + std::fmt::Display> WriteAsJson
+impl<Name: NameType, Kind: NameRefKeyTrait + std::fmt::Display> DisplayAsJson
     for NameRefIndex<Name, Kind, (GroupId, ItemId)>
 {
-    fn write_as_json(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt_as_json(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{{\"reference\": [")?;
         for (i, (kind, value, name)) in self.iter().enumerate() {
             if i != 0 {
@@ -68,10 +68,10 @@ impl<Name: NameType, Kind: NameRefKeyTrait + std::fmt::Display> WriteAsJson
     }
 }
 
-impl<Name: NameType, Kind: NameRefKeyTrait + std::fmt::Display> WriteAsJson
+impl<Name: NameType, Kind: NameRefKeyTrait + std::fmt::Display> DisplayAsJson
     for NameRefIndex<Name, Kind, ItemId>
 {
-    fn write_as_json(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt_as_json(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{{\"reference\": [")?;
         for (i, (kind, value, name)) in self.iter().enumerate() {
             if i != 0 {

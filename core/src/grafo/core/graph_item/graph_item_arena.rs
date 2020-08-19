@@ -11,7 +11,7 @@ use crate::util::alias::{GroupId, ItemId, DEFAULT_ITEM_ID};
 use crate::util::item_base::HasItemBuilderMethod;
 use crate::util::kind::GraphItemKind;
 use crate::util::name_type::NameType;
-use crate::util::writer::WriteAsJson;
+use crate::util::writer::DisplayAsJson;
 
 /// item pool
 #[derive(Debug, Eq, PartialEq, Clone)]
@@ -31,25 +31,25 @@ impl<I> Default for ItemArena<I> {
     }
 }
 
-impl<I: WriteAsJson + GraphItemBase> WriteAsJson for ItemArena<I> {
-    fn write_as_json(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl<I: DisplayAsJson + GraphItemBase> DisplayAsJson for ItemArena<I> {
+    fn fmt_as_json(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{{\"items\": [")?;
         for (i, (_, _, item)) in self.iter().enumerate() {
             if i == 0 {
-                item.write_as_json(f)?;
+                item.fmt_as_json(f)?;
             } else {
                 write!(f, ", ")?;
-                item.write_as_json(f)?;
+                item.fmt_as_json(f)?;
             }
         }
         write!(f, "]}}")
     }
 }
 
-impl<I: std::fmt::Display + WriteAsJson + GraphItemBase> std::fmt::Display for ItemArena<I> {
+impl<I: std::fmt::Display + DisplayAsJson + GraphItemBase> std::fmt::Display for ItemArena<I> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "GraphItemArena")?;
-        self.write_as_json(f)
+        self.fmt_as_json(f)
     }
 }
 
