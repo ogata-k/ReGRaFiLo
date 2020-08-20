@@ -6,8 +6,9 @@ use regrafilo_core::grafo::graph_item::GraphItemBuilderBase;
 use regrafilo_core::grafo::{NameStrGrafo, NameStrGrafoBuilder, NameStrGrafoError};
 use regrafilo_core::util::kind::GraphItemKind;
 
-const ITERATE_COUNT: usize = 100;
-const SHOW: bool = false;
+// please: ITERATE_COUNT % 2 == 0
+const ITERATE_COUNT: usize = 4;
+const SHOW: bool = true;
 
 // 下のNameXXXXGrafoYYYYのXXXXを適当なものにすればあとは簡単な修正で機能する。 ex NameStrGrafoBuilder
 // なおGrafoBuilderを生のまま使うことも可能
@@ -30,7 +31,7 @@ fn main() {
         // when not use following method, set root group automatically
         node_builder.set_belong_group("root group");
         if i % 2 == 0 {
-            node_builder.set_name(format!("{}", i));
+            node_builder.set_name(format!("node {}", i));
         }
         let (_result, _errors) = graph.push_node(node_builder);
         result &= _result;
@@ -42,13 +43,15 @@ fn main() {
         // when not use following method, set root group automatically
         edge_builder.set_belong_group("root group");
         if i % 2 == 0 {
-            edge_builder.set_name(format!("{}", i));
+            edge_builder.set_name(format!("edge {}", i));
         }
-        edge_builder
-            .set_start_endpoint(GraphItemKind::Node, format!("{}", (2 * i) % ITERATE_COUNT));
+        edge_builder.set_start_endpoint(
+            GraphItemKind::Node,
+            format!("node {}", (2 * i) % ITERATE_COUNT),
+        );
         edge_builder.set_end_endpoint(
             GraphItemKind::Node,
-            format!("{}", (2 * (i + 1)) % ITERATE_COUNT),
+            format!("node {}", (2 * (i + 1)) % ITERATE_COUNT),
         );
         let (_result, _errors) = graph.push_edge(edge_builder);
         result &= _result;
@@ -56,19 +59,21 @@ fn main() {
     }
     let end = SystemTime::now();
 
-    println!(
-        "diff: {:.3}ms, result: {}",
+    for error in errors {
+        println!("{}", error);
+    }
+
+    print!(
+        "diff: {:.3}ms",
         end.duration_since(start).unwrap().as_micros() as f32 / 1000.0,
-        result,
     );
+    if result {
+        println!();
+    } else {
+        println!(", build item fail exist");
+    }
 
     if SHOW {
-        if result {
-            println!("{:?}", graph);
-        } else {
-            for error in errors {
-                println!("{}", error);
-            }
-        }
+        println!("\n{:?}", graph);
     }
 }
