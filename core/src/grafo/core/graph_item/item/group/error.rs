@@ -24,17 +24,15 @@ impl<Name: NameType> std::fmt::Display for GroupItemError<Name> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             GroupItemError::CannotSpecifyBelongGroupForRoot(name) => {
-                write!(f, "cannot specify belong group \"{}\" for root group", name)
+                write!(f, "Root Group: cannot specify belong group \"{}\"", name)
             }
             GroupItemError::FailResolveBelongGroup(item_id, None) => {
-                write!(f, "not specify belong group for group {}", item_id)
+                write!(f, "Group {}: not specify belong group", item_id)
             }
-            GroupItemError::FailResolveBelongGroup(item_id, Some(name)) => write!(
-                f,
-                "not found belong group \"{}\" for group {}",
-                name, item_id
-            ),
-            GroupItemError::NameIdError(item_id, e) => write!(f, "{} for group {}", e, item_id),
+            GroupItemError::FailResolveBelongGroup(item_id, Some(name)) => {
+                write!(f, "Group {}: not found belong group \"{}\"", item_id, name)
+            }
+            GroupItemError::NameIdError(item_id, e) => write!(f, "Group {}: {}", item_id, e),
         }
     }
 }

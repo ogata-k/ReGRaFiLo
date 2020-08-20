@@ -28,58 +28,56 @@ impl<Name: NameType> std::fmt::Display for EdgeItemError<Name> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             EdgeItemError::FailResolveBelongGroup(item_id, None) => {
-                write!(f, "not specify belong group for edge {}", item_id)
+                write!(f, "Edge {}: not specify belong group", item_id)
             }
-            EdgeItemError::FailResolveBelongGroup(item_id, Some(name)) => write!(
-                f,
-                "not found belong group \"{}\" for edge {}",
-                name, item_id
-            ),
+            EdgeItemError::FailResolveBelongGroup(item_id, Some(name)) => {
+                write!(f, "Edge {}: not found belong group \"{}\"", item_id, name)
+            }
             EdgeItemError::NotSpecifyStartEndpoint(item_id, None) => {
-                write!(f, "not specify start endpoint for edge {}", item_id)
+                write!(f, "Edge {}: not specify start endpoint", item_id)
             }
             EdgeItemError::NotSpecifyStartEndpoint(item_id, Some((kind, name))) => write!(
                 f,
-                "not found {} \"{}\" as start endpoint for edge {}",
+                "Edge {}: not found {} \"{}\" as start endpoint",
+                item_id,
                 kind.to_string().to_lowercase(),
-                name,
-                item_id
+                name
             ),
             EdgeItemError::FailResolveStartEndpoint(item_id, None) => {
-                write!(f, "not specify start endpoint for edge {}", item_id)
+                write!(f, "Edge {}: not specify start endpoint", item_id)
             }
             EdgeItemError::FailResolveStartEndpoint(item_id, Some((kind, name))) => write!(
                 f,
-                "not found {} \"{}\" as start endpoint for edge {}",
+                "Edge {}: not found {} \"{}\" as start endpoint",
+                item_id,
                 kind.to_string().to_lowercase(),
-                name,
-                item_id
+                name
             ),
             EdgeItemError::NotSpecifyEndEndpoint(item_id, None) => {
-                write!(f, "not specify end endpoint  for edge {}", item_id)
+                write!(f, "Edge {}: not specify end endpoint", item_id)
             }
             EdgeItemError::NotSpecifyEndEndpoint(item_id, Some((kind, name))) => write!(
                 f,
-                "not found {} item \"{}\" as end endpoint for edge {}",
+                "Edge {}: not found {} item \"{}\" as end endpoint",
+                item_id,
                 kind.to_string().to_lowercase(),
-                name,
-                item_id
+                name
             ),
             EdgeItemError::FailResolveEndEndpoint(item_id, None) => {
-                write!(f, "not specify end endpoint for edge {}", item_id)
+                write!(f, "Edge {}: not specify end endpoint", item_id)
             }
-            EdgeItemError::FailResolveEndEndpoint(item_id, Some((kind, name))) => {
-                write!(f,
-                       "not found {} \"{}\" as end endpoint for edge {}",
-                       kind.to_string().to_lowercase(),
-                       name,
-                       item_id)
-            }
-            EdgeItemError::NameIdError(item_id, e) => write!(f, "{} for edge {}", e, item_id),
+            EdgeItemError::FailResolveEndEndpoint(item_id, Some((kind, name))) => write!(
+                f,
+                "Edge {}: not found {} \"{}\" as end endpoint",
+                item_id,
+                kind.to_string().to_lowercase(),
+                name
+            ),
+            EdgeItemError::NameIdError(item_id, e) => write!(f, "Edge {}: {}", item_id, e),
             EdgeItemError::CannotSpecifyBelongGroupAsEndpoint(item_id, name) => write!(
                 f,
-                "cannot specify same belong group \"{}\" for edge {}",
-                name, item_id
+                "Edge {}: cannot specify self belong group \"{}\" or it's ancestor belong group",
+                item_id, name
             ),
         }
     }

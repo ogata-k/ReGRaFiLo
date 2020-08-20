@@ -23,14 +23,12 @@ impl<Name: NameType> std::fmt::Display for NodeItemError<Name> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             NodeItemError::FailResolveBelongGroup(item_id, None) => {
-                write!(f, "not specify belong group for node {}", item_id)
+                write!(f, "Node {}: not specify belong group", item_id)
             }
-            NodeItemError::FailResolveBelongGroup(item_id, Some(name)) => write!(
-                f,
-                "not found belong group \"{}\" for node {}",
-                name, item_id
-            ),
-            NodeItemError::NameIdError(item_id, e) => write!(f, "{} for node {}", e, item_id),
+            NodeItemError::FailResolveBelongGroup(item_id, Some(name)) => {
+                write!(f, "Node {}: not found belong group \"{}\"", item_id, name)
+            }
+            NodeItemError::NameIdError(item_id, e) => write!(f, "Node {}: {}", item_id, e),
         }
     }
 }
