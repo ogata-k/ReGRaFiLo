@@ -1,6 +1,8 @@
 use crate::util::item_base::ItemBase;
-use crate::util::kind::HasAttributeKind;
+use crate::util::kind::{HasAttributeKind, HasAttributeKindDependOnGraph};
 
-// TODO
-/// Item's base set
+/// Item's base set depending on graph item
 pub trait LayoutItemBase: ItemBase + HasAttributeKind {}
+
+/// Item's base set depending on graph item
+pub trait LayoutItemBaseDependOnGraph: ItemBase + HasAttributeKindDependOnGraph {}

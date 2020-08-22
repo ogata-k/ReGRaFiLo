@@ -472,8 +472,8 @@ mod test {
                         name: Some(name),
                     } = option
                     {
-                        if let Err(err) = resolver
-                            .push_graph_item_value_or_override(kind, name, group_id, item_id)
+                        if let Err(err) =
+                            resolver.insert_graph_item_id_or_override(kind, name, group_id, item_id)
                         {
                             errors.push(TargetBuilderError::from_with_id(item_id, err).into());
                         }
@@ -517,8 +517,8 @@ mod test {
                         name: Some(name),
                     } = option
                     {
-                        if let Err(err) = resolver
-                            .push_graph_item_value_or_override(kind, name, group_id, item_id)
+                        if let Err(err) =
+                            resolver.insert_graph_item_id_or_override(kind, name, group_id, item_id)
                         {
                             errors.push(TargetBuilderError::from_with_id(item_id, err).into());
                         }
@@ -568,8 +568,8 @@ mod test {
                         name: Some(name),
                     } = option
                     {
-                        if let Err(err) = resolver
-                            .push_graph_item_value_or_override(kind, name, group_id, item_id)
+                        if let Err(err) =
+                            resolver.insert_graph_item_id_or_override(kind, name, group_id, item_id)
                         {
                             errors.push(TargetBuilderError::from_with_id(item_id, err).into());
                         }
@@ -615,8 +615,8 @@ mod test {
                         name: Some(name),
                     } = option
                     {
-                        if let Err(err) = resolver
-                            .push_graph_item_value_or_override(kind, name, group_id, item_id)
+                        if let Err(err) =
+                            resolver.insert_graph_item_id_or_override(kind, name, group_id, item_id)
                         {
                             errors.push(TargetBuilderError::from_with_id(item_id, err).into());
                         }

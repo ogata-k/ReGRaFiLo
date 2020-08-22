@@ -78,7 +78,7 @@ impl<Name: NameType> GrafoBuilder<Name> {
                 let mut validate = true;
                 let GroupItemOption { name: _ } = option;
                 if let Some(n) = group_name {
-                    if let Err(e) = resolver.push_graph_item_value_or_override(
+                    if let Err(e) = resolver.insert_graph_item_id_or_override(
                         GraphItemKind::Group,
                         n,
                         DEFAULT_ITEM_ID,
@@ -135,7 +135,7 @@ impl<Name: NameType> GrafoBuilder<Name> {
                 let mut validate = true;
                 let GroupItemOption { name } = option;
                 if let Some(n) = name {
-                    if let Err(e) = resolver.push_graph_item_value_or_override(
+                    if let Err(e) = resolver.insert_graph_item_id_or_override(
                         GraphItemKind::Group,
                         n,
                         DEFAULT_ITEM_ID,
@@ -215,12 +215,9 @@ impl<Name: NameType> Grafo<Name> {
                 let mut validate = true;
                 let GroupItemOption { name } = option;
                 if let Some(n) = name {
-                    if let Err(e) = resolver.push_graph_item_value_or_override(
-                        kind,
-                        n,
-                        belong_group_id,
-                        item_id,
-                    ) {
+                    if let Err(e) =
+                        resolver.insert_graph_item_id_or_override(kind, n, belong_group_id, item_id)
+                    {
                         errors.push(GroupItemError::from_with_id(item_id, e).into());
                         validate &= true;
                     }
@@ -247,12 +244,9 @@ impl<Name: NameType> Grafo<Name> {
                 let mut validate = true;
                 let NodeItemOption { name } = option;
                 if let Some(n) = name {
-                    if let Err(e) = resolver.push_graph_item_value_or_override(
-                        kind,
-                        n,
-                        belong_group_id,
-                        item_id,
-                    ) {
+                    if let Err(e) =
+                        resolver.insert_graph_item_id_or_override(kind, n, belong_group_id, item_id)
+                    {
                         errors.push(NodeItemError::from_with_id(item_id, e).into());
                         validate &= true;
                     }
@@ -272,12 +266,9 @@ impl<Name: NameType> Grafo<Name> {
                 let mut validate = true;
                 let EdgeItemOption { name } = option;
                 if let Some(n) = name {
-                    if let Err(e) = resolver.push_graph_item_value_or_override(
-                        kind,
-                        n,
-                        belong_group_id,
-                        item_id,
-                    ) {
+                    if let Err(e) =
+                        resolver.insert_graph_item_id_or_override(kind, n, belong_group_id, item_id)
+                    {
                         errors.push(EdgeItemError::from_with_id(item_id, e).into());
                         validate &= true;
                     }
