@@ -15,6 +15,7 @@ use crate::util::kind::GraphItemKind;
 use crate::util::name_type::NameType;
 use crate::util::writer::DisplayAsJson;
 
+/// builder for Grafo
 #[derive(Debug, Clone)]
 pub struct GrafoBuilder<Name: NameType> {
     // structure resolver
@@ -35,14 +36,17 @@ impl<Name: NameType> Default for GrafoBuilder<Name> {
 }
 
 impl<Name: NameType> GrafoBuilder<Name> {
+    /// initializer for Grafo Builder
     pub fn new() -> Self {
         Default::default()
     }
 
+    /// build to Grafo with default root group. But root group doesn't have name.
     pub fn build_with_no_name_default_group(self) -> Result<Grafo<Name>, Vec<GrafoError<Name>>> {
         self.build_with_default_group(None)
     }
 
+    /// build to Grafo with default root group which has specified name.
     pub fn build_with_name_default_group<S: Into<Name>>(
         self,
         group_name: S,
@@ -50,6 +54,7 @@ impl<Name: NameType> GrafoBuilder<Name> {
         self.build_with_default_group(Some(group_name.into()))
     }
 
+    /// build to Grafo with default root group. You can specify name by arg.
     fn build_with_default_group(
         self,
         group_name: Option<Name>,
@@ -107,6 +112,7 @@ impl<Name: NameType> GrafoBuilder<Name> {
         }
     }
 
+    /// build to Grafo with specify group as root group.
     pub fn build_with_user_group(
         self,
         group_builder: GroupItemBuilder<Name>,
@@ -202,10 +208,13 @@ impl<Name: NameType> std::fmt::Display for Grafo<Name> {
 }
 
 impl<Name: NameType> Grafo<Name> {
+    /// get reference indexes for names and hierarchy tree for group id
     pub fn resolver(&self) -> &Resolver<Name> {
         &self.resolver
     }
 
+    /// push group. Group is specified as graph item. Group can has nodes and edge as graph item.<br/>
+    /// return value is pair of the check flag for push result and the warning or error when build the item.
     pub fn push_group(&mut self, builder: GroupItemBuilder<Name>) -> (bool, Vec<GrafoError<Name>>) {
         self.group_arena.push(
             &mut self.resolver,
@@ -235,6 +244,8 @@ impl<Name: NameType> Grafo<Name> {
         )
     }
 
+    /// push node. Node is specified as graph item. Node is also called vertex in Graph Theory.<br/>
+    /// return value is pair of the check flag for push result and the warning or error when build the item.
     pub fn push_node(&mut self, builder: NodeItemBuilder<Name>) -> (bool, Vec<GrafoError<Name>>) {
         self.node_arena.push(
             &mut self.resolver,
@@ -257,6 +268,8 @@ impl<Name: NameType> Grafo<Name> {
         )
     }
 
+    /// push edge. Edge is specified as graph item. Edge can has endpoints which have name from a graph item to a graph item.<br/>
+    /// return value is pair of the check flag for push result and the warning or error when build the item.
     pub fn push_edge(&mut self, builder: EdgeItemBuilder<Name>) -> (bool, Vec<GrafoError<Name>>) {
         self.edge_arena.push(
             &mut self.resolver,
@@ -279,20 +292,25 @@ impl<Name: NameType> Grafo<Name> {
         )
     }
 
+    /// get root group item. This method is usually success you get item.
     pub fn get_root_group_item(&self) -> Option<&GroupItem> {
         self.group_arena.get(DEFAULT_ITEM_ID, DEFAULT_ITEM_ID)
     }
 
-    pub fn get_group_item(&self, group_id: GroupId, item_id: ItemId) -> Option<&GroupItem> {
-        self.group_arena.get(group_id, item_id)
+    /// get group item of item_id belonging to group having id of belong_group_id.<br/>
+    /// Route group's item_id is same to belong_group_id.
+    pub fn get_group_item(&self, belong_group_id: GroupId, item_id: ItemId) -> Option<&GroupItem> {
+        self.group_arena.get(belong_group_id, item_id)
     }
 
-    pub fn get_node_item(&self, group_id: GroupId, item_id: ItemId) -> Option<&NodeItem> {
-        self.node_arena.get(group_id, item_id)
+    /// get node item of item_id belonging to group having id of belong_group_id.
+    pub fn get_node_item(&self, belong_group_id: GroupId, item_id: ItemId) -> Option<&NodeItem> {
+        self.node_arena.get(belong_group_id, item_id)
     }
 
-    pub fn get_edge_item(&self, group_id: GroupId, item_id: ItemId) -> Option<&EdgeItem> {
-        self.edge_arena.get(group_id, item_id)
+    /// get edge item of item_id belonging to group having id of belong_group_id.
+    pub fn get_edge_item(&self, belong_group_id: GroupId, item_id: ItemId) -> Option<&EdgeItem> {
+        self.edge_arena.get(belong_group_id, item_id)
     }
 }
 
