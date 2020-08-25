@@ -1,3 +1,5 @@
+//! error for layout graph. End user use this error usually.
+
 use std::error::Error;
 use std::fmt::Formatter;
 
@@ -7,12 +9,18 @@ use crate::grafo::graph_item::node::NodeItemError;
 use crate::grafo::ResolverError;
 use crate::util::name_type::NameType;
 
+/// error for Grafo.
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum GrafoError<Name: NameType> {
+    /// fatal error when fail build Grafo
     FailBuildGrafo,
+    /// error of resolver
     ResolverError(ResolverError),
+    /// error of group of graph item
     GroupItemError(GroupItemError<Name>),
+    /// error of node of graph item
     NodeItemError(NodeItemError<Name>),
+    /// error of edge of graph item
     EdgeItemError(EdgeItemError<Name>),
 }
 
