@@ -3,7 +3,9 @@
 /// key with kind
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone, Hash)]
 pub struct KeyWithKind<Kind: Copy, Key> {
+    /// Key's Kind. Kind is grouping key.
     pub kind: Kind,
+    /// main value group by kind.
     pub key: Key,
 }
 

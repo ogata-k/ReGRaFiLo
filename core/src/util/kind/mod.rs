@@ -1,3 +1,5 @@
+//! utility for ReGRaFiLo
+
 mod graph_item_kind;
 mod layout_item_kind;
 
