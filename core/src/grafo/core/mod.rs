@@ -1,4 +1,4 @@
-//! ReGRaFiLo's graph core
+//! Grafo's core modules
 
 pub mod graph_item;
 pub mod layout_item;
