@@ -51,6 +51,7 @@ impl GraphItemBase for NodeItem {
 }
 
 impl NodeItem {
+    /// initializer for Node item
     pub(crate) fn new(belong_group: GroupId, item_id: ItemId) -> Self {
         Self {
             belong_group_id: belong_group,

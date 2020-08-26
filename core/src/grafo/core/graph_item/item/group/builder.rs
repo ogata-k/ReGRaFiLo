@@ -1,4 +1,4 @@
-//! module for Group item builder
+//! module for Group item's builder
 
 use crate::grafo::core::graph_item::group::{GroupItem, GroupItemError};
 use crate::grafo::core::graph_item::item::group::GroupItemOption;
@@ -13,6 +13,7 @@ use crate::util::item_base::{
 use crate::util::kind::HasGraphItemKind;
 use crate::util::name_type::NameType;
 
+/// builder for Group item
 #[derive(Debug, Clone)]
 pub struct GroupItemBuilder<Name: NameType> {
     belong_group: Option<Name>,
@@ -68,6 +69,7 @@ impl<Name: NameType> Default for GroupItemBuilder<Name> {
 
 // resolver
 impl<Name: NameType> GroupItemBuilder<Name> {
+    /// resolve belong group from builder's parameter
     fn resolve_belong_group(
         &self,
         item_id: ItemId,
@@ -95,6 +97,7 @@ impl<Name: NameType> GroupItemBuilder<Name> {
         }
     }
 
+    /// resolve Group item from builder's parameter
     fn resolve_item(
         &self,
         item_id: ItemId,
@@ -119,6 +122,7 @@ impl<Name: NameType> GroupItemBuilder<Name> {
         }
     }
 
+    /// resolve Group item's option from builder's parameter
     fn into_item_option(
         self,
         item_id: ItemId,
@@ -146,6 +150,7 @@ impl<Name: NameType> GroupItemBuilder<Name> {
 }
 
 impl<Name: NameType> GroupItemBuilder<Name> {
+    /// initializer for Group item's builder
     pub fn new() -> Self {
         Self::default()
     }

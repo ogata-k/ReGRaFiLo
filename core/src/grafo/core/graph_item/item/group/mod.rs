@@ -1,4 +1,4 @@
-//! ReGRaFiLo's Grouping for other item
+//! ReGRaFiLo's Group to group other graph item
 
 mod builder;
 mod error;

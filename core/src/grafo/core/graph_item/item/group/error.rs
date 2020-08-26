@@ -1,3 +1,5 @@
+//! module for Group item builder's error
+
 use crate::grafo::core::graph_item::GraphBuilderErrorBase;
 use crate::grafo::graph_item::group::GroupItem;
 use crate::grafo::NameIdError;
@@ -7,10 +9,14 @@ use crate::util::kind::{GraphItemKind, HasGraphItemKind};
 use crate::util::name_type::NameType;
 use std::error::Error;
 
+/// error for Group item's builder
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum GroupItemError<Name: NameType> {
+    /// specify belong group for root group, because root group is not belong to other group.
     CannotSpecifyBelongGroupForRoot(Name),
+    /// not found belonging group by the name or not found root group
     FailResolveBelongGroup(ItemId, Option<Name>),
+    /// error for name reference
     NameIdError(ItemId, NameIdError<Name, GraphItemKind>),
 }
 

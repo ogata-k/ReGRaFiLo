@@ -1,7 +1,6 @@
-//! module for Edge item builder
+//! module for Edge item's builder
 
-use crate::grafo::core::graph_item::edge::{EdgeItem, EdgeItemError};
-use crate::grafo::core::graph_item::item::edge::EdgeItemOption;
+use crate::grafo::core::graph_item::edge::{EdgeItem, EdgeItemError, EdgeItemOption};
 use crate::grafo::core::graph_item::GraphItemBuilderBase;
 use crate::grafo::core::resolve::Resolver;
 use crate::grafo::graph_item::edge::Endpoint;
@@ -14,6 +13,7 @@ use crate::util::item_base::{
 use crate::util::kind::{GraphItemKind, HasGraphItemKind};
 use crate::util::name_type::NameType;
 
+/// builder for Group item
 #[derive(Debug, Clone)]
 pub struct EdgeItemBuilder<Name: NameType> {
     belong_group: Option<Name>,
@@ -77,6 +77,7 @@ impl<Name: NameType> HasItemBuilderMethod<Name> for EdgeItemBuilder<Name> {
 
 // resolver
 impl<Name: NameType> EdgeItemBuilder<Name> {
+    /// resolve belong group from builder's parameter
     fn resolve_belong_group(
         &self,
         item_id: ItemId,
@@ -96,6 +97,7 @@ impl<Name: NameType> EdgeItemBuilder<Name> {
         }
     }
 
+    /// resolve endpoint from builder's parameter
     fn resolve_endpoint<F>(
         &self,
         group_id: GroupId,
@@ -163,6 +165,7 @@ impl<Name: NameType> EdgeItemBuilder<Name> {
         }
     }
 
+    /// resolve Edge item from builder's parameter
     fn resolve_item(
         &self,
         item_id: ItemId,
@@ -204,6 +207,7 @@ impl<Name: NameType> EdgeItemBuilder<Name> {
         }
     }
 
+    /// resolve Edge item's option from builder's parameter
     fn into_item_option(
         self,
         item_id: ItemId,
@@ -233,6 +237,7 @@ impl<Name: NameType> EdgeItemBuilder<Name> {
 }
 
 impl<Name: NameType> EdgeItemBuilder<Name> {
+    /// initializer for Edge item's builder
     #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self {
@@ -243,11 +248,13 @@ impl<Name: NameType> EdgeItemBuilder<Name> {
         }
     }
 
+    /// setter for start endpoint
     pub fn set_start_endpoint<S: Into<Name>>(&mut self, kind: GraphItemKind, name: S) -> &mut Self {
         self.start = Some((kind, name.into()));
         self
     }
 
+    /// setter for end endpoint
     pub fn set_end_endpoint<S: Into<Name>>(&mut self, kind: GraphItemKind, name: S) -> &mut Self {
         self.end = Some((kind, name.into()));
         self

@@ -6,6 +6,7 @@ use crate::util::item_base::ItemBase;
 use crate::util::kind::{GraphItemKind, HasGraphItemKind};
 use crate::util::writer::DisplayAsJson;
 
+/// endpoint is graph item for Edge's endpoint
 #[derive(Debug, Eq, PartialEq, Copy, Clone, Hash)]
 pub struct Endpoint {
     kind: GraphItemKind,
@@ -24,6 +25,7 @@ impl DisplayAsJson for Endpoint {
 }
 
 impl Endpoint {
+    /// initializer for endpoint
     pub fn new(kind: GraphItemKind, group_id: GroupId, item_id: ItemId) -> Self {
         Self {
             kind,
@@ -32,14 +34,17 @@ impl Endpoint {
         }
     }
 
+    /// endpoint's graph item kind
     pub fn get_kind(&self) -> GraphItemKind {
         self.kind
     }
 
+    /// belonging group for endpoint's item
     pub fn get_belong_group(&self) -> GroupId {
         self.group_id
     }
 
+    /// item id for endpoint
     pub fn get_item_id(&self) -> ItemId {
         self.item_id
     }
@@ -97,6 +102,7 @@ impl GraphItemBase for EdgeItem {
 }
 
 impl EdgeItem {
+    /// initializer for Edge item
     pub(crate) fn new(
         belong_group: GroupId,
         item_id: ItemId,
@@ -111,11 +117,13 @@ impl EdgeItem {
         }
     }
 
-    pub fn get_start_item_id(&self) -> Endpoint {
+    /// get endpoint of Edge's start endpoint
+    pub fn get_start_endpoint(&self) -> Endpoint {
         self.start
     }
 
-    pub fn get_end_item_id(&self) -> Endpoint {
+    /// get endpoint of Edge's end endpoint
+    pub fn get_end_endpoint(&self) -> Endpoint {
         self.end
     }
 }

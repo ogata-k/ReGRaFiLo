@@ -1,4 +1,4 @@
-//! item pool
+//! item pool for graph item
 
 use std::collections::btree_map::Range;
 use std::collections::BTreeMap;
@@ -53,6 +53,7 @@ impl<I: std::fmt::Display + DisplayAsJson + GraphItemBase> std::fmt::Display for
     }
 }
 
+/// converter from range of item to range of item belonging to the group
 fn range_with_group(group_id: GroupId, bound: Bound<&ItemId>) -> Bound<(GroupId, ItemId)> {
     match bound {
         Bound::Included(item_id) => Bound::Included((group_id, *item_id)),
@@ -176,6 +177,7 @@ impl<I: GraphItemBase> ItemArena<I> {
 }
 
 impl<I: GraphItemBase + Default> ItemArena<I> {
+    /// item id for default item
     fn get_default_index(&self) -> ItemId {
         DEFAULT_ITEM_ID
     }

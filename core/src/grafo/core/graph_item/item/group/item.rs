@@ -60,6 +60,7 @@ impl Default for GroupItem {
 }
 
 impl GroupItem {
+    /// initializer for Group item
     pub(crate) fn new(belong_group: GroupId, item_id: ItemId) -> Self {
         Self {
             belong_group_id: belong_group,

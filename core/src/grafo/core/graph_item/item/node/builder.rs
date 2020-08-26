@@ -1,7 +1,6 @@
-//! module for Node builder
+//! module for Node item's builder
 
-use crate::grafo::core::graph_item::item::node::NodeItemOption;
-use crate::grafo::core::graph_item::node::{NodeItem, NodeItemError};
+use crate::grafo::core::graph_item::node::{NodeItem, NodeItemError, NodeItemOption};
 use crate::grafo::core::graph_item::GraphItemBuilderBase;
 use crate::grafo::core::resolve::Resolver;
 use crate::grafo::{GrafoError, NameIdError};
@@ -13,6 +12,7 @@ use crate::util::item_base::{
 use crate::util::kind::HasGraphItemKind;
 use crate::util::name_type::NameType;
 
+/// builder for Node item
 #[derive(Debug, Clone)]
 pub struct NodeItemBuilder<Name: NameType> {
     belong_group: Option<Name>,
@@ -59,6 +59,7 @@ impl<Name: NameType> HasItemBuilderMethod<Name> for NodeItemBuilder<Name> {
 
 // resolver
 impl<Name: NameType> NodeItemBuilder<Name> {
+    /// resolve belong group from builder's parameter
     fn resolve_belong_group(
         &self,
         item_id: ItemId,
@@ -78,6 +79,7 @@ impl<Name: NameType> NodeItemBuilder<Name> {
         }
     }
 
+    /// resolve Node item from builder's parameter
     fn resolve_item(
         &self,
         item_id: ItemId,
@@ -99,6 +101,7 @@ impl<Name: NameType> NodeItemBuilder<Name> {
         }
     }
 
+    /// resolve Node item's option from builder's parameter
     fn into_item_option(
         self,
         item_id: ItemId,
@@ -126,6 +129,7 @@ impl<Name: NameType> NodeItemBuilder<Name> {
 }
 
 impl<Name: NameType> NodeItemBuilder<Name> {
+    /// initializer for Node item's builder
     #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self {

@@ -1,4 +1,6 @@
-use crate::grafo::graph_item::item::node::NodeItem;
+//! module for Node item builder's error
+
+use crate::grafo::graph_item::node::NodeItem;
 use crate::grafo::graph_item::GraphBuilderErrorBase;
 use crate::grafo::NameIdError;
 use crate::util::alias::ItemId;
@@ -7,9 +9,12 @@ use crate::util::kind::{GraphItemKind, HasGraphItemKind};
 use crate::util::name_type::NameType;
 use std::error::Error;
 
+/// error for Node item's builder
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum NodeItemError<Name: NameType> {
+    /// not found belonging group by the name or not found root group
     FailResolveBelongGroup(ItemId, Option<Name>),
+    /// error for name reference
     NameIdError(ItemId, NameIdError<Name, GraphItemKind>),
 }
 

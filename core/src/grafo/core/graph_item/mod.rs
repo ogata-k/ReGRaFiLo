@@ -1,4 +1,5 @@
-//! ReGRaFiLo's item
+//! core of modules for item as graph item
+
 mod graph_item_arena;
 mod graph_item_base;
 mod item;

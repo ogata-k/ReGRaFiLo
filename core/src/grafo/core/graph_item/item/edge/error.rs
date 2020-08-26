@@ -1,3 +1,5 @@
+//! module for Edge item builder's error
+
 use crate::grafo::core::graph_item::item::edge::EdgeItem;
 use crate::grafo::core::graph_item::GraphBuilderErrorBase;
 use crate::grafo::NameIdError;
@@ -7,14 +9,22 @@ use crate::util::kind::{GraphItemKind, HasGraphItemKind};
 use crate::util::name_type::NameType;
 use std::error::Error;
 
+/// error for Edge item's builder
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum EdgeItemError<Name: NameType> {
+    /// not found belonging group by the name or not found root group
     FailResolveBelongGroup(ItemId, Option<Name>),
+    /// fail resolve from specify start endpoint
     NotSpecifyStartEndpoint(ItemId, Option<(GraphItemKind, Name)>),
+    /// fail build start endpoint
     FailResolveStartEndpoint(ItemId, Option<(GraphItemKind, Name)>),
+    /// fail resolve from specify end endpoint
     NotSpecifyEndEndpoint(ItemId, Option<(GraphItemKind, Name)>),
+    /// fail build end endpoint
     FailResolveEndEndpoint(ItemId, Option<(GraphItemKind, Name)>),
+    /// error for name reference
     NameIdError(ItemId, NameIdError<Name, GraphItemKind>),
+    /// cannot specify endpoint belonging self group or it's ancestor belong group
     CannotSpecifyBelongGroupAsEndpoint(ItemId, Name),
 }
 
