@@ -1,11 +1,16 @@
+//! module of hierarchical id's tree
+
 use std::error::Error;
 use std::fmt::Debug;
 
-/// This Error is always panic!!
+/// error of hierarchical id's tree
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum IdTreeError<Id> {
+    /// error occurred when use self, before not initialized yet
     NotInitialized,
+    /// not found target's parent id
     NotFindParentId(Id),
+    /// already exist specified target id
     AlreadyExistId(Id),
 }
 
@@ -21,9 +26,13 @@ impl<Id: std::fmt::Display> std::fmt::Display for IdTreeError<Id> {
 
 impl<Id: Debug + std::fmt::Display> Error for IdTreeError<Id> {}
 
+/// hierarchical id's tree<br/>
+/// The hierarchical tree structure of id that cannot be used unless initialized
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum IdTree<Id: Eq + Copy> {
+    /// root node for this tree
     Root(IdTreeRoot<Id>),
+    /// not initialized tree
     None,
 }
 
@@ -43,10 +52,12 @@ impl<Id: Eq + Copy> Default for IdTree<Id> {
 }
 
 impl<Id: Eq + Copy> IdTree<Id> {
+    /// initializer for id's hierarchical tree with root's id which is specified
     pub fn new(root: Id) -> Self {
         Self::Root(IdTreeRoot::new(root))
     }
 
+    /// check self tree contains specified id
     pub fn contains_id(&self, id: Id) -> bool {
         match self {
             IdTree::Root(root) => root.contains_id(id),
@@ -54,6 +65,7 @@ impl<Id: Eq + Copy> IdTree<Id> {
         }
     }
 
+    /// check self is **not** already initialized
     pub fn is_none(&self) -> bool {
         match self {
             IdTree::Root(_) => false,
@@ -61,6 +73,7 @@ impl<Id: Eq + Copy> IdTree<Id> {
         }
     }
 
+    /// check self is already initialized
     pub fn is_some(&self) -> bool {
         match self {
             IdTree::Root(_) => true,
@@ -78,6 +91,7 @@ impl<Id: Eq + Copy> IdTree<Id> {
 }
 
 impl<Id: Debug + Eq + Copy> IdTree<Id> {
+    /// insert id as parent's child
     pub fn insert_id(&mut self, parent: Id, child: Id) -> Result<(), IdTreeError<Id>> {
         match self {
             IdTree::Root(root) => root.insert_id(parent, child),
@@ -85,6 +99,7 @@ impl<Id: Debug + Eq + Copy> IdTree<Id> {
         }
     }
 
+    /// get self tree's root id
     pub fn get_root_id(&self) -> Result<Id, IdTreeError<Id>> {
         match self {
             IdTree::Root(root) => Ok(root.get_root_id()),
@@ -93,6 +108,7 @@ impl<Id: Debug + Eq + Copy> IdTree<Id> {
     }
 }
 
+/// root node for IDTree
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct IdTreeRoot<Id: Eq + Copy> {
     root: UniqueTree<Id>,
@@ -109,16 +125,19 @@ impl<Id: Eq + Copy + std::fmt::Display> std::fmt::Display for IdTreeRoot<Id> {
 }
 
 impl<Id: Eq + Copy> IdTreeRoot<Id> {
+    /// initializer for root node of IDTree
     fn new(root: Id) -> Self {
         Self {
             root: UniqueTree::new(root),
         }
     }
 
+    /// check root node and it's children contains specified id
     fn contains_id(&self, id: Id) -> bool {
         self.root.contains_id(id)
     }
 
+    /// get root id for self tree
     fn get_root_id(&self) -> Id {
         self.root.node
     }
@@ -135,11 +154,13 @@ impl<Id: Eq + Copy> IdTreeRoot<Id> {
 }
 
 impl<Id: Debug + Eq + Copy> IdTreeRoot<Id> {
+    /// insert parent's child
     fn insert_id(&mut self, parent: Id, child: Id) -> Result<(), IdTreeError<Id>> {
         self.root.insert_id(parent, child)
     }
 }
 
+/// this structure is rooted directed tree which can have unique id as node
 #[derive(Debug, Eq, PartialEq, Clone)]
 struct UniqueTree<Id: Eq + Copy> {
     node: Id,
@@ -173,6 +194,7 @@ impl<Id: Eq + Copy + std::fmt::Display> std::fmt::Display for UniqueTree<Id> {
 }
 
 impl<Id: Eq + Copy> UniqueTree<Id> {
+    /// initializer with specified id as root node
     fn new(root: Id) -> Self {
         Self {
             node: root,
@@ -180,6 +202,7 @@ impl<Id: Eq + Copy> UniqueTree<Id> {
         }
     }
 
+    /// check self tree has specified id
     fn contains_id(&self, id: Id) -> bool {
         if self.node == id {
             return true;
@@ -192,6 +215,7 @@ impl<Id: Eq + Copy> UniqueTree<Id> {
         false
     }
 
+    /// find node as mut by specified id
     fn find_as_mut(&mut self, id: Id) -> Option<&mut Self> {
         if self.node == id {
             return Some(self);
@@ -221,6 +245,7 @@ impl<Id: Eq + Copy> UniqueTree<Id> {
 }
 
 impl<Id: Debug + Eq + Copy> UniqueTree<Id> {
+    /// insert parent's child
     fn insert_id(&mut self, parent: Id, child: Id) -> Result<(), IdTreeError<Id>> {
         if self.contains_id(child) {
             return Err(IdTreeError::AlreadyExistId(child));

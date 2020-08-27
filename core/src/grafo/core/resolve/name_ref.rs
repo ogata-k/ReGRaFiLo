@@ -1,3 +1,6 @@
+//! module for reference and reference's error.<br/>
+//! reference has kind as grouping key, name as referencable key and registered name, and value as referenced value and reverse referencable key.
+
 use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::error::Error;
@@ -8,14 +11,19 @@ use crate::util::kind_key::KeyWithKind;
 use crate::util::name_type::NameType;
 use crate::util::writer::DisplayAsJson;
 
+/// key and value's type for NameRefIndex
 pub trait NameRefKeyTrait: Eq + Copy + Hash + Ord {}
 
 impl<T: Eq + Copy + Hash + Ord> NameRefKeyTrait for T {}
 
+/// error for name's reference
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum NameIdError<Name: NameType, Kind> {
+    /// the name is referencable key already registered
     AlreadyExist(Kind, Name),
+    /// override value of the key of already registered the name
     Override(Kind, Name),
+    /// the specified name as key don't exist
     NotExist(Kind, Name),
 }
 
@@ -135,6 +143,7 @@ impl<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKeyTrait>
         NameRefIndex::default()
     }
 
+    /// insert value by reference name. If name already exist, override name's value.
     pub fn insert_value_or_override<S: Into<Name>>(
         &mut self,
         kind: Kind,
@@ -165,10 +174,12 @@ impl<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKeyTrait>
         self.reference_index.get(&kind)?.get(name).copied()
     }
 
+    /// get registered name
     pub fn get_name(&self, kind: Kind, value: Value) -> Option<&Name> {
         self.rev_reference_index.get(&KeyWithKind::new(kind, value))
     }
 
+    /// check specified name is referencable
     pub fn is_usable_name<S: ?Sized>(&self, kind: Kind, name: &S) -> bool
     where
         Name: Borrow<S>,
@@ -180,11 +191,13 @@ impl<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKeyTrait>
         }
     }
 
+    /// check the name is already registered
     pub fn has_registered_name(&self, kind: Kind, value: Value) -> bool {
         self.rev_reference_index
             .contains_key(&KeyWithKind::new(kind, value))
     }
 
+    /// count names which is referencable by filter you specify method
     pub fn count_usable_names_filtered_by<P>(&self, predicate: P) -> usize
     where
         P: Fn(&Kind) -> bool,
@@ -195,14 +208,17 @@ impl<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKeyTrait>
             .fold(0, |acc, (_, map)| acc + map.iter().count())
     }
 
+    /// count names which is referencable filtering by the kind
     pub fn count_usable_names_by(&self, kind: Kind) -> usize {
         self.count_usable_names_filtered_by(|k| k == &kind)
     }
 
+    /// count all referencable names
     pub fn count_usable_names_all(&self) -> usize {
         self.count_usable_names_filtered_by(|_| true)
     }
 
+    /// count names which is already registered by filter you specify method
     pub fn count_registered_names_filtered_by<P>(&self, predicate: P) -> usize
     where
         P: Fn(&Kind) -> bool,
@@ -213,14 +229,17 @@ impl<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKeyTrait>
             .count()
     }
 
+    /// count names which is already registered filtering by the kind
     pub fn count_registered_names_by(&self, kind: Kind) -> usize {
         self.count_registered_names_filtered_by(|k| k == &kind)
     }
 
+    /// count all registered names
     pub fn count_registered_names_all(&self) -> usize {
         self.count_registered_names_filtered_by(|_| true)
     }
 
+    /// to iterator
     pub fn iter<'a>(&'a self) -> impl Iterator<Item = (&Kind, &Value, &Name)> + 'a {
         self.rev_reference_index
             .iter()

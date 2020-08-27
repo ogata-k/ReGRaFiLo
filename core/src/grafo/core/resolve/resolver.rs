@@ -1,4 +1,4 @@
-//! hierarchy and name resolver
+//! resolver for hierarchical group and name
 
 use std::borrow::Borrow;
 use std::error::Error;
@@ -9,15 +9,22 @@ use crate::grafo::layout_item::{LayoutItemBase, LayoutItemBaseDependOnGraph};
 use crate::grafo::{IdTree, IdTreeError, NameIdError, NameRefIndex};
 use crate::util::alias::{GroupId, ItemId};
 use crate::util::either::Either;
-use crate::util::kind::{AttributeKind, AttributeKindDependOnGraph, GraphItemKind, LayoutItemKind};
+use crate::util::kind::{
+    AttributeKind, AttributeKindDependOnGraph, GraphItemKind, HasLayoutKind, LayoutItemKind,
+};
 use crate::util::name_type::NameType;
 use crate::util::writer::DisplayAsJson;
 
+/// error for Resolver
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum ResolverError {
+    /// fail set root group id
     FailSetRootGraphId,
+    /// occurred error when use group tree, before initialized the group tree
     NotInitialized,
+    /// not found parent id for target id
     NotFindParentId(GroupId),
+    /// specified id already exist
     AlreadyExistId(GroupId),
 }
 
@@ -308,7 +315,7 @@ impl<Name: NameType> Resolver<Name> {
     }
 
     /// get item's name for layout item depending on graph item
-    pub fn get_graph_item_layout_name_by_item<I: LayoutItemBaseDependOnGraph>(
+    pub fn get_graph_item_layout_name_by_item<I: LayoutItemBaseDependOnGraph + HasLayoutKind>(
         &self,
         item: &I,
     ) -> Option<&Name> {
@@ -419,7 +426,10 @@ impl<Name: NameType> Resolver<Name> {
     }
 
     /// get the name for attribute item limited by specify
-    pub fn get_attribute_name_by_item<I: LayoutItemBase>(&self, item: &I) -> Option<&Name> {
+    pub fn get_attribute_name_by_item<I: LayoutItemBase + HasLayoutKind>(
+        &self,
+        item: &I,
+    ) -> Option<&Name> {
         self.layout_items
             .get_name(item.get_layout_kind(), item.get_item_id())
     }
