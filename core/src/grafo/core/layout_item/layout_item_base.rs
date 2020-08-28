@@ -1,3 +1,5 @@
+//! base of layout item and layout item's builder
+
 use crate::util::item_base::ItemBase;
 use crate::util::kind::{HasAttributeKind, HasAttributeKindDependOnGraph};
 

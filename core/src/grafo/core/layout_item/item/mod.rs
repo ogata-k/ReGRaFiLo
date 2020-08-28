@@ -1,1 +1,1 @@
-// TODO add module for each layout item
+//! layout item's modules

@@ -1,4 +1,4 @@
-//! ReGRaFiLo's Layout
+//! core modules for layout item of Grafo
 
 mod item;
 mod layout;

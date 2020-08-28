@@ -1,4 +1,4 @@
-//! core of modules for item as graph item
+//! core modules for graph item of Grafo
 
 mod graph_item_arena;
 mod graph_item_base;

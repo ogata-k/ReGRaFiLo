@@ -1,4 +1,4 @@
-//! base of item and item builder
+//! base of graph item and graph item's builder
 
 use crate::grafo::NameIdError;
 use crate::util::alias::GroupId;

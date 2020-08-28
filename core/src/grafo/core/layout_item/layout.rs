@@ -1,3 +1,6 @@
+//! module for set of layout item's stores
+
+/// set of store for layout items
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct Layout {
     // TODO layout item store
