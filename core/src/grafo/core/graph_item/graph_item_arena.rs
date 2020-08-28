@@ -469,16 +469,14 @@ mod test {
                 builder,
                 |resolver, kind, group_id, item_id, option| {
                     let mut errors: Vec<GrafoError<String>> = Vec::new();
-                    if let TargetItemOption {
+                    let TargetItemOption {
                         belong_group_id: _,
-                        name: Some(name),
-                    } = option
+                        name,
+                    } = option;
+                    if let Err(err) =
+                        resolver.insert_graph_item_id_or_override(kind, name, group_id, item_id)
                     {
-                        if let Err(err) =
-                            resolver.insert_graph_item_id_or_override(kind, name, group_id, item_id)
-                        {
-                            errors.push(TargetBuilderError::from_with_id(item_id, err).into());
-                        }
+                        errors.push(TargetBuilderError::from_with_id(item_id, err).into());
                     }
                     (errors.is_empty(), errors)
                 },
@@ -514,16 +512,14 @@ mod test {
                 builder,
                 |resolver, kind, group_id, item_id, option| {
                     let mut errors: Vec<GrafoError<String>> = Vec::new();
-                    if let TargetItemOption {
+                    let TargetItemOption {
                         belong_group_id: _,
-                        name: Some(name),
-                    } = option
+                        name,
+                    } = option;
+                    if let Err(err) =
+                        resolver.insert_graph_item_id_or_override(kind, name, group_id, item_id)
                     {
-                        if let Err(err) =
-                            resolver.insert_graph_item_id_or_override(kind, name, group_id, item_id)
-                        {
-                            errors.push(TargetBuilderError::from_with_id(item_id, err).into());
-                        }
+                        errors.push(TargetBuilderError::from_with_id(item_id, err).into());
                     }
 
                     (errors.is_empty(), errors)
@@ -565,16 +561,14 @@ mod test {
                 builder,
                 |resolver, kind, group_id, item_id, option| {
                     let mut errors: Vec<GrafoError<String>> = Vec::new();
-                    if let TargetItemOption {
+                    let TargetItemOption {
                         belong_group_id: _,
-                        name: Some(name),
-                    } = option
+                        name,
+                    } = option;
+                    if let Err(err) =
+                        resolver.insert_graph_item_id_or_override(kind, name, group_id, item_id)
                     {
-                        if let Err(err) =
-                            resolver.insert_graph_item_id_or_override(kind, name, group_id, item_id)
-                        {
-                            errors.push(TargetBuilderError::from_with_id(item_id, err).into());
-                        }
+                        errors.push(TargetBuilderError::from_with_id(item_id, err).into());
                     }
 
                     (errors.is_empty(), errors)
@@ -612,16 +606,14 @@ mod test {
                 builder,
                 |resolver, kind, group_id, item_id, option| {
                     let mut errors: Vec<GrafoError<String>> = Vec::new();
-                    if let TargetItemOption {
+                    let TargetItemOption {
                         belong_group_id: _,
-                        name: Some(name),
-                    } = option
+                        name,
+                    } = option;
+                    if let Err(err) =
+                        resolver.insert_graph_item_id_or_override(kind, name, group_id, item_id)
                     {
-                        if let Err(err) =
-                            resolver.insert_graph_item_id_or_override(kind, name, group_id, item_id)
-                        {
-                            errors.push(TargetBuilderError::from_with_id(item_id, err).into());
-                        }
+                        errors.push(TargetBuilderError::from_with_id(item_id, err).into());
                     }
 
                     (errors.is_empty(), errors)

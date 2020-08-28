@@ -82,16 +82,14 @@ impl<Name: NameType> GrafoBuilder<Name> {
 
                 let mut validate = true;
                 let GroupItemOption { name: _ } = option;
-                if let Some(n) = group_name {
-                    if let Err(e) = resolver.insert_graph_item_id_or_override(
-                        GraphItemKind::Group,
-                        n,
-                        DEFAULT_ITEM_ID,
-                        DEFAULT_ITEM_ID,
-                    ) {
-                        errors.push(NodeItemError::from_with_id(DEFAULT_ITEM_ID, e).into());
-                        validate &= true;
-                    }
+                if let Err(e) = resolver.insert_graph_item_id_or_override(
+                    GraphItemKind::Group,
+                    group_name,
+                    DEFAULT_ITEM_ID,
+                    DEFAULT_ITEM_ID,
+                ) {
+                    errors.push(NodeItemError::from_with_id(DEFAULT_ITEM_ID, e).into());
+                    validate &= true;
                 }
 
                 (validate, errors)
@@ -140,16 +138,14 @@ impl<Name: NameType> GrafoBuilder<Name> {
 
                 let mut validate = true;
                 let GroupItemOption { name } = option;
-                if let Some(n) = name {
-                    if let Err(e) = resolver.insert_graph_item_id_or_override(
-                        GraphItemKind::Group,
-                        n,
-                        DEFAULT_ITEM_ID,
-                        DEFAULT_ITEM_ID,
-                    ) {
-                        errors.push(NodeItemError::from_with_id(DEFAULT_ITEM_ID, e).into());
-                        validate &= true;
-                    }
+                if let Err(e) = resolver.insert_graph_item_id_or_override(
+                    GraphItemKind::Group,
+                    name,
+                    DEFAULT_ITEM_ID,
+                    DEFAULT_ITEM_ID,
+                ) {
+                    errors.push(NodeItemError::from_with_id(DEFAULT_ITEM_ID, e).into());
+                    validate &= true;
                 }
 
                 (validate, errors)
@@ -223,13 +219,11 @@ impl<Name: NameType> Grafo<Name> {
                 let mut errors: Vec<GrafoError<Name>> = Vec::new();
                 let mut validate = true;
                 let GroupItemOption { name } = option;
-                if let Some(n) = name {
-                    if let Err(e) =
-                        resolver.insert_graph_item_id_or_override(kind, n, belong_group_id, item_id)
-                    {
-                        errors.push(GroupItemError::from_with_id(item_id, e).into());
-                        validate &= true;
-                    }
+                if let Err(e) =
+                    resolver.insert_graph_item_id_or_override(kind, name, belong_group_id, item_id)
+                {
+                    errors.push(GroupItemError::from_with_id(item_id, e).into());
+                    validate &= true;
                 }
 
                 if validate {
@@ -254,13 +248,11 @@ impl<Name: NameType> Grafo<Name> {
                 let mut errors: Vec<GrafoError<Name>> = Vec::new();
                 let mut validate = true;
                 let NodeItemOption { name } = option;
-                if let Some(n) = name {
-                    if let Err(e) =
-                        resolver.insert_graph_item_id_or_override(kind, n, belong_group_id, item_id)
-                    {
-                        errors.push(NodeItemError::from_with_id(item_id, e).into());
-                        validate &= true;
-                    }
+                if let Err(e) =
+                    resolver.insert_graph_item_id_or_override(kind, name, belong_group_id, item_id)
+                {
+                    errors.push(NodeItemError::from_with_id(item_id, e).into());
+                    validate &= true;
                 }
 
                 (validate, errors)
@@ -278,13 +270,11 @@ impl<Name: NameType> Grafo<Name> {
                 let mut errors: Vec<GrafoError<Name>> = Vec::new();
                 let mut validate = true;
                 let EdgeItemOption { name } = option;
-                if let Some(n) = name {
-                    if let Err(e) =
-                        resolver.insert_graph_item_id_or_override(kind, n, belong_group_id, item_id)
-                    {
-                        errors.push(EdgeItemError::from_with_id(item_id, e).into());
-                        validate &= true;
-                    }
+                if let Err(e) =
+                    resolver.insert_graph_item_id_or_override(kind, name, belong_group_id, item_id)
+                {
+                    errors.push(EdgeItemError::from_with_id(item_id, e).into());
+                    validate &= true;
                 }
 
                 (validate, errors)

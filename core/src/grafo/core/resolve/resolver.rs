@@ -186,7 +186,7 @@ impl<Name: NameType> Resolver<Name> {
     pub(crate) fn insert_graph_item_id_or_override<S: Into<Name>>(
         &mut self,
         item_kind: GraphItemKind,
-        name: S,
+        name: Option<S>,
         group_id: GroupId,
         item_id: ItemId,
     ) -> Result<(), NameIdError<Name, GraphItemKind>> {
@@ -225,6 +225,17 @@ impl<Name: NameType> Resolver<Name> {
             item.get_kind(),
             (item.get_belong_group_id(), item.get_item_id()),
         )
+    }
+
+    /// check the graph item is already registered
+    pub fn is_already_registered_graph_item(
+        &self,
+        item_kind: GraphItemKind,
+        group_id: GroupId,
+        item_id: ItemId,
+    ) -> bool {
+        self.graph_items
+            .is_already_registered(item_kind, (group_id, item_id))
     }
 
     /// check the name usable as reference key for graph item's key.
@@ -276,12 +287,12 @@ impl<Name: NameType> Resolver<Name> {
         &mut self,
         item_kind: GraphItemKind,
         layout_kind: AttributeKindDependOnGraph,
-        name: S,
+        name: Option<S>,
         layout_item_id: ItemId,
     ) -> Result<(), NameIdError<Name, LayoutItemKind>> {
         self.layout_items.insert_value_or_override(
             LayoutItemKind::new_layout(item_kind, layout_kind),
-            name.into(),
+            name,
             layout_item_id,
         )
     }
@@ -321,6 +332,17 @@ impl<Name: NameType> Resolver<Name> {
     ) -> Option<&Name> {
         self.layout_items
             .get_name(item.get_layout_kind(), item.get_item_id())
+    }
+
+    /// check the layout item depending graph item is already registered
+    pub fn is_already_registered_graph_item_layout(
+        &self,
+        item_kind: GraphItemKind,
+        layout_kind: AttributeKindDependOnGraph,
+        item_id: ItemId,
+    ) -> bool {
+        self.layout_items
+            .is_already_registered(LayoutItemKind::new_layout(item_kind, layout_kind), item_id)
     }
 
     /// check the name usable as reference key for layout item depend on graph item
@@ -389,7 +411,7 @@ impl<Name: NameType> Resolver<Name> {
     pub(crate) fn insert_attribute_id<S: Into<Name>>(
         &mut self,
         attribute_kind: AttributeKind,
-        name: S,
+        name: Option<S>,
         layout_item_id: ItemId,
     ) -> Result<(), NameIdError<Name, LayoutItemKind>> {
         self.layout_items.insert_value_or_override(
@@ -432,6 +454,16 @@ impl<Name: NameType> Resolver<Name> {
     ) -> Option<&Name> {
         self.layout_items
             .get_name(item.get_layout_kind(), item.get_item_id())
+    }
+
+    /// check the attribute item as layout item is already registered
+    pub fn is_already_registered_attribute_item(
+        &self,
+        attribute_kind: AttributeKind,
+        item_id: ItemId,
+    ) -> bool {
+        self.layout_items
+            .is_already_registered(LayoutItemKind::new_attribute(attribute_kind), item_id)
     }
 
     /// check the name usable as reference key for attribute item

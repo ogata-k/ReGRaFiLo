@@ -2,7 +2,7 @@
 //! reference has kind as grouping key, name as referencable key and registered name, and value as referenced value and reverse referencable key.
 
 use std::borrow::Borrow;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::error::Error;
 use std::hash::Hash;
 
@@ -62,6 +62,7 @@ pub struct NameRefIndex<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKey
     //        reference_indexの二重HashMapをHashMap<(Kind, Name), Value>に一重化する
     reference_index: HashMap<Kind, HashMap<Name, Value>>,
     rev_reference_index: HashMap<KeyWithKind<Kind, Value>, Name>,
+    no_name_reference: HashSet<(Kind, Value)>,
 }
 
 impl<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKeyTrait> Default
@@ -71,6 +72,7 @@ impl<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKeyTrait> Default
         NameRefIndex {
             reference_index: Default::default(),
             rev_reference_index: Default::default(),
+            no_name_reference: Default::default(),
         }
     }
 }
@@ -147,22 +149,30 @@ impl<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKeyTrait>
     pub fn insert_value_or_override<S: Into<Name>>(
         &mut self,
         kind: Kind,
-        name: S,
+        name: Option<S>,
         value: Value,
     ) -> Result<(), NameIdError<Name, Kind>> {
-        let item_name = name.into();
-        let rev_key = KeyWithKind::new(kind, value);
-        let result = if self.is_usable_name(kind, &item_name) {
-            Err(NameIdError::Override(kind, item_name.clone()))
-        } else {
-            Ok(())
-        };
-        self.reference_index
-            .entry(kind)
-            .or_insert_with(HashMap::new)
-            .insert(item_name.clone(), value);
-        self.rev_reference_index.insert(rev_key, item_name);
-        result
+        match name {
+            Some(ref_name) => {
+                let item_name = ref_name.into();
+                let rev_key = KeyWithKind::new(kind, value);
+                let result = if self.is_usable_name(kind, &item_name) {
+                    Err(NameIdError::Override(kind, item_name.clone()))
+                } else {
+                    Ok(())
+                };
+                self.reference_index
+                    .entry(kind)
+                    .or_insert_with(HashMap::new)
+                    .insert(item_name.clone(), value);
+                self.rev_reference_index.insert(rev_key, item_name);
+                result
+            }
+            None => {
+                self.no_name_reference.insert((kind, value));
+                Ok(())
+            }
+        }
     }
 
     /// helper for getter of string attribute
@@ -177,6 +187,14 @@ impl<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKeyTrait>
     /// get registered name
     pub fn get_name(&self, kind: Kind, value: Value) -> Option<&Name> {
         self.rev_reference_index.get(&KeyWithKind::new(kind, value))
+    }
+
+    /// check value grouped by kind is registered
+    pub fn is_already_registered(&self, kind: Kind, value: Value) -> bool {
+        self.no_name_reference.contains(&(kind, value))
+            || self
+                .rev_reference_index
+                .contains_key(&KeyWithKind::new(kind, value))
     }
 
     /// check specified name is referencable
@@ -258,14 +276,14 @@ mod test {
         let mut name_ref: NameRefIndex<String, GraphItemKind, ItemId> = NameRefIndex::new();
         assert_eq!(
             Ok(()),
-            name_ref.insert_value_or_override(GraphItemKind::Node, "node".to_string(), 1)
+            name_ref.insert_value_or_override(GraphItemKind::Node, Some("node".to_string()), 1)
         );
         assert_eq!(
             Err(NameIdError::Override(
                 GraphItemKind::Node,
                 "node".to_string(),
             )),
-            name_ref.insert_value_or_override(GraphItemKind::Node, "node".to_string(), 2)
+            name_ref.insert_value_or_override(GraphItemKind::Node, Some("node".to_string()), 2)
         );
         assert_eq!(Some(2), name_ref.get_value(GraphItemKind::Node, "node"));
     }
@@ -275,11 +293,11 @@ mod test {
         let mut name_ref: NameRefIndex<String, GraphItemKind, ItemId> = NameRefIndex::new();
         assert_eq!(
             Ok(()),
-            name_ref.insert_value_or_override(GraphItemKind::Node, "item".to_string(), 1)
+            name_ref.insert_value_or_override(GraphItemKind::Node, Some("item".to_string()), 1)
         );
         assert_eq!(
             Ok(()),
-            name_ref.insert_value_or_override(GraphItemKind::Edge, "item".to_string(), 2)
+            name_ref.insert_value_or_override(GraphItemKind::Edge, Some("item".to_string()), 2)
         );
         assert_eq!(Some(1), name_ref.get_value(GraphItemKind::Node, "item"));
         assert_eq!(Some(2), name_ref.get_value(GraphItemKind::Edge, "item"));
