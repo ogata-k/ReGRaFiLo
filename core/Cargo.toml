@@ -18,3 +18,7 @@ harness = false
 [[bench]]
 name = "push_edge"
 harness = false
+
+[[bench]]
+name = "push_grouping_graph_item"
+harness = false
