@@ -24,9 +24,7 @@ fn push_items(count: u32) {
 fn push_nodes(graph: &mut Graph, errors: &mut Vec<GraphError>, count: u32) {
     for i in 0..count {
         let mut node_builder = NodeItemBuilder::new();
-        if i % 2 == 0 {
-            node_builder.set_name(format!("{}", i));
-        }
+        node_builder.set_name(format!("{}", i));
         let (_result, _errors) = graph.push_node(node_builder);
         errors.extend(_errors);
     }
@@ -35,9 +33,7 @@ fn push_nodes(graph: &mut Graph, errors: &mut Vec<GraphError>, count: u32) {
 fn push_edges(graph: &mut Graph, errors: &mut Vec<GraphError>, count: u32) {
     for i in 0..count {
         let mut edge_builder = EdgeItemBuilder::new();
-        if i % 2 == 0 {
-            edge_builder.set_name(format!("{}", i));
-        }
+        edge_builder.set_name(format!("{}", i));
         edge_builder.set_start_endpoint(GraphItemKind::Node, format!("{}", (2 * i) % count));
         edge_builder.set_end_endpoint(GraphItemKind::Node, format!("{}", (2 * (i + 1)) % count));
         let (_result, _errors) = graph.push_edge(edge_builder);
@@ -46,15 +42,19 @@ fn push_edges(graph: &mut Graph, errors: &mut Vec<GraphError>, count: u32) {
 }
 
 fn push_node_and_edge_100(c: &mut Criterion) {
-    c.bench_function("push_node_and_edge_100", |b| b.iter(|| push_items(100)));
+    c.bench_function("push_node_and_edge_100", |b| b.iter(|| push_items(100 / 2)));
 }
 
 fn push_node_and_edge_1000(c: &mut Criterion) {
-    c.bench_function("push_node_and_edge_1000", |b| b.iter(|| push_items(1000)));
+    c.bench_function("push_node_and_edge_1000", |b| {
+        b.iter(|| push_items(1000 / 2))
+    });
 }
 
 fn push_node_and_edge_10000(c: &mut Criterion) {
-    c.bench_function("push_node_and_edge_10000", |b| b.iter(|| push_items(10000)));
+    c.bench_function("push_node_and_edge_10000", |b| {
+        b.iter(|| push_items(10000 / 2))
+    });
 }
 
 criterion_group!(

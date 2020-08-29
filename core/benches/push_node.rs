@@ -21,9 +21,7 @@ fn push_items(count: u32) {
 fn push_nodes(graph: &mut Graph, errors: &mut Vec<GraphError>, count: u32) {
     for i in 0..count {
         let mut node_builder = NodeItemBuilder::new();
-        if i % 2 == 0 {
-            node_builder.set_name(format!("{}", i));
-        }
+        node_builder.set_name(format!("{}", i));
         let (_result, _errors) = graph.push_node(node_builder);
         errors.extend(_errors);
     }
