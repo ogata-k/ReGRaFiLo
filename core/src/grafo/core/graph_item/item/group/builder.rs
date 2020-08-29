@@ -78,7 +78,14 @@ impl<Name: NameType> GroupItemBuilder<Name> {
     ) -> Option<ItemId> {
         if item_id == DEFAULT_ITEM_ID {
             return if let Some(n) = &self.belong_group {
-                errors.push(GroupItemError::CannotSpecifyBelongGroupForRoot(n.clone()).into());
+                errors.push(
+                    GroupItemError::CannotSpecifyBelongGroupForRoot(
+                        item_id,
+                        self.name.clone(),
+                        n.clone(),
+                    )
+                    .into(),
+                );
                 None
             } else {
                 Some(item_id)
@@ -87,11 +94,11 @@ impl<Name: NameType> GroupItemBuilder<Name> {
         match resolver.get_belong_group(self.belong_group.as_ref()) {
             Ok(group) => Some(group),
             Err(Either::Left(e)) => {
-                errors.push(GroupItemError::from_with_id(item_id, e).into());
+                errors.push(GroupItemError::from_with_id(item_id, self.name.clone(), e).into());
                 None
             }
             Err(Either::Right(e)) => {
-                errors.push(e.into());
+                errors.push(GroupItemError::from_with_id(item_id, self.name.clone(), e).into());
                 None
             }
         }
@@ -108,8 +115,12 @@ impl<Name: NameType> GroupItemBuilder<Name> {
         if resolved_belong_group.is_none() {
             if item_id != DEFAULT_ITEM_ID {
                 errors.push(
-                    GroupItemError::FailResolveBelongGroup(item_id, self.belong_group.clone())
-                        .into(),
+                    GroupItemError::FailResolveBelongGroup(
+                        item_id,
+                        self.name.clone(),
+                        self.belong_group.clone(),
+                    )
+                    .into(),
                 );
             }
             validate = false;
@@ -138,6 +149,7 @@ impl<Name: NameType> GroupItemBuilder<Name> {
                 errors.push(
                     GroupItemError::from_with_id(
                         item_id,
+                        Some(n.clone()),
                         NameIdError::AlreadyExist(GroupItem::kind(), n.clone()),
                     )
                     .into(),

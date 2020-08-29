@@ -263,7 +263,7 @@ mod test {
         GraphBuilderErrorBase, GraphItemBase, GraphItemBuilderBase, ItemArena,
     };
     use crate::grafo::core::{NameIdError, Resolver};
-    use crate::grafo::GrafoError;
+    use crate::grafo::{GrafoError, ResolverError};
     use crate::util::alias::{GroupId, ItemId};
     use crate::util::item_base::{
         FromWithItemId, HasItemBuilderMethod, ItemBase, ItemBuilderBase, ItemBuilderResult,
@@ -279,42 +279,6 @@ mod test {
     struct TargetItemBuilder {
         belong_group: Option<String>,
         name: Option<String>,
-    }
-
-    #[derive(Debug, Eq, PartialEq, Clone, Copy)]
-    struct TargetItem {
-        belong_group_id: GroupId,
-        item_id: ItemId,
-    }
-
-    #[derive(Debug, Eq, PartialEq, Clone)]
-    struct TargetItemOption {
-        belong_group_id: GroupId,
-        name: Option<String>,
-    }
-
-    #[derive(Debug, Eq, PartialEq, Clone)]
-    enum TargetBuilderError {
-        BuildFail(ItemId),
-        NotFindGroup(ItemId),
-    }
-
-    impl From<TargetBuilderError> for GrafoError<String> {
-        fn from(_: TargetBuilderError) -> GrafoError<String> {
-            unreachable!()
-        }
-    }
-
-    impl HasGraphItemKind for TargetItem {
-        fn kind() -> GraphItemKind {
-            TARGET_KIND
-        }
-    }
-
-    impl HasGraphItemKind for TargetBuilderError {
-        fn kind() -> GraphItemKind {
-            TARGET_KIND
-        }
     }
 
     impl ItemBuilderBase<String> for TargetItemBuilder {
@@ -362,7 +326,10 @@ mod test {
                     match belong_group_result {
                         Ok((_belong_group_id, group_item_id)) => Some(group_item_id),
                         Err(err) => {
-                            errors.push(TargetBuilderError::from_with_id(item_id, err).into());
+                            errors.push(
+                                TargetBuilderError::from_with_id(item_id, self.name.clone(), err)
+                                    .into(),
+                            );
                             None
                         }
                     }
@@ -388,7 +355,7 @@ mod test {
                 self.belong_group.as_deref(),
             );
             if group_id.is_none() {
-                errors.push(TargetBuilderError::NotFindGroup(item_id).into());
+                errors.push(TargetBuilderError::NotFindGroup(item_id, self.name.clone()).into());
                 return (None, errors);
             }
             let group_id = group_id.unwrap();
@@ -417,6 +384,94 @@ mod test {
         }
     }
 
+    #[derive(Debug, Eq, PartialEq, Clone)]
+    struct TargetItemOption {
+        belong_group_id: GroupId,
+        name: Option<String>,
+    }
+
+    #[derive(Debug, Eq, PartialEq, Clone)]
+    enum TargetBuilderError {
+        BuildFail(ItemId, Option<String>),
+        NotFindGroup(ItemId, Option<String>),
+    }
+
+    impl From<TargetBuilderError> for GrafoError<String> {
+        fn from(_: TargetBuilderError) -> GrafoError<String> {
+            unreachable!()
+        }
+    }
+
+    impl HasGraphItemKind for TargetBuilderError {
+        fn kind() -> GraphItemKind {
+            TARGET_KIND
+        }
+    }
+
+    impl std::fmt::Display for TargetBuilderError {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            use TargetBuilderError::*;
+            match &self {
+                BuildFail(_, _) => {
+                    self.fmt_header(f)?;
+                    write!(f, "fail build item")
+                }
+                NotFindGroup(_, _) => {
+                    self.fmt_header(f)?;
+                    write!(f, "fail found belong group")
+                }
+            }
+        }
+    }
+
+    impl Error for TargetBuilderError {}
+
+    impl ItemErrorBase<String> for TargetBuilderError {}
+
+    impl FromWithItemId<NameIdError<String, GraphItemKind>, String> for TargetBuilderError {
+        fn from_with_id(
+            _: ItemId,
+            name: Option<String>,
+            _: NameIdError<String, GraphItemKind>,
+        ) -> Self {
+            unimplemented!()
+        }
+    }
+
+    impl FromWithItemId<ResolverError, String> for TargetBuilderError {
+        fn from_with_id(_: ItemId, name: Option<String>, _: ResolverError) -> Self {
+            unimplemented!()
+        }
+    }
+
+    impl GraphBuilderErrorBase<String> for TargetBuilderError {
+        fn get_item_id(&self) -> &usize {
+            match self {
+                TargetBuilderError::BuildFail(i, _) => i,
+                TargetBuilderError::NotFindGroup(i, _) => i,
+            }
+        }
+
+        fn get_item_name(&self) -> &Option<String> {
+            match self {
+                TargetBuilderError::BuildFail(_, name) => name,
+                TargetBuilderError::NotFindGroup(_, name) => name,
+            }
+        }
+    }
+
+    #[derive(Debug, Eq, PartialEq, Clone, Copy)]
+    struct TargetItem {
+        belong_group_id: GroupId,
+        item_id: ItemId,
+    }
+
+    impl HasGraphItemKind for TargetItem {
+        fn kind() -> GraphItemKind {
+            TARGET_KIND
+        }
+    }
+
     impl ItemBase for TargetItem {
         fn get_item_id(&self) -> ItemId {
             self.item_id
@@ -428,28 +483,6 @@ mod test {
             self.belong_group_id
         }
     }
-
-    impl std::fmt::Display for TargetBuilderError {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            use TargetBuilderError::*;
-            match &self {
-                BuildFail(id) => write!(f, "id: {} fail build item", id),
-                NotFindGroup(id) => write!(f, "id: {} fail found belong group", id),
-            }
-        }
-    }
-
-    impl Error for TargetBuilderError {}
-
-    impl ItemErrorBase<String> for TargetBuilderError {}
-
-    impl FromWithItemId<NameIdError<String, GraphItemKind>> for TargetBuilderError {
-        fn from_with_id(_: ItemId, _: NameIdError<String, GraphItemKind>) -> Self {
-            unimplemented!()
-        }
-    }
-
-    impl GraphBuilderErrorBase<String> for TargetBuilderError {}
 
     #[test]
     fn is_empty() {
@@ -473,10 +506,13 @@ mod test {
                         belong_group_id: _,
                         name,
                     } = option;
-                    if let Err(err) =
-                        resolver.insert_graph_item_id_or_override(kind, name, group_id, item_id)
-                    {
-                        errors.push(TargetBuilderError::from_with_id(item_id, err).into());
+                    if let Err(err) = resolver.insert_graph_item_id_or_override(
+                        kind,
+                        name.clone(),
+                        group_id,
+                        item_id,
+                    ) {
+                        errors.push(TargetBuilderError::from_with_id(item_id, name, err).into());
                     }
                     (errors.is_empty(), errors)
                 },
@@ -516,10 +552,15 @@ mod test {
                         belong_group_id: _,
                         name,
                     } = option;
-                    if let Err(err) =
-                        resolver.insert_graph_item_id_or_override(kind, name, group_id, item_id)
-                    {
-                        errors.push(TargetBuilderError::from_with_id(item_id, err).into());
+                    if let Err(err) = resolver.insert_graph_item_id_or_override(
+                        kind,
+                        name.clone(),
+                        group_id,
+                        item_id,
+                    ) {
+                        errors.push(
+                            TargetBuilderError::from_with_id(item_id, name.clone(), err).into(),
+                        );
                     }
 
                     (errors.is_empty(), errors)
@@ -565,10 +606,13 @@ mod test {
                         belong_group_id: _,
                         name,
                     } = option;
-                    if let Err(err) =
-                        resolver.insert_graph_item_id_or_override(kind, name, group_id, item_id)
-                    {
-                        errors.push(TargetBuilderError::from_with_id(item_id, err).into());
+                    if let Err(err) = resolver.insert_graph_item_id_or_override(
+                        kind,
+                        name.clone(),
+                        group_id,
+                        item_id,
+                    ) {
+                        errors.push(TargetBuilderError::from_with_id(item_id, name, err).into());
                     }
 
                     (errors.is_empty(), errors)
@@ -610,10 +654,13 @@ mod test {
                         belong_group_id: _,
                         name,
                     } = option;
-                    if let Err(err) =
-                        resolver.insert_graph_item_id_or_override(kind, name, group_id, item_id)
-                    {
-                        errors.push(TargetBuilderError::from_with_id(item_id, err).into());
+                    if let Err(err) = resolver.insert_graph_item_id_or_override(
+                        kind,
+                        name.clone(),
+                        group_id,
+                        item_id,
+                    ) {
+                        errors.push(TargetBuilderError::from_with_id(item_id, name, err).into());
                     }
 
                     (errors.is_empty(), errors)

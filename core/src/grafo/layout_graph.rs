@@ -84,11 +84,12 @@ impl<Name: NameType> GrafoBuilder<Name> {
                 let GroupItemOption { name: _ } = option;
                 if let Err(e) = resolver.insert_graph_item_id_or_override(
                     GraphItemKind::Group,
-                    group_name,
+                    group_name.clone(),
                     DEFAULT_ITEM_ID,
                     DEFAULT_ITEM_ID,
                 ) {
-                    errors.push(NodeItemError::from_with_id(DEFAULT_ITEM_ID, e).into());
+                    errors
+                        .push(GroupItemError::from_with_id(DEFAULT_ITEM_ID, group_name, e).into());
                     validate &= true;
                 }
 
@@ -140,11 +141,11 @@ impl<Name: NameType> GrafoBuilder<Name> {
                 let GroupItemOption { name } = option;
                 if let Err(e) = resolver.insert_graph_item_id_or_override(
                     GraphItemKind::Group,
-                    name,
+                    name.clone(),
                     DEFAULT_ITEM_ID,
                     DEFAULT_ITEM_ID,
                 ) {
-                    errors.push(NodeItemError::from_with_id(DEFAULT_ITEM_ID, e).into());
+                    errors.push(GroupItemError::from_with_id(DEFAULT_ITEM_ID, name, e).into());
                     validate &= true;
                 }
 
@@ -219,10 +220,13 @@ impl<Name: NameType> Grafo<Name> {
                 let mut errors: Vec<GrafoError<Name>> = Vec::new();
                 let mut validate = true;
                 let GroupItemOption { name } = option;
-                if let Err(e) =
-                    resolver.insert_graph_item_id_or_override(kind, name, belong_group_id, item_id)
-                {
-                    errors.push(GroupItemError::from_with_id(item_id, e).into());
+                if let Err(e) = resolver.insert_graph_item_id_or_override(
+                    kind,
+                    name.clone(),
+                    belong_group_id,
+                    item_id,
+                ) {
+                    errors.push(GroupItemError::from_with_id(item_id, name, e).into());
                     validate &= true;
                 }
 
@@ -248,10 +252,13 @@ impl<Name: NameType> Grafo<Name> {
                 let mut errors: Vec<GrafoError<Name>> = Vec::new();
                 let mut validate = true;
                 let NodeItemOption { name } = option;
-                if let Err(e) =
-                    resolver.insert_graph_item_id_or_override(kind, name, belong_group_id, item_id)
-                {
-                    errors.push(NodeItemError::from_with_id(item_id, e).into());
+                if let Err(e) = resolver.insert_graph_item_id_or_override(
+                    kind,
+                    name.clone(),
+                    belong_group_id,
+                    item_id,
+                ) {
+                    errors.push(NodeItemError::from_with_id(item_id, name, e).into());
                     validate &= true;
                 }
 
@@ -270,10 +277,13 @@ impl<Name: NameType> Grafo<Name> {
                 let mut errors: Vec<GrafoError<Name>> = Vec::new();
                 let mut validate = true;
                 let EdgeItemOption { name } = option;
-                if let Err(e) =
-                    resolver.insert_graph_item_id_or_override(kind, name, belong_group_id, item_id)
-                {
-                    errors.push(EdgeItemError::from_with_id(item_id, e).into());
+                if let Err(e) = resolver.insert_graph_item_id_or_override(
+                    kind,
+                    name.clone(),
+                    belong_group_id,
+                    item_id,
+                ) {
+                    errors.push(EdgeItemError::from_with_id(item_id, name, e).into());
                     validate &= true;
                 }
 
@@ -330,7 +340,7 @@ mod test {
         assert_eq!(
             GraphBuilder::new().build_with_user_group(group_builder),
             Err(vec![
-                GroupItemError::CannotSpecifyBelongGroupForRoot("root".to_string()).into(),
+                GroupItemError::CannotSpecifyBelongGroupForRoot(0, None, "root".to_string()).into(),
                 GrafoError::FailBuildGrafo,
             ])
         );
@@ -511,11 +521,13 @@ mod test {
             vec![
                 GroupItemError::NameIdError(
                     2,
+                    Some("group".to_string()),
                     NameIdError::AlreadyExist(GraphItemKind::Group, "group".to_string())
                 )
                 .into(),
                 GroupItemError::NameIdError(
                     2,
+                    Some("group".to_string()),
                     NameIdError::Override(GraphItemKind::Group, "group".to_string())
                 )
                 .into(),
@@ -548,10 +560,11 @@ mod test {
             vec![
                 GroupItemError::NameIdError(
                     1,
+                    None,
                     NameIdError::NotExist(GraphItemKind::Group, "hoge".to_string())
                 )
                 .into(),
-                GroupItemError::FailResolveBelongGroup(1, Some("hoge".to_string())).into(),
+                GroupItemError::FailResolveBelongGroup(1, None, Some("hoge".to_string())).into(),
             ]
         );
     }
@@ -606,11 +619,13 @@ mod test {
             vec![
                 NodeItemError::NameIdError(
                     2,
+                    Some("node".to_string()),
                     NameIdError::AlreadyExist(GraphItemKind::Node, "node".to_string()),
                 )
                 .into(),
                 NodeItemError::NameIdError(
                     2,
+                    Some("node".to_string()),
                     NameIdError::Override(GraphItemKind::Node, "node".to_string()),
                 )
                 .into(),
@@ -641,10 +656,11 @@ mod test {
             vec![
                 NodeItemError::NameIdError(
                     1,
+                    None,
                     NameIdError::NotExist(GraphItemKind::Group, "hoge".to_string()),
                 )
                 .into(),
-                NodeItemError::FailResolveBelongGroup(1, Some("hoge".to_string())).into(),
+                NodeItemError::FailResolveBelongGroup(1, None, Some("hoge".to_string())).into(),
             ]
         );
     }
@@ -919,11 +935,13 @@ mod test {
             vec![
                 EdgeItemError::NameIdError(
                     2,
+                    Some("edge".to_string()),
                     NameIdError::AlreadyExist(GraphItemKind::Edge, "edge".to_string()),
                 )
                 .into(),
                 EdgeItemError::NameIdError(
                     2,
+                    Some("edge".to_string()),
                     NameIdError::Override(GraphItemKind::Edge, "edge".to_string()),
                 )
                 .into(),
@@ -968,10 +986,11 @@ mod test {
             vec![
                 EdgeItemError::NameIdError(
                     1,
+                    None,
                     NameIdError::NotExist(GraphItemKind::Group, "hoge".to_string()),
                 )
                 .into(),
-                EdgeItemError::FailResolveBelongGroup(1, Some("hoge".to_string())).into(),
+                EdgeItemError::FailResolveBelongGroup(1, None, Some("hoge".to_string())).into(),
             ]
         );
     }
@@ -998,10 +1017,15 @@ mod test {
         assert_eq!(
             errors,
             vec![
-                EdgeItemError::CannotSpecifyBelongGroupAsEndpoint(1, "root group".to_string(),)
-                    .into(),
+                EdgeItemError::CannotSpecifyBelongGroupAsEndpoint(
+                    1,
+                    None,
+                    "root group".to_string(),
+                )
+                .into(),
                 EdgeItemError::FailResolveEndEndpoint(
                     1,
+                    None,
                     Some((GraphItemKind::Group, "root group".to_string())),
                 )
                 .into(),
@@ -1033,11 +1057,13 @@ mod test {
             vec![
                 EdgeItemError::NameIdError(
                     1,
+                    None,
                     NameIdError::NotExist(GraphItemKind::Node, "not exist".to_string()),
                 )
                 .into(),
                 EdgeItemError::FailResolveEndEndpoint(
                     1,
+                    None,
                     Some((GraphItemKind::Node, "not exist".to_string())),
                 )
                 .into(),
@@ -1066,8 +1092,8 @@ mod test {
         assert_eq!(
             errors,
             vec![
-                EdgeItemError::NotSpecifyEndEndpoint(1, None).into(),
-                EdgeItemError::FailResolveEndEndpoint(1, None).into(),
+                EdgeItemError::NotSpecifyEndEndpoint(1, None, None).into(),
+                EdgeItemError::FailResolveEndEndpoint(1, None, None).into(),
             ]
         );
     }
@@ -1085,10 +1111,10 @@ mod test {
         assert_eq!(
             errors,
             vec![
-                EdgeItemError::NotSpecifyStartEndpoint(1, None).into(),
-                EdgeItemError::NotSpecifyEndEndpoint(1, None).into(),
-                EdgeItemError::FailResolveStartEndpoint(1, None).into(),
-                EdgeItemError::FailResolveEndEndpoint(1, None).into(),
+                EdgeItemError::NotSpecifyStartEndpoint(1, None, None).into(),
+                EdgeItemError::NotSpecifyEndEndpoint(1, None, None).into(),
+                EdgeItemError::FailResolveStartEndpoint(1, None, None).into(),
+                EdgeItemError::FailResolveEndEndpoint(1, None, None).into(),
             ]
         );
     }

@@ -41,7 +41,7 @@ pub trait ItemBase {
 pub trait ItemErrorBase<Name: NameType>: Eq + Error + Into<GrafoError<Name>> {}
 
 /// error converter from an error to an error with item id
-pub trait FromWithItemId<T> {
+pub trait FromWithItemId<T, Name: NameType> {
     /// converter method
-    fn from_with_id(item_id: ItemId, from: T) -> Self;
+    fn from_with_id(item_id: ItemId, name: Option<Name>, from: T) -> Self;
 }

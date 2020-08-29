@@ -51,14 +51,18 @@ impl<Name: NameType> HasItemBuilderMethod<Name> for EdgeItemBuilder<Name> {
             self.resolve_belong_group(item_id, resolver, &mut errors);
         let start: Option<(GraphItemKind, (GroupId, ItemId))> = if let Some(bg) = belong_group {
             self.resolve_endpoint(bg, item_id, &self.start, resolver, &mut errors, |item_id| {
-                EdgeItemError::NotSpecifyStartEndpoint(item_id, self.start.clone())
+                EdgeItemError::NotSpecifyStartEndpoint(
+                    item_id,
+                    self.name.clone(),
+                    self.start.clone(),
+                )
             })
         } else {
             None
         };
         let end: Option<(GraphItemKind, (GroupId, ItemId))> = if let Some(bg) = belong_group {
             self.resolve_endpoint(bg, item_id, &self.end, resolver, &mut errors, |item_id| {
-                EdgeItemError::NotSpecifyEndEndpoint(item_id, self.end.clone())
+                EdgeItemError::NotSpecifyEndEndpoint(item_id, self.name.clone(), self.end.clone())
             })
         } else {
             None
@@ -87,11 +91,11 @@ impl<Name: NameType> EdgeItemBuilder<Name> {
         match resolver.get_belong_group(self.belong_group.as_ref()) {
             Ok(group) => Some(group),
             Err(Either::Left(e)) => {
-                errors.push(EdgeItemError::from_with_id(item_id, e).into());
+                errors.push(EdgeItemError::from_with_id(item_id, self.name.clone(), e).into());
                 None
             }
             Err(Either::Right(e)) => {
-                errors.push(e.into());
+                errors.push(EdgeItemError::from_with_id(item_id, self.name.clone(), e).into());
                 None
             }
         }
@@ -123,6 +127,7 @@ impl<Name: NameType> EdgeItemBuilder<Name> {
                                     errors.push(
                                         EdgeItemError::from_with_id(
                                             item_id,
+                                            self.name.clone(),
                                             NameIdError::NotExist(
                                                 GraphItemKind::Group,
                                                 name.clone(),
@@ -142,6 +147,7 @@ impl<Name: NameType> EdgeItemBuilder<Name> {
                             errors.push(
                                 EdgeItemError::CannotSpecifyBelongGroupAsEndpoint(
                                     item_id,
+                                    self.name.clone(),
                                     name.clone(),
                                 )
                                 .into(),
@@ -155,7 +161,7 @@ impl<Name: NameType> EdgeItemBuilder<Name> {
                     }
                 }
                 Err(e) => {
-                    errors.push(EdgeItemError::from_with_id(item_id, e).into());
+                    errors.push(EdgeItemError::from_with_id(item_id, self.name.clone(), e).into());
                     None
                 }
             }
@@ -177,19 +183,33 @@ impl<Name: NameType> EdgeItemBuilder<Name> {
         let mut validate = true;
         if resolved_belong_group.is_none() {
             errors.push(
-                EdgeItemError::FailResolveBelongGroup(item_id, self.belong_group.clone()).into(),
+                EdgeItemError::FailResolveBelongGroup(
+                    item_id,
+                    self.name.clone(),
+                    self.belong_group.clone(),
+                )
+                .into(),
             );
             validate = false;
         }
 
         if resolved_belong_group.is_some() && start.is_none() {
-            errors
-                .push(EdgeItemError::FailResolveStartEndpoint(item_id, self.start.clone()).into());
+            errors.push(
+                EdgeItemError::FailResolveStartEndpoint(
+                    item_id,
+                    self.name.clone(),
+                    self.start.clone(),
+                )
+                .into(),
+            );
             validate = false;
         }
 
         if resolved_belong_group.is_some() && end.is_none() {
-            errors.push(EdgeItemError::FailResolveEndEndpoint(item_id, self.end.clone()).into());
+            errors.push(
+                EdgeItemError::FailResolveEndEndpoint(item_id, self.name.clone(), self.end.clone())
+                    .into(),
+            );
             validate = false;
         }
 
@@ -225,6 +245,7 @@ impl<Name: NameType> EdgeItemBuilder<Name> {
                 errors.push(
                     EdgeItemError::from_with_id(
                         item_id,
+                        Some(n.clone()),
                         NameIdError::AlreadyExist(EdgeItem::kind(), n.clone()),
                     )
                     .into(),

@@ -1,7 +1,7 @@
 //! base of graph item and graph item's builder
 
-use crate::grafo::NameIdError;
-use crate::util::alias::GroupId;
+use crate::grafo::{NameIdError, ResolverError};
+use crate::util::alias::{GroupId, ItemId};
 use crate::util::item_base::{FromWithItemId, ItemBase, ItemBuilderBase, ItemErrorBase};
 use crate::util::kind::{GraphItemKind, HasGraphItemKind};
 use crate::util::name_type::NameType;
@@ -21,6 +21,27 @@ pub trait GraphItemBase: Copy + ItemBase + HasGraphItemKind {
 
 /// base of build result's error for graph item's builder
 pub trait GraphBuilderErrorBase<Name: NameType>:
-    ItemErrorBase<Name> + HasGraphItemKind + FromWithItemId<NameIdError<Name, GraphItemKind>>
+    ItemErrorBase<Name>
+    + HasGraphItemKind
+    + FromWithItemId<NameIdError<Name, GraphItemKind>, Name>
+    + FromWithItemId<ResolverError, Name>
 {
+    /// get item id for graph item whose builder is error source
+    fn get_item_id(&self) -> &ItemId;
+    /// get item name for graph item whose builder is error source
+    fn get_item_name(&self) -> &Option<Name>;
+    /// write error's header
+    fn fmt_header(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(name) = self.get_item_name() {
+            write!(
+                f,
+                "{} {} with name \"{}\": ",
+                self.get_kind(),
+                self.get_item_id(),
+                name
+            )
+        } else {
+            write!(f, "{} {}: ", self.get_kind(), self.get_item_id())
+        }
+    }
 }

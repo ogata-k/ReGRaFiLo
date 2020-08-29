@@ -69,11 +69,11 @@ impl<Name: NameType> NodeItemBuilder<Name> {
         match resolver.get_belong_group(self.belong_group.as_ref()) {
             Ok(group) => Some(group),
             Err(Either::Left(e)) => {
-                errors.push(NodeItemError::from_with_id(item_id, e).into());
+                errors.push(NodeItemError::from_with_id(item_id, self.name.clone(), e).into());
                 None
             }
             Err(Either::Right(e)) => {
-                errors.push(e.into());
+                errors.push(NodeItemError::from_with_id(item_id, self.name.clone(), e).into());
                 None
             }
         }
@@ -89,7 +89,12 @@ impl<Name: NameType> NodeItemBuilder<Name> {
         let mut validate = true;
         if resolved_belong_group.is_none() {
             errors.push(
-                NodeItemError::FailResolveBelongGroup(item_id, self.belong_group.clone()).into(),
+                NodeItemError::FailResolveBelongGroup(
+                    item_id,
+                    self.name.clone(),
+                    self.belong_group.clone(),
+                )
+                .into(),
             );
             validate = false;
         }
@@ -117,6 +122,7 @@ impl<Name: NameType> NodeItemBuilder<Name> {
                 errors.push(
                     NodeItemError::from_with_id(
                         item_id,
+                        Some(n.clone()),
                         NameIdError::AlreadyExist(NodeItem::kind(), n.clone()),
                     )
                     .into(),

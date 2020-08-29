@@ -2,7 +2,7 @@
 
 use crate::grafo::core::graph_item::item::edge::EdgeItem;
 use crate::grafo::core::graph_item::GraphBuilderErrorBase;
-use crate::grafo::NameIdError;
+use crate::grafo::{NameIdError, ResolverError};
 use crate::util::alias::ItemId;
 use crate::util::item_base::{FromWithItemId, ItemErrorBase};
 use crate::util::kind::{GraphItemKind, HasGraphItemKind};
@@ -12,20 +12,23 @@ use std::error::Error;
 /// error for Edge item's builder
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum EdgeItemError<Name: NameType> {
-    /// not found belonging group by the name or not found root group
-    FailResolveBelongGroup(ItemId, Option<Name>),
-    /// fail resolve from specify start endpoint
-    NotSpecifyStartEndpoint(ItemId, Option<(GraphItemKind, Name)>),
-    /// fail build start endpoint
-    FailResolveStartEndpoint(ItemId, Option<(GraphItemKind, Name)>),
-    /// fail resolve from specify end endpoint
-    NotSpecifyEndEndpoint(ItemId, Option<(GraphItemKind, Name)>),
-    /// fail build end endpoint
-    FailResolveEndEndpoint(ItemId, Option<(GraphItemKind, Name)>),
-    /// error for name reference
-    NameIdError(ItemId, NameIdError<Name, GraphItemKind>),
-    /// cannot specify endpoint belonging self group or it's ancestor belong group
-    CannotSpecifyBelongGroupAsEndpoint(ItemId, Name),
+    /// not found belonging group by the name or not found root group. Argument is (item_id, item's name, belong group's name)
+    FailResolveBelongGroup(ItemId, Option<Name>, Option<Name>),
+    /// fail resolve from specify start endpoint. Argument is (item_id, item's name, start endpoint's kind and name)
+    NotSpecifyStartEndpoint(ItemId, Option<Name>, Option<(GraphItemKind, Name)>),
+    /// fail build start endpoint. Argument is (item_id, item's name, start endpoint's kind and name)
+    FailResolveStartEndpoint(ItemId, Option<Name>, Option<(GraphItemKind, Name)>),
+    /// fail resolve from specify end endpoint. Argument is (item_id, item's name, end endpoint's kind and name)
+    NotSpecifyEndEndpoint(ItemId, Option<Name>, Option<(GraphItemKind, Name)>),
+    /// fail build end endpoint. Argument is (item_id, item's name, end endpoint's kind and name)
+    FailResolveEndEndpoint(ItemId, Option<Name>, Option<(GraphItemKind, Name)>),
+    /// cannot specify endpoint belonging self group or it's ancestor belong group.
+    /// Argument is (item_id, item's name, belong group's name for endpoint)
+    CannotSpecifyBelongGroupAsEndpoint(ItemId, Option<Name>, Name),
+    /// error for name reference. Argument is (item_id, item's name, error of NameIdError for Edge item)
+    NameIdError(ItemId, Option<Name>, NameIdError<Name, GraphItemKind>),
+    /// error for resolver. Argument is (item_id, item's name, error of ResolverError for Edge item)
+    ResolverError(ItemId, Option<Name>, ResolverError),
 }
 
 impl<Name: NameType> HasGraphItemKind for EdgeItemError<Name> {
@@ -37,67 +40,128 @@ impl<Name: NameType> HasGraphItemKind for EdgeItemError<Name> {
 impl<Name: NameType> std::fmt::Display for EdgeItemError<Name> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            EdgeItemError::FailResolveBelongGroup(item_id, None) => {
-                write!(f, "Edge {}: not specify belong group", item_id)
+            EdgeItemError::FailResolveBelongGroup(_, _, None) => {
+                self.fmt_header(f)?;
+                write!(f, "not specify belong group")
             }
-            EdgeItemError::FailResolveBelongGroup(item_id, Some(name)) => {
-                write!(f, "Edge {}: not found belong group \"{}\"", item_id, name)
+            EdgeItemError::FailResolveBelongGroup(_, _, Some(name)) => {
+                self.fmt_header(f)?;
+                write!(f, "not found belong group \"{}\"", name)
             }
-            EdgeItemError::NotSpecifyStartEndpoint(item_id, None) => {
-                write!(f, "Edge {}: not specify start endpoint", item_id)
+            EdgeItemError::NotSpecifyStartEndpoint(_, _, None) => {
+                self.fmt_header(f)?;
+                write!(f, "not specify start endpoint")
             }
-            EdgeItemError::NotSpecifyStartEndpoint(item_id, Some((kind, name))) => write!(
-                f,
-                "Edge {}: not found {} \"{}\" as start endpoint",
-                item_id,
-                kind.to_string().to_lowercase(),
-                name
-            ),
-            EdgeItemError::FailResolveStartEndpoint(item_id, None) => {
-                write!(f, "Edge {}: not specify start endpoint", item_id)
+            EdgeItemError::NotSpecifyStartEndpoint(_, _, Some((kind, name))) => {
+                self.fmt_header(f)?;
+                write!(
+                    f,
+                    "not found {} \"{}\" as start endpoint",
+                    kind.to_string().to_lowercase(),
+                    name
+                )
             }
-            EdgeItemError::FailResolveStartEndpoint(item_id, Some((kind, name))) => write!(
-                f,
-                "Edge {}: not found {} \"{}\" as start endpoint",
-                item_id,
-                kind.to_string().to_lowercase(),
-                name
-            ),
-            EdgeItemError::NotSpecifyEndEndpoint(item_id, None) => {
-                write!(f, "Edge {}: not specify end endpoint", item_id)
+            EdgeItemError::FailResolveStartEndpoint(_, _, None) => {
+                self.fmt_header(f)?;
+                write!(f, "not specify start endpoint")
             }
-            EdgeItemError::NotSpecifyEndEndpoint(item_id, Some((kind, name))) => write!(
-                f,
-                "Edge {}: not found {} item \"{}\" as end endpoint",
-                item_id,
-                kind.to_string().to_lowercase(),
-                name
-            ),
-            EdgeItemError::FailResolveEndEndpoint(item_id, None) => {
-                write!(f, "Edge {}: not specify end endpoint", item_id)
+            EdgeItemError::FailResolveStartEndpoint(_, _, Some((kind, name))) => {
+                self.fmt_header(f)?;
+                write!(
+                    f,
+                    "not found {} \"{}\" as start endpoint",
+                    kind.to_string().to_lowercase(),
+                    name
+                )
             }
-            EdgeItemError::FailResolveEndEndpoint(item_id, Some((kind, name))) => write!(
-                f,
-                "Edge {}: not found {} \"{}\" as end endpoint",
-                item_id,
-                kind.to_string().to_lowercase(),
-                name
-            ),
-            EdgeItemError::NameIdError(item_id, e) => write!(f, "Edge {}: {}", item_id, e),
-            EdgeItemError::CannotSpecifyBelongGroupAsEndpoint(item_id, name) => write!(
-                f,
-                "Edge {}: cannot specify self belong group \"{}\" or it's ancestor belong group",
-                item_id, name
-            ),
+            EdgeItemError::NotSpecifyEndEndpoint(_, _, None) => {
+                self.fmt_header(f)?;
+                write!(f, "not specify end endpoint")
+            }
+            EdgeItemError::NotSpecifyEndEndpoint(_, _, Some((kind, name))) => {
+                self.fmt_header(f)?;
+                write!(
+                    f,
+                    "not found {} item \"{}\" as end endpoint",
+                    kind.to_string().to_lowercase(),
+                    name
+                )
+            }
+            EdgeItemError::FailResolveEndEndpoint(_, _, None) => {
+                self.fmt_header(f)?;
+                write!(f, "not specify end endpoint")
+            }
+            EdgeItemError::FailResolveEndEndpoint(_, _, Some((kind, name))) => {
+                self.fmt_header(f)?;
+                write!(
+                    f,
+                    "not found {} \"{}\" as end endpoint",
+                    kind.to_string().to_lowercase(),
+                    name
+                )
+            }
+            EdgeItemError::CannotSpecifyBelongGroupAsEndpoint(_, _, name) => {
+                self.fmt_header(f)?;
+                write!(
+                    f,
+                    "cannot specify self belong group \"{}\" or it's ancestor belong group",
+                    name
+                )
+            }
+            EdgeItemError::NameIdError(_, _, e) => {
+                self.fmt_header(f)?;
+                write!(f, "{}", e)
+            }
+            EdgeItemError::ResolverError(_, _, e) => {
+                self.fmt_header(f)?;
+                write!(f, "{}", e)
+            }
         }
     }
 }
 
 impl<Name: NameType> Error for EdgeItemError<Name> {}
 impl<Name: NameType> ItemErrorBase<Name> for EdgeItemError<Name> {}
-impl<Name: NameType> FromWithItemId<NameIdError<Name, GraphItemKind>> for EdgeItemError<Name> {
-    fn from_with_id(item_id: ItemId, from: NameIdError<Name, GraphItemKind>) -> Self {
-        EdgeItemError::NameIdError(item_id, from)
+impl<Name: NameType> FromWithItemId<NameIdError<Name, GraphItemKind>, Name>
+    for EdgeItemError<Name>
+{
+    fn from_with_id(
+        item_id: ItemId,
+        name: Option<Name>,
+        from: NameIdError<Name, GraphItemKind>,
+    ) -> Self {
+        EdgeItemError::NameIdError(item_id, name, from)
     }
 }
-impl<Name: NameType> GraphBuilderErrorBase<Name> for EdgeItemError<Name> {}
+impl<Name: NameType> FromWithItemId<ResolverError, Name> for EdgeItemError<Name> {
+    fn from_with_id(item_id: ItemId, name: Option<Name>, from: ResolverError) -> Self {
+        EdgeItemError::ResolverError(item_id, name, from)
+    }
+}
+impl<Name: NameType> GraphBuilderErrorBase<Name> for EdgeItemError<Name> {
+    fn get_item_id(&self) -> &ItemId {
+        match self {
+            EdgeItemError::FailResolveBelongGroup(i, _, _) => i,
+            EdgeItemError::NotSpecifyStartEndpoint(i, _, _) => i,
+            EdgeItemError::FailResolveStartEndpoint(i, _, _) => i,
+            EdgeItemError::NotSpecifyEndEndpoint(i, _, _) => i,
+            EdgeItemError::FailResolveEndEndpoint(i, _, _) => i,
+            EdgeItemError::CannotSpecifyBelongGroupAsEndpoint(i, _, _) => i,
+            EdgeItemError::NameIdError(i, _, _) => i,
+            EdgeItemError::ResolverError(i, _, _) => i,
+        }
+    }
+
+    fn get_item_name(&self) -> &Option<Name> {
+        match self {
+            EdgeItemError::FailResolveBelongGroup(_, name, _) => name,
+            EdgeItemError::NotSpecifyStartEndpoint(_, name, _) => name,
+            EdgeItemError::FailResolveStartEndpoint(_, name, _) => name,
+            EdgeItemError::NotSpecifyEndEndpoint(_, name, _) => name,
+            EdgeItemError::FailResolveEndEndpoint(_, name, _) => name,
+            EdgeItemError::CannotSpecifyBelongGroupAsEndpoint(_, name, _) => name,
+            EdgeItemError::NameIdError(_, name, _) => name,
+            EdgeItemError::ResolverError(_, name, _) => name,
+        }
+    }
+}
