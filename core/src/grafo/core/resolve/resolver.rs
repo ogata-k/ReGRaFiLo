@@ -5,13 +5,11 @@ use std::error::Error;
 use std::hash::Hash;
 
 use crate::grafo::core::graph_item::GraphItemBase;
-use crate::grafo::layout_item::{LayoutItemBase, LayoutItemBaseDependOnGraph};
+use crate::grafo::layout_item::LayoutItemBase;
 use crate::grafo::{IdTree, IdTreeError, NameIdError, NameRefIndex};
-use crate::util::alias::{GroupId, ItemId};
+use crate::util::alias::{GroupId, ItemId, LayoutItemId};
 use crate::util::either::Either;
-use crate::util::kind::{
-    AttributeKind, AttributeKindDependOnGraph, GraphItemKind, HasLayoutKind, LayoutItemKind,
-};
+use crate::util::kind::{GraphItemKind, LayoutGraphItemKind};
 use crate::util::name_type::NameType;
 use crate::util::writer::DisplayAsJson;
 
@@ -62,7 +60,7 @@ pub struct Resolver<Name: NameType> {
     /// names reference indexes name:(group_id, graph_item_id)
     graph_items: NameRefIndex<Name, GraphItemKind, (GroupId, ItemId)>,
     /// layout reference indexes layout_type: layout_item_id
-    layout_items: NameRefIndex<Name, LayoutItemKind, ItemId>,
+    layout_items: NameRefIndex<Name, LayoutGraphItemKind, ItemId>,
 }
 
 impl<Name: NameType> Default for Resolver<Name> {
@@ -162,20 +160,6 @@ impl<Name: NameType> Resolver<Name> {
     /// get group tree but type as string
     pub fn group_tree_string(&self) -> String {
         self.group_id_tree.to_string()
-    }
-
-    //
-    // for whole item resolve
-    //
-
-    /// count all usable names as reference key for all layout item.
-    pub fn count_usable_whole_layout_item_names(&self) -> usize {
-        self.layout_items.count_usable_names_all()
-    }
-
-    /// count all layout items having name.
-    pub fn count_registered_whole_layout_names(&self) -> usize {
-        self.layout_items.count_registered_names_all()
     }
 
     //
@@ -282,235 +266,95 @@ impl<Name: NameType> Resolver<Name> {
     // for layout with graph item
     //
 
-    /// insert item id for layout item depending on graph item
-    pub(crate) fn insert_graph_item_layout_id<S: Into<Name>>(
+    /// insert item id for layout item
+    pub(crate) fn insert_layout_id<S: Into<Name>>(
         &mut self,
         item_kind: GraphItemKind,
-        layout_kind: AttributeKindDependOnGraph,
         name: Option<S>,
-        layout_item_id: ItemId,
-    ) -> Result<(), NameIdError<Name, LayoutItemKind>> {
-        self.layout_items.insert_value_or_override(
-            LayoutItemKind::new_layout(item_kind, layout_kind),
-            name,
-            layout_item_id,
-        )
+        layout_item_id: LayoutItemId,
+    ) -> Result<(), NameIdError<Name, LayoutGraphItemKind>> {
+        self.layout_items
+            .insert_value_or_override(item_kind.into(), name, layout_item_id)
     }
 
-    /// get item id for layout item depending on graph item
-    pub fn get_graph_item_layout_id<S: ?Sized>(
+    /// get item id for layout item
+    pub fn get_layout_item_id<S: ?Sized>(
         &self,
         item_kind: GraphItemKind,
-        layout_kind: AttributeKindDependOnGraph,
         name: &S,
-    ) -> Result<ItemId, NameIdError<Name, LayoutItemKind>>
+    ) -> Result<ItemId, NameIdError<Name, LayoutGraphItemKind>>
     where
         Name: Borrow<S>,
         S: ToOwned<Owned = Name> + Hash + Eq,
     {
-        let kind = LayoutItemKind::new_layout(item_kind, layout_kind);
+        let layout_kind = item_kind.into();
         self.layout_items
-            .get_value(kind, name)
-            .ok_or_else(|| NameIdError::NotExist(kind, name.to_owned()))
+            .get_value(layout_kind, name)
+            .ok_or_else(|| NameIdError::NotExist(layout_kind, name.to_owned()))
     }
 
-    /// get item's name for layout item depending on graph item
-    pub fn get_graph_item_layout_name_by(
+    /// get layout item's name
+    pub fn get_layout_item_name_by(
         &self,
         item_kind: GraphItemKind,
-        layout_kind: AttributeKindDependOnGraph,
         item_id: ItemId,
     ) -> Option<&Name> {
-        self.layout_items
-            .get_name(LayoutItemKind::new_layout(item_kind, layout_kind), item_id)
+        self.layout_items.get_name(item_kind.into(), item_id)
     }
 
-    /// get item's name for layout item depending on graph item
-    pub fn get_graph_item_layout_name_by_item<I: LayoutItemBaseDependOnGraph + HasLayoutKind>(
-        &self,
-        item: &I,
-    ) -> Option<&Name> {
+    /// get layout item's name by specified layout item
+    pub fn get_layout_item_name_by_item<I: LayoutItemBase>(&self, item: &I) -> Option<&Name> {
         self.layout_items
             .get_name(item.get_layout_kind(), item.get_item_id())
     }
 
-    /// check the layout item depending graph item is already registered
-    pub fn is_already_registered_graph_item_layout(
+    /// check the layout item is already registered
+    pub fn is_already_registered_layout_item(
         &self,
         item_kind: GraphItemKind,
-        layout_kind: AttributeKindDependOnGraph,
         item_id: ItemId,
     ) -> bool {
         self.layout_items
-            .is_already_registered(LayoutItemKind::new_layout(item_kind, layout_kind), item_id)
+            .is_already_registered(item_kind.into(), item_id)
     }
 
-    /// check the name usable as reference key for layout item depend on graph item
-    pub fn is_usable_graph_item_layout_name<S: ?Sized>(
-        &self,
-        item_kind: GraphItemKind,
-        layout_kind: AttributeKindDependOnGraph,
-        name: &S,
-    ) -> bool
+    /// check the name usable as reference key for layout item
+    pub fn is_usable_layout_item_name<S: ?Sized>(&self, item_kind: GraphItemKind, name: &S) -> bool
     where
         Name: Borrow<S>,
         S: ToOwned<Owned = Name> + Hash + Eq,
     {
-        self.layout_items
-            .is_usable_name(LayoutItemKind::new_layout(item_kind, layout_kind), name)
+        self.layout_items.is_usable_name(item_kind.into(), name)
     }
 
-    /// check the layout item depend on graph item as the kind has a name for the layout item's key.
-    pub fn has_registered_graph_item_layout_name(
+    /// check the layout item as the kind has a name for the layout item's key.
+    pub fn has_registered_layout_item_name(
         &self,
         item_kind: GraphItemKind,
-        layout_kind: AttributeKindDependOnGraph,
         item_id: ItemId,
     ) -> bool {
         self.layout_items
-            .has_registered_name(LayoutItemKind::new_layout(item_kind, layout_kind), item_id)
+            .has_registered_name(item_kind.into(), item_id)
     }
 
-    /// count all usable names as reference key for layout item depend on graph item.
-    pub fn count_usable_graph_item_layout_names(&self) -> usize {
-        self.layout_items
-            .count_usable_names_filtered_by(|k| k.need_graph_item())
+    /// count all usable names as reference key for layout item.
+    pub fn count_usable_layout_item_names(&self) -> usize {
+        self.layout_items.count_usable_names_all()
     }
 
-    /// count all layout items depend on graph item as the kind has a name for the layout item's key.
+    /// count all layout items as the kind has a name for the layout item's key.
     pub fn count_registered_graph_item_layout_names(&self) -> usize {
-        self.layout_items
-            .count_registered_names_filtered_by(|k| k.need_graph_item())
+        self.layout_items.count_registered_names_all()
     }
 
-    /// count usable names as reference key for layout item depend on graph item limited by specify kind.
-    pub fn count_usable_graph_item_layout_names_by(
-        &self,
-        item_kind: GraphItemKind,
-        layout_kind: AttributeKindDependOnGraph,
-    ) -> usize {
-        self.layout_items
-            .count_usable_names_by(LayoutItemKind::new_layout(item_kind, layout_kind))
+    /// count usable names as reference key for layout item limited by specify kind.
+    pub fn count_usable_graph_item_layout_names_by(&self, item_kind: GraphItemKind) -> usize {
+        self.layout_items.count_usable_names_by(item_kind.into())
     }
 
-    /// count all layout items depend on graph item as the kind has a name for the layout item's key limited by specify kind.
-    pub fn count_registered_graph_item_layout_names_by(
-        &self,
-        item_kind: GraphItemKind,
-        layout_kind: AttributeKindDependOnGraph,
-    ) -> usize {
+    /// count all layout items as the kind has a name for the layout item's key limited by specify kind.
+    pub fn count_registered_graph_item_layout_names_by(&self, item_kind: GraphItemKind) -> usize {
         self.layout_items
-            .count_registered_names_by(LayoutItemKind::new_layout(item_kind, layout_kind))
-    }
-
-    //
-    //  for layout without graph item
-    //
-
-    /// insert id for attribute item
-    pub(crate) fn insert_attribute_id<S: Into<Name>>(
-        &mut self,
-        attribute_kind: AttributeKind,
-        name: Option<S>,
-        layout_item_id: ItemId,
-    ) -> Result<(), NameIdError<Name, LayoutItemKind>> {
-        self.layout_items.insert_value_or_override(
-            LayoutItemKind::new_attribute(attribute_kind),
-            name,
-            layout_item_id,
-        )
-    }
-
-    /// get id for attribute item
-    pub fn get_attribute_item_id<S: ?Sized>(
-        &self,
-        attribute_kind: AttributeKind,
-        name: &S,
-    ) -> Result<ItemId, NameIdError<Name, LayoutItemKind>>
-    where
-        Name: Borrow<S>,
-        S: ToOwned<Owned = Name> + Hash + Eq,
-    {
-        let kind = LayoutItemKind::new_attribute(attribute_kind);
-        self.layout_items
-            .get_value(kind, name)
-            .ok_or_else(|| NameIdError::NotExist(kind, name.to_owned()))
-    }
-
-    /// get the name for attribute item
-    pub fn get_attribute_name_by(
-        &self,
-        attribute_kind: AttributeKind,
-        item_id: ItemId,
-    ) -> Option<&Name> {
-        self.layout_items
-            .get_name(LayoutItemKind::new_attribute(attribute_kind), item_id)
-    }
-
-    /// get the name for attribute item limited by specify
-    pub fn get_attribute_name_by_item<I: LayoutItemBase + HasLayoutKind>(
-        &self,
-        item: &I,
-    ) -> Option<&Name> {
-        self.layout_items
-            .get_name(item.get_layout_kind(), item.get_item_id())
-    }
-
-    /// check the attribute item as layout item is already registered
-    pub fn is_already_registered_attribute_item(
-        &self,
-        attribute_kind: AttributeKind,
-        item_id: ItemId,
-    ) -> bool {
-        self.layout_items
-            .is_already_registered(LayoutItemKind::new_attribute(attribute_kind), item_id)
-    }
-
-    /// check the name usable as reference key for attribute item
-    pub fn is_usable_attribute_name<S: ?Sized>(
-        &self,
-        attribute_kind: AttributeKind,
-        name: &S,
-    ) -> bool
-    where
-        Name: Borrow<S>,
-        S: ToOwned<Owned = Name> + Hash + Eq,
-    {
-        self.layout_items
-            .is_usable_name(LayoutItemKind::new_attribute(attribute_kind), name)
-    }
-
-    /// check the attribute item as the kind has a name for the attribute item's key.
-    pub fn has_registered_attribute_name(
-        &self,
-        attribute_kind: AttributeKind,
-        item_id: ItemId,
-    ) -> bool {
-        self.layout_items
-            .has_registered_name(LayoutItemKind::new_attribute(attribute_kind), item_id)
-    }
-
-    /// count all names usable as reference key for attribute item.
-    pub fn count_usable_whole_attribute_names(&self) -> usize {
-        self.layout_items
-            .count_usable_names_filtered_by(|k| k.is_attribute())
-    }
-
-    /// count all attribute items as the kind has a name for the attribute item's key.
-    pub fn count_registered_whole_attribute_names(&self) -> usize {
-        self.layout_items
-            .count_registered_names_filtered_by(|k| k.is_attribute())
-    }
-
-    /// count all names usable as reference key for attribute item limited by specify kind.
-    pub fn count_usable_attribute_names_by(&self, attribute_kind: AttributeKind) -> usize {
-        self.layout_items
-            .count_usable_names_by(LayoutItemKind::new_attribute(attribute_kind))
-    }
-
-    /// count all attribute items as the kind has a name for the attribute item's key limited by specify the kind.
-    pub fn count_registered_attribute_names_by(&self, attribute_kind: AttributeKind) -> usize {
-        self.layout_items
-            .count_registered_names_by(LayoutItemKind::new_attribute(attribute_kind))
+            .count_registered_names_by(item_kind.into())
     }
 }

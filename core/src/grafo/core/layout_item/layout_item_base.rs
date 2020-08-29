@@ -1,10 +1,7 @@
-//! base of layout item and layout item's builder
+//! base of layout item and layout item
 
 use crate::util::item_base::ItemBase;
-use crate::util::kind::{HasAttributeKind, HasAttributeKindDependOnGraph};
+use crate::util::kind::HasLayoutGraphItemKind;
 
-/// Item's base set depending on graph item
-pub trait LayoutItemBase: ItemBase + HasAttributeKind {}
-
-/// Item's base set depending on graph item
-pub trait LayoutItemBaseDependOnGraph: ItemBase + HasAttributeKindDependOnGraph {}
+/// layout item's base
+pub trait LayoutItemBase: ItemBase + HasLayoutGraphItemKind {}
