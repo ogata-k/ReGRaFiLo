@@ -25,6 +25,9 @@ pub enum EdgeItemError<Name: NameType> {
     /// cannot specify endpoint belonging self group or it's ancestor belong group.
     /// Argument is (item_id, item's name, belong group's name for endpoint)
     CannotSpecifyBelongGroupAsEndpoint(ItemId, Option<Name>, Name),
+    /// this error occurred when item's belong group is not endpoint's belong group or group endpoint.
+    /// Argument is (item_id, item's name, belong group's name for item)
+    InappropriateGroup(ItemId, Option<Name>, Option<Name>),
     /// error for name reference. Argument is (item_id, item's name, error of NameIdError for Edge item)
     NameIdError(ItemId, Option<Name>, NameIdError<Name, GraphItemKind>),
     /// error for resolver. Argument is (item_id, item's name, error of ResolverError for Edge item)
@@ -108,6 +111,21 @@ impl<Name: NameType> std::fmt::Display for EdgeItemError<Name> {
                     name
                 )
             }
+            EdgeItemError::InappropriateGroup(_, _, Some(name)) => {
+                self.fmt_header(f)?;
+                write!(
+                    f,
+                    "item's belong group \"{}\" is not endpoint's belong group or group endpoint",
+                    name
+                )
+            }
+            EdgeItemError::InappropriateGroup(_, _, None) => {
+                self.fmt_header(f)?;
+                write!(
+                    f,
+                    "root group which item belong to is not endpoint's belong group or group endpoint",
+                )
+            }
             EdgeItemError::NameIdError(_, _, e) => {
                 self.fmt_header(f)?;
                 write!(f, "{}", e)
@@ -147,6 +165,7 @@ impl<Name: NameType> GraphBuilderErrorBase<Name> for EdgeItemError<Name> {
             EdgeItemError::NotSpecifyEndEndpoint(i, _, _) => i,
             EdgeItemError::FailResolveEndEndpoint(i, _, _) => i,
             EdgeItemError::CannotSpecifyBelongGroupAsEndpoint(i, _, _) => i,
+            EdgeItemError::InappropriateGroup(i, _, _) => i,
             EdgeItemError::NameIdError(i, _, _) => i,
             EdgeItemError::ResolverError(i, _, _) => i,
         }
@@ -160,6 +179,7 @@ impl<Name: NameType> GraphBuilderErrorBase<Name> for EdgeItemError<Name> {
             EdgeItemError::NotSpecifyEndEndpoint(_, name, _) => name,
             EdgeItemError::FailResolveEndEndpoint(_, name, _) => name,
             EdgeItemError::CannotSpecifyBelongGroupAsEndpoint(_, name, _) => name,
+            EdgeItemError::InappropriateGroup(_, name, _) => name,
             EdgeItemError::NameIdError(_, name, _) => name,
             EdgeItemError::ResolverError(_, name, _) => name,
         }

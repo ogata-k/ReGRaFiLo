@@ -814,7 +814,95 @@ mod test {
     }
 
     #[test]
-    fn push_edge_success_endpoints_is_not_same_group() {
+    fn push_edge_success_with_name_override() {
+        let graph = GraphBuilder::new().build_with_no_name_default_group();
+        if graph.is_err() {
+            panic!("errors: {:?}", graph.err().unwrap()); // in test panic
+        }
+        let mut graph: Graph = graph.unwrap();
+
+        let mut node_builder_1 = NodeItemBuilder::new();
+        node_builder_1.set_name("node1");
+        let (result, errors) = graph.push_node(node_builder_1);
+        assert!(result);
+        assert_eq!(errors, Vec::<GraphError>::new());
+
+        let mut node_builder_2 = NodeItemBuilder::new();
+        node_builder_2.set_name("node2");
+        let (result, errors) = graph.push_node(node_builder_2);
+        assert!(result);
+        assert_eq!(Vec::<GraphError>::new(), errors);
+
+        let mut edge_builder_1 = EdgeItemBuilder::new();
+        edge_builder_1.set_name("edge");
+        edge_builder_1.set_start_endpoint(GraphItemKind::Node, "node1");
+        edge_builder_1.set_end_endpoint(GraphItemKind::Node, "node2");
+        let (result, errors) = graph.push_edge(edge_builder_1);
+        assert!(result);
+        assert_eq!(errors, Vec::<GraphError>::new());
+
+        let mut edge_builder_2 = EdgeItemBuilder::new();
+        edge_builder_2.set_name("edge");
+        edge_builder_2.set_start_endpoint(GraphItemKind::Node, "node1");
+        edge_builder_2.set_end_endpoint(GraphItemKind::Node, "node2");
+        let (result, errors) = graph.push_edge(edge_builder_2);
+        assert!(result);
+        assert_eq!(
+            errors,
+            vec![
+                EdgeItemError::NameIdError(
+                    2,
+                    Some("edge".to_string()),
+                    NameIdError::AlreadyExist(GraphItemKind::Edge, "edge".to_string()),
+                )
+                .into(),
+                EdgeItemError::NameIdError(
+                    2,
+                    Some("edge".to_string()),
+                    NameIdError::Override(GraphItemKind::Edge, "edge".to_string()),
+                )
+                .into(),
+            ]
+        );
+        assert_eq!(
+            graph
+                .resolver
+                .get_graph_item_id_pair(GraphItemKind::Edge, "edge"),
+            Ok((0, 2))
+        );
+    }
+
+    #[test]
+    fn push_edge_success_group_endpoint() {
+        let graph = GraphBuilder::new().build_with_name_default_group("root");
+        if graph.is_err() {
+            panic!("errors: {:?}", graph.err().unwrap()); // in test panic
+        }
+        let mut graph: Graph = graph.unwrap();
+
+        let mut group_builder_1 = GroupItemBuilder::new();
+        group_builder_1.set_name("group 1");
+        let (result, errors) = graph.push_group(group_builder_1);
+        assert!(result);
+        assert_eq!(errors, Vec::<GraphError>::new());
+
+        let mut group_builder_2 = GroupItemBuilder::new();
+        group_builder_2.set_name("group 2");
+        let (result, errors) = graph.push_group(group_builder_2);
+        assert!(result);
+        assert_eq!(errors, Vec::<GraphError>::new());
+
+        let mut edge_builder = EdgeItemBuilder::new();
+        edge_builder.set_belong_group("root");
+        edge_builder.set_start_endpoint(GraphItemKind::Group, "group 1");
+        edge_builder.set_end_endpoint(GraphItemKind::Group, "group 2");
+        let (result, errors) = graph.push_edge(edge_builder);
+        assert!(result);
+        assert_eq!(errors, Vec::<GraphError>::new());
+    }
+
+    #[test]
+    fn push_edges_endpoints_is_not_same_group() {
         let graph = GraphBuilder::new().build_with_no_name_default_group();
         if graph.is_err() {
             panic!("errors: {:?}", graph.err().unwrap()); // in test panic
@@ -872,8 +960,12 @@ mod test {
         edge_builder_1.set_start_endpoint(GraphItemKind::Node, "node_1");
         edge_builder_1.set_end_endpoint(GraphItemKind::Node, "node_2");
         let (result, errors) = graph.push_edge(edge_builder_1);
-        assert!(result);
-        assert_eq!(errors, Vec::<GraphError>::new());
+        // error
+        assert!(!result);
+        assert_eq!(
+            errors,
+            vec![EdgeItemError::InappropriateGroup(1, None, None).into()]
+        );
 
         // in group_1
         let mut edge_builder_2 = EdgeItemBuilder::new();
@@ -893,65 +985,97 @@ mod test {
         assert!(result);
         assert_eq!(errors, Vec::<GraphError>::new());
 
-        assert_eq!(graph.edge_arena.count(), 3);
+        assert_eq!(graph.edge_arena.count(), 2);
     }
 
     #[test]
-    fn push_edge_success_with_name_override() {
+    fn build_edge_fail_inappropriate_node_as_endpoint_belong_group() {
         let graph = GraphBuilder::new().build_with_no_name_default_group();
         if graph.is_err() {
             panic!("errors: {:?}", graph.err().unwrap()); // in test panic
         }
         let mut graph: Graph = graph.unwrap();
 
+        let mut group_builder_1 = GroupItemBuilder::new();
+        group_builder_1.set_name("group 1");
+        let (result, errors) = graph.push_group(group_builder_1);
+        assert!(result);
+        assert_eq!(errors, Vec::<GraphError>::new());
+
+        let mut group_builder_2 = GroupItemBuilder::new();
+        group_builder_2.set_name("group 2");
+        let (result, errors) = graph.push_group(group_builder_2);
+        assert!(result);
+        assert_eq!(errors, Vec::<GraphError>::new());
+
         let mut node_builder_1 = NodeItemBuilder::new();
-        node_builder_1.set_name("node1");
+        node_builder_1.set_belong_group("group 1");
+        node_builder_1.set_name("node 1");
         let (result, errors) = graph.push_node(node_builder_1);
         assert!(result);
         assert_eq!(errors, Vec::<GraphError>::new());
 
         let mut node_builder_2 = NodeItemBuilder::new();
-        node_builder_2.set_name("node2");
+        node_builder_2.set_belong_group("group 2");
+        node_builder_2.set_name("node 2");
         let (result, errors) = graph.push_node(node_builder_2);
-        assert!(result);
-        assert_eq!(Vec::<GraphError>::new(), errors);
-
-        let mut edge_builder_1 = EdgeItemBuilder::new();
-        edge_builder_1.set_name("edge");
-        edge_builder_1.set_start_endpoint(GraphItemKind::Node, "node1");
-        edge_builder_1.set_end_endpoint(GraphItemKind::Node, "node2");
-        let (result, errors) = graph.push_edge(edge_builder_1);
         assert!(result);
         assert_eq!(errors, Vec::<GraphError>::new());
 
-        let mut edge_builder_2 = EdgeItemBuilder::new();
-        edge_builder_2.set_name("edge");
-        edge_builder_2.set_start_endpoint(GraphItemKind::Node, "node1");
-        edge_builder_2.set_end_endpoint(GraphItemKind::Node, "node2");
-        let (result, errors) = graph.push_edge(edge_builder_2);
-        assert!(result);
+        let mut edge_builder = EdgeItemBuilder::new();
+        edge_builder.set_start_endpoint(GraphItemKind::Node, "node 1");
+        edge_builder.set_end_endpoint(GraphItemKind::Node, "node 2");
+        let (result, errors) = graph.push_edge(edge_builder);
+        assert!(!result);
         assert_eq!(
             errors,
-            vec![
-                EdgeItemError::NameIdError(
-                    2,
-                    Some("edge".to_string()),
-                    NameIdError::AlreadyExist(GraphItemKind::Edge, "edge".to_string()),
-                )
-                .into(),
-                EdgeItemError::NameIdError(
-                    2,
-                    Some("edge".to_string()),
-                    NameIdError::Override(GraphItemKind::Edge, "edge".to_string()),
-                )
-                .into(),
-            ]
+            vec![EdgeItemError::InappropriateGroup(1, None, None).into()]
         );
+    }
+
+    #[test]
+    fn build_edge_fail_inappropriate_group_as_endpoint_belong_group() {
+        let graph = GraphBuilder::new().build_with_name_default_group("root");
+        if graph.is_err() {
+            panic!("errors: {:?}", graph.err().unwrap()); // in test panic
+        }
+        let mut graph: Graph = graph.unwrap();
+
+        let mut group_builder_1 = GroupItemBuilder::new();
+        group_builder_1.set_name("group 1");
+        let (result, errors) = graph.push_group(group_builder_1);
+        assert!(result);
+        assert_eq!(errors, Vec::<GraphError>::new());
+
+        let mut group_builder_2 = GroupItemBuilder::new();
+        group_builder_2.set_belong_group("group 1");
+        group_builder_2.set_name("group 2");
+        let (result, errors) = graph.push_group(group_builder_2);
+        assert!(result);
+        assert_eq!(errors, Vec::<GraphError>::new());
+
+        let mut group_builder_3 = GroupItemBuilder::new();
+        group_builder_3.set_name("group 3");
+        let (result, errors) = graph.push_group(group_builder_3);
+        assert!(result);
+        assert_eq!(errors, Vec::<GraphError>::new());
+
+        let mut group_builder_4 = GroupItemBuilder::new();
+        group_builder_4.set_belong_group("group 3");
+        group_builder_4.set_name("group 4");
+        let (result, errors) = graph.push_group(group_builder_4);
+        assert!(result);
+        assert_eq!(errors, Vec::<GraphError>::new());
+
+        let mut edge_builder = EdgeItemBuilder::new();
+        edge_builder.set_belong_group("root");
+        edge_builder.set_start_endpoint(GraphItemKind::Group, "group 2");
+        edge_builder.set_end_endpoint(GraphItemKind::Group, "group 4");
+        let (result, errors) = graph.push_edge(edge_builder);
+        assert!(!result);
         assert_eq!(
-            graph
-                .resolver
-                .get_graph_item_id_pair(GraphItemKind::Edge, "edge"),
-            Ok((0, 2))
+            errors,
+            vec![EdgeItemError::InappropriateGroup(1, None, Some("root".to_string())).into()]
         );
     }
 
