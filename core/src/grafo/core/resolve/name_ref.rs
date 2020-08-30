@@ -163,7 +163,7 @@ impl<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKeyTrait>
                 };
                 self.reference_index
                     .entry(kind)
-                    .or_insert_with(HashMap::new)
+                    .or_default()
                     .insert(item_name.clone(), value);
                 self.rev_reference_index.insert(rev_key, item_name);
                 result
