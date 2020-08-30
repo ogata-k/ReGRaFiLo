@@ -68,7 +68,7 @@ impl<Name: NameType> Default for Resolver<Name> {
         Self {
             group_id_tree: IdTree::None,
             graph_items: NameRefIndex::new(),
-            layout_items: NameRefIndex::new(),
+            layout_items: NameRefIndex::initialize_without_no_name(),
         }
     }
 }
@@ -266,15 +266,15 @@ impl<Name: NameType> Resolver<Name> {
     // for layout with graph item
     //
 
-    /// insert item id for layout item
+    /// insert item id for layout item. layout item always has name because the no name item cannot be specified.
     pub(crate) fn insert_layout_id<S: Into<Name>>(
         &mut self,
         item_kind: GraphItemKind,
-        name: Option<S>,
+        name: S,
         layout_item_id: LayoutItemId,
     ) -> Result<(), NameIdError<Name, LayoutGraphItemKind>> {
         self.layout_items
-            .insert_value_or_override(item_kind.into(), name, layout_item_id)
+            .insert_value_or_override(item_kind.into(), Some(name), layout_item_id)
     }
 
     /// get item id for layout item

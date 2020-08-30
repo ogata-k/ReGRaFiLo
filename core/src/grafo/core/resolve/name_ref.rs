@@ -140,9 +140,18 @@ impl<
 impl<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKeyTrait>
     NameRefIndex<Name, Kind, Value>
 {
-    /// initialize
+    /// initializer
     pub fn new() -> Self {
         NameRefIndex::default()
+    }
+
+    /// initializer with no name item's store is smallest store.
+    pub fn initialize_without_no_name() -> Self {
+        NameRefIndex {
+            reference_index: Default::default(),
+            rev_reference_index: Default::default(),
+            no_name_reference: HashSet::with_capacity(0),
+        }
     }
 
     /// insert value by reference name. If name already exist, override name's value.
@@ -191,10 +200,9 @@ impl<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKeyTrait>
 
     /// check value grouped by kind is registered
     pub fn is_already_registered(&self, kind: Kind, value: Value) -> bool {
-        self.no_name_reference.contains(&(kind, value))
-            || self
-                .rev_reference_index
-                .contains_key(&KeyWithKind::new(kind, value))
+        self.rev_reference_index
+            .contains_key(&KeyWithKind::new(kind, value))
+            || self.no_name_reference.contains(&(kind, value))
     }
 
     /// check specified name is referencable
