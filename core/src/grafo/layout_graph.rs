@@ -22,7 +22,6 @@ pub struct GrafoBuilder<Name: NameType> {
     resolver: Resolver<Name>,
 
     // layout
-    // TODO Check もし必要ならItemArenaのように分ける
     layout: Layout,
 }
 
@@ -35,6 +34,7 @@ impl<Name: NameType> Default for GrafoBuilder<Name> {
     }
 }
 
+// TODO Layout関係のメソッド
 impl<Name: NameType> GrafoBuilder<Name> {
     /// initializer for Grafo Builder
     pub fn new() -> Self {
@@ -180,7 +180,6 @@ pub struct Grafo<Name: NameType> {
     edge_arena: ItemArena<EdgeItem>,
 
     // layout
-    // TODO Check もし必要ならItemArenaのように分ける
     layout: Layout,
 }
 
@@ -188,11 +187,14 @@ impl<Name: NameType> DisplayAsJson for Grafo<Name> {
     fn fmt_as_json(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{{\"resolver\": ")?;
         self.resolver.fmt_as_json(f)?;
+        write!(f, ", \"group_items\": ")?;
+        self.group_arena.fmt_as_json(f)?;
         write!(f, ", \"node_items\": ")?;
         self.node_arena.fmt_as_json(f)?;
         write!(f, ", \"edge_items\": ")?;
         self.edge_arena.fmt_as_json(f)?;
-        // TODO layout
+        write!(f, ", \"layout_items\": ")?;
+        self.layout.fmt_as_json(f)?;
         write!(f, "}}")
     }
 }
@@ -204,6 +206,7 @@ impl<Name: NameType> std::fmt::Display for Grafo<Name> {
     }
 }
 
+// TODO Layout関係のメソッド
 impl<Name: NameType> Grafo<Name> {
     /// get reference indexes for names and hierarchy tree for group id
     pub fn resolver(&self) -> &Resolver<Name> {
