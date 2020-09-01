@@ -2,12 +2,12 @@
 //! reference has kind as grouping key, name as referencable key and registered name, and value as referenced value and reverse referencable key.
 
 use std::borrow::Borrow;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::error::Error;
 use std::hash::Hash;
 
 use crate::util::alias::{GroupId, ItemId};
-use crate::util::kind_key::KeyWithKind;
+use crate::util::kind::{GraphItemKind, LayoutGraphItemKind};
 use crate::util::name_type::NameType;
 use crate::util::writer::DisplayAsJson;
 
@@ -58,11 +58,9 @@ impl<Name: NameType, Kind: std::fmt::Debug + std::fmt::Display> Error for NameId
 /// However, the name can be restored from the registered value.
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct NameRefIndex<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKeyTrait> {
-    // @todo (A, B).borrow() == (&A, &B) とできるなら
-    //        reference_indexの二重HashMapをHashMap<(Kind, Name), Value>に一重化する
     reference_index: HashMap<Kind, HashMap<Name, Value>>,
-    rev_reference_index: HashMap<KeyWithKind<Kind, Value>, Name>,
-    no_name_reference: HashSet<(Kind, Value)>,
+    rev_reference_index: HashMap<Kind, BTreeMap<Value, Name>>,
+    no_name_reference: HashMap<Kind, BTreeSet<Value>>,
 }
 
 impl<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKeyTrait> Default
@@ -77,39 +75,63 @@ impl<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKeyTrait> Default
     }
 }
 
-impl<Name: NameType, Kind: NameRefKeyTrait + std::fmt::Display> DisplayAsJson
-    for NameRefIndex<Name, Kind, (GroupId, ItemId)>
-{
+impl<Name: NameType> DisplayAsJson for NameRefIndex<Name, GraphItemKind, (GroupId, ItemId)> {
     fn fmt_as_json(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{{\"reference\": [")?;
-        for (i, (kind, value, name)) in self.iter().enumerate() {
-            if i != 0 {
-                write!(f, ", ")?;
+        let mut is_first = true;
+        // fix order
+        for kind in [
+            GraphItemKind::Group,
+            GraphItemKind::Node,
+            GraphItemKind::Edge,
+        ]
+        .iter()
+        {
+            if let Some(map) = self.rev_reference_index.get(kind) {
+                for ((group_id, item_id), name) in map.iter() {
+                    if is_first {
+                        is_first = false;
+                    } else {
+                        write!(f, ", ")?;
+                    }
+                    write!(
+                        f,
+                        "{{\"kind\": \"{}\", \"belong_group_id\": {}, \"item_id\": {}, \"name\": \"{}\"}}",
+                        kind, group_id, item_id, name
+                    )?;
+                }
             }
-            write!(
-                f,
-                "{{\"kind\": \"{}\", \"belong_group_id\": {}, \"item_id\": {}, \"name\": \"{}\"}}",
-                kind, value.0, value.1, name
-            )?;
         }
         write!(f, "]}}")
     }
 }
 
-impl<Name: NameType, Kind: NameRefKeyTrait + std::fmt::Display> DisplayAsJson
-    for NameRefIndex<Name, Kind, ItemId>
-{
+impl<Name: NameType> DisplayAsJson for NameRefIndex<Name, LayoutGraphItemKind, ItemId> {
     fn fmt_as_json(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{{\"reference\": [")?;
-        for (i, (kind, value, name)) in self.iter().enumerate() {
-            if i != 0 {
-                write!(f, ", ")?;
+        let mut is_first = true;
+        // fix order
+        for kind in [
+            LayoutGraphItemKind::Group,
+            LayoutGraphItemKind::Node,
+            LayoutGraphItemKind::Edge,
+        ]
+        .iter()
+        {
+            if let Some(map) = self.rev_reference_index.get(kind) {
+                for (item_id, name) in map.iter() {
+                    if is_first {
+                        is_first = false;
+                    } else {
+                        write!(f, ", ")?;
+                    }
+                    write!(
+                        f,
+                        "{{\"kind\": \"{}\", \"item_id\": {}, \"name\": \"{}\"}}",
+                        kind, item_id, name
+                    )?;
+                }
             }
-            write!(
-                f,
-                "{{\"kind\": \"{}\", \"item_id\": {}, \"name\": \"{}\"}}",
-                kind, value, name
-            )?;
         }
         write!(f, "]}}")
     }
@@ -123,15 +145,20 @@ impl<
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Reference{{\"reference\": [")?;
-        for (i, (kind, value, name)) in self.iter().enumerate() {
-            if i != 0 {
-                write!(f, ", ")?;
+        let mut is_first = true;
+        for (kind, map) in self.rev_reference_index.iter() {
+            for (value, name) in map.iter() {
+                if is_first {
+                    is_first = false;
+                } else {
+                    write!(f, ", ")?;
+                }
+                write!(
+                    f,
+                    "{{\"kind\": \"{}\", \"value\": {}, \"name\": \"{}\"}}",
+                    kind, value, name
+                )?;
             }
-            write!(
-                f,
-                "{{\"kind\": \"{}\", \"value\": {}, \"name\": \"{}\"}}",
-                kind, value, name
-            )?;
         }
         write!(f, "]}}")
     }
@@ -150,7 +177,7 @@ impl<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKeyTrait>
         NameRefIndex {
             reference_index: Default::default(),
             rev_reference_index: Default::default(),
-            no_name_reference: HashSet::with_capacity(0),
+            no_name_reference: HashMap::with_capacity(0),
         }
     }
 
@@ -164,7 +191,6 @@ impl<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKeyTrait>
         match name {
             Some(ref_name) => {
                 let item_name = ref_name.into();
-                let rev_key = KeyWithKind::new(kind, value);
                 let result = if self.is_usable_name(kind, &item_name) {
                     Err(NameIdError::Override(kind, item_name.clone()))
                 } else {
@@ -174,11 +200,17 @@ impl<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKeyTrait>
                     .entry(kind)
                     .or_default()
                     .insert(item_name.clone(), value);
-                self.rev_reference_index.insert(rev_key, item_name);
+                self.rev_reference_index
+                    .entry(kind)
+                    .or_default()
+                    .insert(value, item_name);
                 result
             }
             None => {
-                self.no_name_reference.insert((kind, value));
+                self.no_name_reference
+                    .entry(kind)
+                    .or_default()
+                    .insert(value);
                 Ok(())
             }
         }
@@ -195,14 +227,21 @@ impl<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKeyTrait>
 
     /// get registered name
     pub fn get_name(&self, kind: Kind, value: Value) -> Option<&Name> {
-        self.rev_reference_index.get(&KeyWithKind::new(kind, value))
+        match self.rev_reference_index.get(&kind) {
+            Some(map) => map.get(&value),
+            None => None,
+        }
     }
 
     /// check value grouped by kind is registered
     pub fn is_already_registered(&self, kind: Kind, value: Value) -> bool {
-        self.rev_reference_index
-            .contains_key(&KeyWithKind::new(kind, value))
-            || self.no_name_reference.contains(&(kind, value))
+        match self.rev_reference_index.get(&kind) {
+            Some(map) => map.contains_key(&value),
+            None => match self.no_name_reference.get(&kind) {
+                Some(map) => map.contains(&value),
+                None => false,
+            },
+        }
     }
 
     /// check specified name is referencable
@@ -219,57 +258,66 @@ impl<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKeyTrait>
 
     /// check the name is already registered
     pub fn has_registered_name(&self, kind: Kind, value: Value) -> bool {
-        self.rev_reference_index
-            .contains_key(&KeyWithKind::new(kind, value))
+        match self.rev_reference_index.get(&kind) {
+            Some(map) => map.contains_key(&value),
+            None => false,
+        }
     }
 
-    /// count names which is referencable by filter you specify method
-    pub fn count_usable_names_filtered_by<P>(&self, predicate: P) -> usize
-    where
-        P: Fn(&Kind) -> bool,
-    {
-        self.reference_index
+    /// count all registered items by the kind
+    pub fn count_all_registered_by(&self, kind: Kind) -> usize {
+        let with_name_count = match self.rev_reference_index.get(&kind) {
+            Some(map) => map.len(),
+            None => 0,
+        };
+        let no_name_count = match self.no_name_reference.get(&kind) {
+            Some(map) => map.len(),
+            None => 0,
+        };
+        with_name_count + no_name_count
+    }
+
+    /// count all referencable names
+    pub fn count_all_registered(&self) -> usize {
+        let with_name_count = self
+            .rev_reference_index
             .iter()
-            .filter(|(k, _)| predicate(*k))
-            .fold(0, |acc, (_, map)| acc + map.iter().count())
+            .fold(0, |acc, map| acc + (map.1).len());
+        let no_name_count = self
+            .no_name_reference
+            .iter()
+            .fold(0, |acc, map| acc + (map.1).len());
+        with_name_count + no_name_count
     }
 
     /// count names which is referencable filtering by the kind
     pub fn count_usable_names_by(&self, kind: Kind) -> usize {
-        self.count_usable_names_filtered_by(|k| k == &kind)
+        match self.reference_index.get(&kind) {
+            Some(map) => map.len(),
+            None => 0,
+        }
     }
 
     /// count all referencable names
     pub fn count_usable_names_all(&self) -> usize {
-        self.count_usable_names_filtered_by(|_| true)
-    }
-
-    /// count names which is already registered by filter you specify method
-    pub fn count_registered_names_filtered_by<P>(&self, predicate: P) -> usize
-    where
-        P: Fn(&Kind) -> bool,
-    {
-        self.rev_reference_index
-            .keys()
-            .filter(|k| predicate(&k.kind))
-            .count()
+        self.reference_index
+            .iter()
+            .fold(0, |acc, map| acc + (map.1).len())
     }
 
     /// count names which is already registered filtering by the kind
     pub fn count_registered_names_by(&self, kind: Kind) -> usize {
-        self.count_registered_names_filtered_by(|k| k == &kind)
+        match self.rev_reference_index.get(&kind) {
+            Some(map) => map.len(),
+            None => 0,
+        }
     }
 
     /// count all registered names
     pub fn count_registered_names_all(&self) -> usize {
-        self.count_registered_names_filtered_by(|_| true)
-    }
-
-    /// to iterator
-    pub fn iter<'a>(&'a self) -> impl Iterator<Item = (&Kind, &Value, &Name)> + 'a {
         self.rev_reference_index
             .iter()
-            .map(|(KeyWithKind { kind, key: value }, name)| (kind, value, name))
+            .fold(0, |acc, map| acc + (map.1).len())
     }
 }
 

@@ -242,19 +242,29 @@ impl<Name: NameType> Resolver<Name> {
             .has_registered_name(item_kind, (group_id, item_id))
     }
 
+    /// count all graph items.
+    pub fn count_all_registered_graph_items(&self) -> usize {
+        self.graph_items.count_all_registered()
+    }
+
+    /// count all graph items limited by kind.
+    pub fn count_all_graph_items_by(&self, item_kind: GraphItemKind) -> usize {
+        self.graph_items.count_all_registered_by(item_kind)
+    }
+
     /// count all usable names as reference key for graph item's key.
     pub fn count_usable_graph_item_names(&self) -> usize {
         self.graph_items.count_usable_names_all()
     }
 
-    /// count all graph items having name.
-    pub fn count_registered_graph_item_names(&self) -> usize {
-        self.graph_items.count_registered_names_all()
-    }
-
     /// count all usable names as reference key limited by the kind for graph item's key.
     pub fn count_usable_graph_item_names_by(&self, item_kind: GraphItemKind) -> usize {
         self.graph_items.count_usable_names_by(item_kind)
+    }
+
+    /// count all graph items having name.
+    pub fn count_registered_graph_item_names(&self) -> usize {
+        self.graph_items.count_registered_names_all()
     }
 
     /// count all graph items having name limited by specify kind.
@@ -342,14 +352,14 @@ impl<Name: NameType> Resolver<Name> {
         self.layout_items.count_usable_names_all()
     }
 
-    /// count all layout items as the kind has a name for the layout item's key.
-    pub fn count_registered_graph_item_layout_names(&self) -> usize {
-        self.layout_items.count_registered_names_all()
-    }
-
     /// count usable names as reference key for layout item limited by specify kind.
     pub fn count_usable_graph_item_layout_names_by(&self, item_kind: GraphItemKind) -> usize {
         self.layout_items.count_usable_names_by(item_kind.into())
+    }
+
+    /// count all layout items as the kind has a name for the layout item's key.
+    pub fn count_registered_graph_item_layout_names(&self) -> usize {
+        self.layout_items.count_registered_names_all()
     }
 
     /// count all layout items as the kind has a name for the layout item's key limited by specify kind.
