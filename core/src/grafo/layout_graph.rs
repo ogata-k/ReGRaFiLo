@@ -399,7 +399,7 @@ mod test {
         assert!(result);
         assert_eq!(errors, Vec::<GraphError>::new());
 
-        assert_eq!(graph.group_arena.count(), 3);
+        assert_eq!(graph.group_arena.count_all(), 3);
 
         // in group_1
         let mut node_builder_1_1 = NodeItemBuilder::new();
@@ -451,7 +451,7 @@ mod test {
         assert_eq!(node_2_1.unwrap().get_belong_group_id(), 2);
         assert_eq!(node_2_1.unwrap().get_item_id(), 3);
 
-        assert_eq!(graph.node_arena.count(), 3);
+        assert_eq!(graph.node_arena.count_all(), 3);
     }
 
     #[test]
@@ -486,7 +486,7 @@ mod test {
         assert!(result);
         assert_eq!(errors, Vec::<GraphError>::new());
 
-        assert_eq!(graph.group_arena.count(), 3);
+        assert_eq!(graph.group_arena.count_all(), 3);
     }
 
     #[test]
@@ -543,7 +543,7 @@ mod test {
             Ok((0, 2))
         );
 
-        assert_eq!(graph.group_arena.count(), 3);
+        assert_eq!(graph.group_arena.count_all(), 3);
     }
 
     #[test]
@@ -590,7 +590,7 @@ mod test {
             assert_eq!(errors, Vec::<GraphError>::new());
         }
 
-        assert_eq!(graph.node_arena.count(), 2 * ITERATE_COUNT);
+        assert_eq!(graph.node_arena.count_all(), 2 * ITERATE_COUNT);
         assert_eq!(
             graph
                 .resolver
@@ -704,7 +704,7 @@ mod test {
             assert_eq!(errors, Vec::<GraphError>::new());
         }
 
-        assert_eq!(graph.edge_arena.count(), ITERATE_COUNT);
+        assert_eq!(graph.edge_arena.count_all(), ITERATE_COUNT);
         assert_eq!(
             graph
                 .resolver
@@ -936,7 +936,7 @@ mod test {
         assert!(result);
         assert_eq!(errors, Vec::<GraphError>::new());
 
-        assert_eq!(graph.group_arena.count(), 3);
+        assert_eq!(graph.group_arena.count_all(), 3);
 
         // node
         // in group_1
@@ -955,7 +955,7 @@ mod test {
         assert!(result);
         assert_eq!(errors, Vec::<GraphError>::new());
 
-        assert_eq!(graph.node_arena.count(), 2);
+        assert_eq!(graph.node_arena.count_all(), 2);
 
         // edge
         // in root group
@@ -988,7 +988,7 @@ mod test {
         assert!(result);
         assert_eq!(errors, Vec::<GraphError>::new());
 
-        assert_eq!(graph.edge_arena.count(), 2);
+        assert_eq!(graph.edge_arena.count_all(), 2);
     }
 
     #[test]

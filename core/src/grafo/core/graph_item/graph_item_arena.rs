@@ -1,14 +1,13 @@
 //! item pool for graph item
 
-use std::collections::btree_map::Range;
 use std::collections::BTreeMap;
-use std::ops::{Bound, RangeBounds};
 
 use crate::grafo::graph_item::{GraphBuilderErrorBase, GraphItemBase, GraphItemBuilderBase};
 use crate::grafo::GrafoError;
 use crate::grafo::Resolver;
 use crate::util::alias::{GroupId, ItemId, DEFAULT_ITEM_ID};
 use crate::util::item_base::HasItemBuilderMethod;
+use crate::util::iter;
 use crate::util::kind::GraphItemKind;
 use crate::util::name_type::NameType;
 use crate::util::writer::DisplayAsJson;
@@ -18,7 +17,7 @@ use crate::util::writer::DisplayAsJson;
 pub struct ItemArena<I> {
     id_counter: ItemId,
     /// (GroupId, ItemId) => Item
-    arena: BTreeMap<(GroupId, ItemId), I>,
+    arena: BTreeMap<GroupId, BTreeMap<ItemId, I>>,
 }
 
 impl<I> Default for ItemArena<I> {
@@ -34,7 +33,7 @@ impl<I> Default for ItemArena<I> {
 impl<I: DisplayAsJson + GraphItemBase> DisplayAsJson for ItemArena<I> {
     fn fmt_as_json(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{{\"items\": [")?;
-        for (i, (_, _, item)) in self.iter().enumerate() {
+        for (i, (_, item)) in self.iter_all().enumerate() {
             if i == 0 {
                 item.fmt_as_json(f)?;
             } else {
@@ -50,15 +49,6 @@ impl<I: std::fmt::Display + DisplayAsJson + GraphItemBase> std::fmt::Display for
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "GraphItemArena")?;
         self.fmt_as_json(f)
-    }
-}
-
-/// converter from range of item to range of item belonging to the group
-fn range_with_group(group_id: GroupId, bound: Bound<&ItemId>) -> Bound<(GroupId, ItemId)> {
-    match bound {
-        Bound::Included(item_id) => Bound::Included((group_id, *item_id)),
-        Bound::Excluded(item_id) => Bound::Excluded((group_id, *item_id)),
-        Bound::Unbounded => Bound::Unbounded,
     }
 }
 
@@ -116,7 +106,10 @@ impl<I: GraphItemBase> ItemArena<I> {
                     action(resolver, item.get_kind(), group_id, push_id, option);
                 errors.extend(action_errors);
                 if result {
-                    self.arena.insert((group_id, push_id), item);
+                    self.arena
+                        .entry(group_id)
+                        .or_default()
+                        .insert(push_id, item);
                 }
                 (result, errors)
             }
@@ -125,54 +118,59 @@ impl<I: GraphItemBase> ItemArena<I> {
 
     /// item getter
     pub fn get(&self, group_id: GroupId, index: ItemId) -> Option<&I> {
-        self.arena.get(&(group_id, index))
-    }
-
-    /// item getter by range
-    pub fn range<R: RangeBounds<ItemId>>(
-        &self,
-        group_id: GroupId,
-        range: R,
-    ) -> Range<(GroupId, ItemId), I> {
-        let start = range_with_group(group_id, range.start_bound());
-        let end = range_with_group(group_id, range.end_bound());
-        self.arena.range((start, end))
-    }
-
-    /// iter by filtering group_id
-    pub fn filter_by_group<'a>(&'a self, group_id: GroupId) -> impl Iterator + 'a {
-        self.iter().filter_map(move |(item_group_id, _, item)| {
-            if item_group_id == group_id {
-                Some(item)
-            } else {
-                None
-            }
-        })
+        match self.arena.get(&group_id) {
+            None => None,
+            Some(map) => map.get(&index),
+        }
     }
 
     //
     // reference
     //
 
-    /// count of item
-    pub fn count(&self) -> usize {
-        self.arena.len()
+    /// count for all of item
+    pub fn count_all(&self) -> usize {
+        self.arena.iter().map(|(_, map)| map.len()).sum()
+    }
+
+    /// count for all of item grouping by group id
+    pub fn count_by(&self, group_id: GroupId) -> usize {
+        self.arena
+            .get(&group_id)
+            .map(|map| map.len())
+            .unwrap_or_else(|| 0)
     }
 
     /// item pool is empty
-    pub fn is_empty(&self) -> bool {
-        self.count() == 0
+    pub fn is_empty_all(&self) -> bool {
+        self.arena.iter().map(|(_, map)| map.is_empty()).all(|b| b)
+    }
+
+    /// item pool is empty grouping by group id
+    pub fn is_empty_by(&self, group_id: GroupId) -> bool {
+        self.arena
+            .get(&group_id)
+            .map(|map| map.is_empty())
+            .unwrap_or_else(|| true)
     }
 
     //
     // iter or slice
     //
 
-    /// to iterator
-    pub fn iter<'a>(&'a self) -> impl Iterator<Item = (GroupId, ItemId, &I)> + 'a {
-        self.arena
-            .iter()
-            .map(|(&(group_id, item_id), item)| (group_id, item_id, item))
+    /// iter for all item. This iterator sorted by ItemId.
+    pub fn iter_all(&self) -> iter::IterGroupByAll<I> {
+        iter::IterGroupByAll::<I>::from_btree_map(&self.arena)
+    }
+
+    /// iter for all item grouping by specified groups. This iterator sorted by ItemId.
+    pub fn iter_group_by_list(&self, groups: &[GroupId]) -> iter::IterGroupByList<I> {
+        iter::IterGroupByList::<I>::from_btree_map(groups, &self.arena)
+    }
+
+    /// iter for all item grouping by specified group_id. This iterator sorted by ItemId
+    pub fn iter_group_by_id(&self, group_id: GroupId) -> iter::IterGroupById<I> {
+        iter::IterGroupById::from_map(group_id, self.arena.get(&group_id))
     }
 }
 
@@ -205,7 +203,10 @@ impl<I: GraphItemBase + Default> ItemArena<I> {
             return (false, errors);
         }
 
-        self.arena.insert((group_id, push_id), item);
+        self.arena
+            .entry(group_id)
+            .or_default()
+            .insert(push_id, item);
         (true, errors)
     }
 
@@ -242,7 +243,10 @@ impl<I: GraphItemBase + Default> ItemArena<I> {
                     action(resolver, item.get_kind(), group_id, push_id, option);
                 errors.extend(action_errors);
                 if result {
-                    self.arena.insert((group_id, push_id), item);
+                    self.arena
+                        .entry(group_id)
+                        .or_default()
+                        .insert(push_id, item);
                 }
                 (result, errors)
             }
@@ -251,7 +255,7 @@ impl<I: GraphItemBase + Default> ItemArena<I> {
 
     /// item getter
     pub(crate) fn get_default(&self, group_id: GroupId) -> Option<&I> {
-        self.arena.get(&(group_id, self.get_default_index()))
+        self.get(group_id, self.get_default_index())
     }
 }
 
@@ -486,7 +490,7 @@ mod test {
 
     #[test]
     fn is_empty() {
-        assert!(ItemArena::<TargetItem>::new().is_empty());
+        assert!(ItemArena::<TargetItem>::new().is_empty_all());
     }
 
     #[test]
@@ -521,7 +525,7 @@ mod test {
             assert!(result);
         }
         let arena = arena_mut;
-        assert_eq!(arena.count(), ITERATE_COUNT as usize);
+        assert_eq!(arena.count_all(), ITERATE_COUNT as usize);
         for target in graph_item_check_list() {
             assert_eq!(
                 resolver.count_usable_graph_item_names_by(target),
@@ -570,13 +574,13 @@ mod test {
             assert!(result);
         }
         let arena = arena_mut;
-        for (group_id, item_id, _) in (&arena).iter() {
+        for (item_id, item) in (&arena).iter_all() {
             for kind in graph_item_check_list() {
                 let name = format!("{}", item_id);
                 let ref_result = resolver.get_graph_item_id_pair(kind, &name);
                 if let Ok(success) = ref_result {
                     // デフォルトがitem_id = 0占有
-                    assert_eq!(success, (group_id, item_id));
+                    assert_eq!(success, (item.get_belong_group_id(), *item_id));
                 } else {
                     assert_eq!(
                         ref_result,
@@ -622,7 +626,7 @@ mod test {
             assert!(result)
         }
         let arena = arena_mut;
-        assert_eq!(arena.count(), 2 * ITERATE_COUNT as usize);
+        assert_eq!(arena.count_all(), 2 * ITERATE_COUNT as usize);
         for target in graph_item_check_list() {
             assert_eq!(
                 resolver.count_usable_graph_item_names_by(target),
@@ -670,14 +674,14 @@ mod test {
             assert!(result);
         }
         let arena = arena_mut;
-        for (group_id, item_id, _) in (&arena).iter() {
+        for (item_id, item) in arena.iter_all() {
             for kind in graph_item_check_list() {
                 let name = format!("{}", item_id);
                 let ref_result = resolver.get_graph_item_id_pair(kind, &name);
-                if item_id <= ITERATE_COUNT && kind == TARGET_KIND {
+                if item_id <= &ITERATE_COUNT && kind == TARGET_KIND {
                     if let Ok(success) = &ref_result {
                         // デフォルトがitem_id = 0占有
-                        assert_eq!(success, &(group_id, item_id));
+                        assert_eq!(success, &(item.get_belong_group_id(), *item_id));
                     } else {
                         unreachable!("over count and not exist the name \"{}\"", name)
                     }
@@ -690,4 +694,6 @@ mod test {
             }
         }
     }
+
+    // TODO arena iterator's test
 }
