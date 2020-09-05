@@ -230,7 +230,7 @@ impl<'a, I: 'a> DoubleEndedIterator for IterGroupByAll<'a, I> {
             Some(_target_index) => self
                 .iters
                 .get_mut(_target_index)
-                .map(|iter| iter.next())
+                .map(|iter| iter.next_back())
                 .flatten(),
         }
     }
@@ -334,7 +334,7 @@ impl<'a, I: 'a> DoubleEndedIterator for IterGroupByList<'a, I> {
             Some(_target_index) => self
                 .iters
                 .get_mut(_target_index)
-                .map(|iter| iter.next())
+                .map(|iter| iter.next_back())
                 .flatten(),
         }
     }
@@ -465,5 +465,5 @@ impl<'a, I: 'a> IterGroupById<'a, I> {
 
 #[cfg(test)]
 mod test {
-    // TODO 動作確認
+    // TODO  動作確認
 }
