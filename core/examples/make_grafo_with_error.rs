@@ -61,7 +61,7 @@ fn main() {
         edge_builder.set_belong_group(i);
         // Edge does not have name
         edge_builder.set_start_endpoint(select_kind(i), i);
-        edge_builder.set_end_endpoint(select_kind(i), i);
+        edge_builder.set_end_endpoint(select_kind(i.saturating_sub(1)), i.saturating_sub(1));
         let (_result, _errors) = graph.push_edge(edge_builder);
         result &= _result;
         print_errors(_errors);

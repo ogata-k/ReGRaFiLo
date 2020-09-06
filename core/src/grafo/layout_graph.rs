@@ -427,7 +427,7 @@ impl<Name: NameType> Grafo<Name> {
     pub fn count_group_items_group_by(&self, group_id: GroupId) -> usize {
         if group_id == DEFAULT_ITEM_ID {
             // root group belong to self. So removed. But arena's count do not remove.
-            self.group_arena.count_by(group_id).wrapping_sub(1)
+            self.group_arena.count_by(group_id).saturating_sub(1)
         } else {
             self.group_arena.count_by(group_id)
         }
