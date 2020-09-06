@@ -170,7 +170,7 @@ impl<I: GraphItemBase> ItemArena<I> {
 
     /// iter for all item grouping by specified group_id. This iterator sorted by ItemId
     pub fn iter_group_by_id(&self, group_id: GroupId) -> iter::IterGroupById<I> {
-        iter::IterGroupById::from_map(group_id, self.arena.get(&group_id))
+        iter::IterGroupById::from_btree_map(&group_id, &self.arena)
     }
 }
 
@@ -695,5 +695,5 @@ mod test {
         }
     }
 
-    // TODO arena iterator's test
+    // TODO arena test for iterator
 }

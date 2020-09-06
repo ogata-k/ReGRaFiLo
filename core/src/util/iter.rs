@@ -445,10 +445,13 @@ impl<'a, I: 'a> FusedIterator for IterGroupById<'a, I> {}
 impl<'a, I: 'a> IterGroupById<'a, I> {
     /// initializer for this iterator.
     /// This group id is group's id for I.
-    pub fn from_map(group_id: GroupId, map: Option<&'a BTreeMap<ItemId, I>>) -> Self {
+    pub fn from_btree_map(
+        group_id: &GroupId,
+        map: &'a BTreeMap<GroupId, BTreeMap<ItemId, I>>,
+    ) -> Self {
         IterGroupById {
-            group_id,
-            inner_iter: map.map(|map| map.iter()),
+            group_id: *group_id,
+            inner_iter: map.get(group_id).map(|map| map.iter()),
         }
     }
 
@@ -465,5 +468,250 @@ impl<'a, I: 'a> IterGroupById<'a, I> {
 
 #[cfg(test)]
 mod test {
-    // TODO  動作確認
+    mod double_ended_peekable {
+        use crate::util::iter::DoubleEndedPeekable;
+
+        const ITEM_COUNT: usize = 5;
+
+        fn tester_vec() -> Vec<usize> {
+            (0..ITEM_COUNT).map(|i| 2 * i).collect()
+        }
+
+        #[test]
+        fn incremental() {
+            let vec = tester_vec();
+            let mut iter = DoubleEndedPeekable::from_iter(vec.iter());
+            for i in 0..ITEM_COUNT {
+                assert_eq!(iter.peek(), Some(2_usize * i).as_ref().as_ref());
+                assert_eq!(iter.next(), Some(2_usize * i).as_ref());
+            }
+            assert_eq!(iter.peek(), None);
+            assert_eq!(iter.peek_back(), None);
+            assert_eq!(iter.next(), None);
+            assert_eq!(iter.next_back(), None);
+        }
+
+        #[test]
+        fn first() {
+            let vec = tester_vec();
+            let mut iter = DoubleEndedPeekable::from_iter(vec.iter());
+
+            assert_eq!(iter.nth(0), tester_vec().first());
+        }
+
+        #[test]
+        fn third() {
+            let vec = tester_vec();
+            let mut iter = DoubleEndedPeekable::from_iter(vec.iter());
+
+            assert_eq!(iter.nth(2), tester_vec().iter().nth(2));
+        }
+
+        #[test]
+        fn decremental() {
+            let vec = tester_vec();
+            let mut iter = DoubleEndedPeekable::from_iter(vec.iter());
+            for i in (0..ITEM_COUNT).rev() {
+                assert_eq!(iter.peek_back(), Some(2_usize * i).as_ref().as_ref());
+                assert_eq!(iter.next_back(), Some(2_usize * i).as_ref());
+            }
+            assert_eq!(iter.peek(), None);
+            assert_eq!(iter.peek_back(), None);
+            assert_eq!(iter.next_back(), None);
+            assert_eq!(iter.next(), None);
+        }
+
+        #[test]
+        fn last() {
+            let vec = tester_vec();
+            let mut iter = DoubleEndedPeekable::from_iter(vec.iter());
+
+            let last_index = iter.len() - 1;
+            assert_eq!(iter.nth(last_index), tester_vec().last());
+        }
+
+        #[test]
+        fn third_back() {
+            let vec = tester_vec();
+            let mut iter = DoubleEndedPeekable::from_iter(vec.iter());
+
+            assert_eq!(iter.nth_back(2), tester_vec().iter().nth_back(2));
+        }
+
+        #[test]
+        fn collect() {
+            let vec = tester_vec();
+            let iter = DoubleEndedPeekable::from_iter(vec.iter());
+
+            assert_eq!(iter.copied().collect::<Vec<usize>>(), vec);
+        }
+    }
+
+    mod all_item {
+        use crate::util::alias::{GroupId, ItemId};
+        use crate::util::iter::IterGroupByAll;
+        use std::collections::BTreeMap;
+
+        const ITEM_COUNT: usize = 20;
+
+        fn tester_map() -> BTreeMap<GroupId, BTreeMap<ItemId, usize>> {
+            let mut map_list: BTreeMap<GroupId, BTreeMap<ItemId, usize>> = BTreeMap::new();
+            for i in 0..ITEM_COUNT {
+                map_list.entry(i % 5).or_default().insert(i, 2 * i);
+            }
+            map_list
+        }
+
+        #[test]
+        fn incremental() {
+            let map = tester_map();
+            let mut iter = IterGroupByAll::from_btree_map(&map);
+            for i in 0..ITEM_COUNT {
+                assert_eq!(iter.next().map(|(k, _)| k), Some(i).as_ref());
+            }
+            assert_eq!(iter.next(), None);
+            assert_eq!(iter.next_back(), None);
+        }
+
+        #[test]
+        fn decremental() {
+            let map = tester_map();
+            let mut iter = IterGroupByAll::from_btree_map(&map);
+            for i in (0..ITEM_COUNT).rev() {
+                assert_eq!(iter.next_back().map(|(k, _)| k), Some(i).as_ref());
+            }
+            assert_eq!(iter.next_back(), None);
+            assert_eq!(iter.next(), None);
+        }
+    }
+
+    mod group_by_list {
+        use crate::util::alias::{GroupId, ItemId};
+        use crate::util::iter::IterGroupByList;
+        use std::collections::BTreeMap;
+
+        const ITEM_COUNT: usize = 20;
+        const GROUP_COUNT: usize = 5;
+
+        fn tester_group_list() -> Vec<usize> {
+            (0..GROUP_COUNT).collect()
+        }
+
+        fn tester_map() -> BTreeMap<GroupId, BTreeMap<ItemId, usize>> {
+            let mut map_list: BTreeMap<GroupId, BTreeMap<ItemId, usize>> = BTreeMap::new();
+            for i in 0..ITEM_COUNT {
+                map_list
+                    .entry(i % GROUP_COUNT)
+                    .or_default()
+                    .insert(i, 2 * i);
+            }
+            map_list
+        }
+
+        #[test]
+        fn incremental() {
+            let map = tester_map();
+            let mut creator_group_list = tester_group_list();
+            creator_group_list.push(GROUP_COUNT * 10);
+            let mut iter = IterGroupByList::from_btree_map(&creator_group_list, &map);
+            assert!(iter
+                .using_groups()
+                .iter()
+                .zip(tester_group_list())
+                .all(|(u, t)| u == &t));
+            for i in 0..ITEM_COUNT {
+                if iter.using_groups().contains(&(i % GROUP_COUNT)) {
+                    assert_eq!(iter.next().map(|(k, _)| k), Some(i).as_ref());
+                }
+            }
+            assert_eq!(iter.next(), None);
+        }
+
+        #[test]
+        fn decremental() {
+            let map = tester_map();
+            let mut creator_group_list = tester_group_list();
+            creator_group_list.push(GROUP_COUNT * 10);
+            let mut iter = IterGroupByList::from_btree_map(&creator_group_list, &map);
+            assert!(iter
+                .using_groups()
+                .iter()
+                .zip(tester_group_list())
+                .all(|(u, t)| u == &t));
+            for i in (0..ITEM_COUNT).rev() {
+                if iter.using_groups().contains(&(i % GROUP_COUNT)) {
+                    assert_eq!(iter.next_back().map(|(k, _)| k), Some(i).as_ref());
+                }
+            }
+            assert_eq!(iter.next_back(), None);
+        }
+    }
+
+    mod group_by_id {
+        use crate::util::alias::{GroupId, ItemId};
+        use crate::util::iter::IterGroupById;
+        use std::collections::BTreeMap;
+
+        const ITEM_COUNT: usize = 20;
+        const GROUP_COUNT: usize = 5;
+        const EXIST_GROUP_ID: usize = 3;
+        const NOT_EXIST_GROUP_ID: usize = 30;
+
+        fn tester_map() -> BTreeMap<GroupId, BTreeMap<ItemId, usize>> {
+            let mut map_list: BTreeMap<GroupId, BTreeMap<ItemId, usize>> = BTreeMap::new();
+            for i in 0..ITEM_COUNT {
+                map_list
+                    .entry(i % GROUP_COUNT)
+                    .or_default()
+                    .insert(i, 2 * i);
+            }
+            map_list
+        }
+
+        #[test]
+        fn exist_incremental() {
+            let map = tester_map();
+            let mut iter = IterGroupById::from_btree_map(&EXIST_GROUP_ID, &map);
+            assert_eq!(iter.get_group_id(), EXIST_GROUP_ID);
+            for i in 0..ITEM_COUNT {
+                if iter.get_group_id() == i % GROUP_COUNT {
+                    assert_eq!(iter.next().map(|(k, _)| k), Some(i).as_ref());
+                }
+            }
+            assert_eq!(iter.next(), None);
+        }
+
+        #[test]
+        fn not_exist_incremental() {
+            let map = tester_map();
+            let mut iter = IterGroupById::from_btree_map(&NOT_EXIST_GROUP_ID, &map);
+            assert_eq!(iter.get_group_id(), NOT_EXIST_GROUP_ID);
+            assert!(!iter.has_iter());
+            assert_eq!(iter.len(), 0);
+            assert_eq!(iter.next(), None);
+        }
+
+        #[test]
+        fn exist_decremental() {
+            let map = tester_map();
+            let mut iter = IterGroupById::from_btree_map(&EXIST_GROUP_ID, &map);
+            assert_eq!(iter.get_group_id(), EXIST_GROUP_ID);
+            for i in (0..ITEM_COUNT).rev() {
+                if iter.get_group_id() == i % GROUP_COUNT {
+                    assert_eq!(iter.next_back().map(|(k, _)| k), Some(i).as_ref());
+                }
+            }
+            assert_eq!(iter.next_back(), None);
+        }
+
+        #[test]
+        fn not_exist_decremental() {
+            let map = tester_map();
+            let mut iter = IterGroupById::from_btree_map(&NOT_EXIST_GROUP_ID, &map);
+            assert_eq!(iter.get_group_id(), NOT_EXIST_GROUP_ID);
+            assert!(!iter.has_iter());
+            assert_eq!(iter.len(), 0);
+            assert_eq!(iter.next_back(), None);
+        }
+    }
 }
