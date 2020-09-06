@@ -105,11 +105,13 @@ impl<Name: NameType> Resolver<Name> {
     //
     /// initialize as group id tree with specify id
     pub(crate) fn set_root_group_id(&mut self, group_id: GroupId) -> Result<(), ResolverError> {
-        if self.group_id_tree.is_some() {
-            return Err(ResolverError::FailSetRootGraphId);
+        match self.group_id_tree {
+            IdTree::Root(_) => Err(ResolverError::FailSetRootGraphId),
+            IdTree::None => {
+                self.group_id_tree = IdTree::new(group_id);
+                Ok(())
+            }
         }
-        self.group_id_tree = IdTree::new(group_id);
-        Ok(())
     }
 
     /// insert child group for parent group
@@ -152,9 +154,19 @@ impl<Name: NameType> Resolver<Name> {
         }
     }
 
+    /// check specified group is exist
+    pub fn contains_group(&self, group_id: GroupId) -> bool {
+        self.group_id_tree.contains_id(group_id)
+    }
+
     /// get parent and ancestors id
-    pub fn get_ancestor_ids(&self, group_id: GroupId) -> Option<Vec<GroupId>> {
+    pub fn get_ancestor_ids(&self, group_id: GroupId) -> Vec<GroupId> {
         self.group_id_tree.get_ancestor_ids(group_id)
+    }
+
+    /// get children's id list
+    pub fn get_child_ids(&self, group_id: GroupId) -> Vec<GroupId> {
+        self.group_id_tree.get_child_ids(group_id)
     }
 
     /// get group tree but type as string

@@ -65,27 +65,19 @@ impl<Id: Eq + Copy> IdTree<Id> {
         }
     }
 
-    /// check self is **not** already initialized
-    pub fn is_none(&self) -> bool {
-        match self {
-            IdTree::Root(_) => false,
-            IdTree::None => true,
-        }
-    }
-
-    /// check self is already initialized
-    pub fn is_some(&self) -> bool {
-        match self {
-            IdTree::Root(_) => true,
-            IdTree::None => false,
-        }
-    }
-
     /// get parent and ancestors id without target id
-    pub fn get_ancestor_ids(&self, id: Id) -> Option<Vec<Id>> {
+    pub fn get_ancestor_ids(&self, id: Id) -> Vec<Id> {
         match self {
             IdTree::Root(tree) => tree.get_ancestor_ids(id),
-            IdTree::None => None,
+            IdTree::None => Default::default(),
+        }
+    }
+
+    /// get children's id list
+    pub fn get_child_ids(&self, id: Id) -> Vec<Id> {
+        match self {
+            IdTree::Root(tree) => tree.get_child_ids(id),
+            IdTree::None => Default::default(),
         }
     }
 }
@@ -143,13 +135,21 @@ impl<Id: Eq + Copy> IdTreeRoot<Id> {
     }
 
     /// get ids from root to target id without target id
-    fn get_ancestor_ids(&self, target_id: Id) -> Option<Vec<Id>> {
+    fn get_ancestor_ids(&self, target_id: Id) -> Vec<Id> {
         let mut ids: Vec<Id> = Vec::new();
         if self.root.collect_ids_self_to(&mut ids, target_id) {
-            Some(ids)
+            ids
         } else {
-            None
+            Default::default()
         }
+    }
+
+    /// get children's id list
+    fn get_child_ids(&self, target_id: Id) -> Vec<Id> {
+        self.root
+            .find(target_id)
+            .map(|node| node.get_children().iter().map(|child| child.node).collect())
+            .unwrap_or_else(Default::default)
     }
 }
 
@@ -213,6 +213,25 @@ impl<Id: Eq + Copy> UniqueTree<Id> {
             }
         }
         false
+    }
+
+    /// getter for children
+    fn get_children(&self) -> &[Box<UniqueTree<Id>>] {
+        self.children.as_ref()
+    }
+
+    /// find node by specified id
+    fn find(&self, id: Id) -> Option<&Self> {
+        if self.node == id {
+            return Some(self);
+        }
+        for child in self.children.as_slice() {
+            let child_result = child.find(id);
+            if child_result.is_some() {
+                return child_result;
+            }
+        }
+        None
     }
 
     /// find node as mut by specified id
@@ -296,14 +315,14 @@ mod test {
     fn not_found_ancestor_in_none_tree() {
         let tree = new_empty_tree();
         assert!(!tree.contains_id(0));
-        assert_eq!(tree.get_ancestor_ids(0), None);
+        assert_eq!(tree.get_ancestor_ids(0), vec![]);
     }
 
     #[test]
     fn not_found_ancestor_in_tree_template() {
         let tree = new_tree_template();
         assert!(!tree.contains_id(100));
-        assert_eq!(tree.get_ancestor_ids(100), None);
+        assert_eq!(tree.get_ancestor_ids(100), vec![]);
     }
 
     #[test]
@@ -354,34 +373,34 @@ mod test {
     fn found_root() {
         let tree = new_tree_template();
         assert!(tree.contains_id(0));
-        assert_eq!(tree.get_ancestor_ids(0), Some(vec!()));
+        assert_eq!(tree.get_ancestor_ids(0), vec![]);
     }
 
     #[test]
     fn found_ancestor1() {
         let tree = new_tree_template();
         assert!(tree.contains_id(4));
-        assert_eq!(tree.get_ancestor_ids(4), Some(vec!(0, 1)));
+        assert_eq!(tree.get_ancestor_ids(4), vec!(0, 1));
     }
 
     #[test]
     fn found_ancestor2() {
         let tree = new_tree_template();
         assert!(tree.contains_id(5));
-        assert_eq!(tree.get_ancestor_ids(5), Some(vec!(0, 1)));
+        assert_eq!(tree.get_ancestor_ids(5), vec!(0, 1));
     }
 
     #[test]
     fn found_ancestor3() {
         let tree = new_tree_template();
         assert!(tree.contains_id(3));
-        assert_eq!(tree.get_ancestor_ids(3), Some(vec!(0)));
+        assert_eq!(tree.get_ancestor_ids(3), vec!(0));
     }
 
     #[test]
     fn found_deep_ancestor() {
         let tree = new_tree_template();
         assert!(tree.contains_id(7));
-        assert_eq!(tree.get_ancestor_ids(7), Some(vec!(0, 1, 4)));
+        assert_eq!(tree.get_ancestor_ids(7), vec!(0, 1, 4));
     }
 }

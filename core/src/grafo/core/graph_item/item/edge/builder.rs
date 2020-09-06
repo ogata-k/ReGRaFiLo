@@ -120,26 +120,22 @@ impl<Name: NameType> EdgeItemBuilder<Name> {
                     if *kind == GraphItemKind::Group {
                         let mut cannot_specify = group_id == endpoint_item_id;
                         if !cannot_specify {
-                            match resolver.get_ancestor_ids(group_id) {
-                                None => {
-                                    // not stored graph id in id_tree
-                                    // usually unreachable!!
-                                    errors.push(
-                                        EdgeItemError::from_with_id(
-                                            item_id,
-                                            self.name.clone(),
-                                            NameIdError::NotExist(
-                                                GraphItemKind::Group,
-                                                name.clone(),
-                                            ),
-                                        )
-                                        .into(),
-                                    );
-                                    cannot_specify = true;
-                                }
-                                Some(ancestor_ids) => {
-                                    cannot_specify = ancestor_ids.contains(&endpoint_item_id);
-                                }
+                            if resolver.contains_group(group_id) {
+                                cannot_specify = resolver
+                                    .get_ancestor_ids(group_id)
+                                    .contains(&endpoint_item_id);
+                            } else {
+                                // not stored graph id in id_tree
+                                // usually unreachable!!
+                                errors.push(
+                                    EdgeItemError::from_with_id(
+                                        item_id,
+                                        self.name.clone(),
+                                        NameIdError::NotExist(GraphItemKind::Group, name.clone()),
+                                    )
+                                    .into(),
+                                );
+                                cannot_specify = true;
                             }
                         }
 

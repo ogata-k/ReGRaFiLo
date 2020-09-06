@@ -407,6 +407,7 @@ impl<'a, I: 'a> DoubleEndedIterator for IterGroupById<'a, I> {
         }
     }
 
+    #[allow(unused_mut)]
     #[inline]
     fn nth_back(&mut self, mut n: usize) -> Option<Self::Item> {
         match self.inner_iter.as_mut() {
@@ -415,6 +416,7 @@ impl<'a, I: 'a> DoubleEndedIterator for IterGroupById<'a, I> {
         }
     }
 
+    #[allow(unused_mut)]
     #[inline]
     fn rfold<B, F>(mut self, init: B, mut f: F) -> B
     where
