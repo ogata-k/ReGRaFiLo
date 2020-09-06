@@ -730,8 +730,4 @@ mod test {
             }
         }
     }
-
-    mod iter {
-        // TODO  arena test for iterator
-    }
 }

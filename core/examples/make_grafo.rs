@@ -20,9 +20,8 @@ fn main() {
     println!("iter count: {}", ITERATE_COUNT);
 
     let start = SystemTime::now();
-    let mut graph: Graph = GraphBuilder::new()
-        .build_with_name_default_group("root group")
-        .unwrap();
+    let mut graph: Graph = GraphBuilder::new().build_with_name_default_group("root group");
+
     let mut result = true;
     let mut errors: Vec<GraphError> = Vec::new();
 

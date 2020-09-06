@@ -34,9 +34,8 @@ fn main() {
     println!("iter count: {}", ITERATE_COUNT);
 
     let start = SystemTime::now();
-    let mut graph: Graph = GraphBuilder::new()
-        .build_with_name_default_group(0_usize)
-        .unwrap();
+    let mut graph: Graph = GraphBuilder::new().build_with_name_default_group(0_usize);
+
     let mut result = true;
 
     for i in 0..ITERATE_COUNT {

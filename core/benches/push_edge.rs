@@ -13,9 +13,8 @@ pub type GraphBuilder = NameStrGrafoBuilder;
 pub type GraphError = NameStrGrafoError;
 
 fn push_items(count: u32) {
-    let mut graph: Graph = GraphBuilder::new()
-        .build_with_no_name_default_group()
-        .unwrap();
+    let mut graph: Graph = GraphBuilder::new().build_with_no_name_default_group();
+
     let mut errors: Vec<GraphError> = Vec::new();
     push_nodes(&mut graph, &mut errors, count);
     push_edges(&mut graph, &mut errors, count);

@@ -594,7 +594,7 @@ mod test {
         const GROUP_COUNT: usize = 5;
 
         fn tester_group_list() -> Vec<usize> {
-            (0..GROUP_COUNT).collect()
+            (0..GROUP_COUNT).filter(|i| i % 2 == 0).collect()
         }
 
         fn tester_map() -> BTreeMap<GroupId, BTreeMap<ItemId, usize>> {
@@ -619,9 +619,11 @@ mod test {
                 .iter()
                 .zip(tester_group_list())
                 .all(|(u, t)| u == &t));
-            for i in 0..ITEM_COUNT {
+            for i in (0..ITEM_COUNT).filter(|i| (i % GROUP_COUNT) % 2 == 0) {
                 if iter.using_groups().contains(&(i % GROUP_COUNT)) {
                     assert_eq!(iter.next().map(|(k, _)| k), Some(i).as_ref());
+                } else {
+                    unreachable!("occurred error when index {}", i);
                 }
             }
             assert_eq!(iter.next(), None);
@@ -638,9 +640,11 @@ mod test {
                 .iter()
                 .zip(tester_group_list())
                 .all(|(u, t)| u == &t));
-            for i in (0..ITEM_COUNT).rev() {
+            for i in (0..ITEM_COUNT).filter(|i| (i % GROUP_COUNT) % 2 == 0).rev() {
                 if iter.using_groups().contains(&(i % GROUP_COUNT)) {
                     assert_eq!(iter.next_back().map(|(k, _)| k), Some(i).as_ref());
+                } else {
+                    unreachable!("occurred error when index {}", i);
                 }
             }
             assert_eq!(iter.next_back(), None);
