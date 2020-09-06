@@ -7,6 +7,7 @@ use std::error::Error;
 use std::hash::Hash;
 
 use crate::util::alias::{GroupId, ItemId};
+use crate::util::iter::IterGroupByOne;
 use crate::util::kind::{GraphItemKind, LayoutGraphItemKind};
 use crate::util::name_type::NameType;
 use crate::util::writer::DisplayAsJson;
@@ -87,19 +88,17 @@ impl<Name: NameType> DisplayAsJson for NameRefIndex<Name, GraphItemKind, (GroupI
         ]
         .iter()
         {
-            if let Some(map) = self.rev_reference_index.get(kind) {
-                for ((group_id, item_id), name) in map.iter() {
-                    if is_first {
-                        is_first = false;
-                    } else {
-                        write!(f, ", ")?;
-                    }
-                    write!(
-                        f,
-                        "{{\"kind\": \"{}\", \"belong_group_id\": {}, \"item_id\": {}, \"name\": \"{}\"}}",
-                        kind, group_id, item_id, name
-                    )?;
+            for ((group_id, item_id), name) in self.iter_by_kind(*kind) {
+                if is_first {
+                    is_first = false;
+                } else {
+                    write!(f, ", ")?;
                 }
+                write!(
+                    f,
+                    "{{\"kind\": \"{}\", \"belong_group_id\": {}, \"item_id\": {}, \"name\": \"{}\"}}",
+                    kind, group_id, item_id, name
+                )?;
             }
         }
         write!(f, "]}}")
@@ -118,19 +117,17 @@ impl<Name: NameType> DisplayAsJson for NameRefIndex<Name, LayoutGraphItemKind, I
         ]
         .iter()
         {
-            if let Some(map) = self.rev_reference_index.get(kind) {
-                for (item_id, name) in map.iter() {
-                    if is_first {
-                        is_first = false;
-                    } else {
-                        write!(f, ", ")?;
-                    }
-                    write!(
-                        f,
-                        "{{\"kind\": \"{}\", \"item_id\": {}, \"name\": \"{}\"}}",
-                        kind, item_id, name
-                    )?;
+            for (item_id, name) in self.iter_by_kind(*kind) {
+                if is_first {
+                    is_first = false;
+                } else {
+                    write!(f, ", ")?;
                 }
+                write!(
+                    f,
+                    "{{\"kind\": \"{}\", \"item_id\": {}, \"name\": \"{}\"}}",
+                    kind, item_id, name
+                )?;
             }
         }
         write!(f, "]}}")
@@ -318,6 +315,11 @@ impl<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKeyTrait>
         self.rev_reference_index
             .iter()
             .fold(0, |acc, map| acc + (map.1).len())
+    }
+
+    /// get iter grouped by the kind
+    pub fn iter_by_kind(&self, kind: Kind) -> IterGroupByOne<Kind, Value, Name> {
+        IterGroupByOne::from_hash_map(&kind, &self.rev_reference_index)
     }
 }
 

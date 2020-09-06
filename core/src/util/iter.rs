@@ -1,9 +1,9 @@
 //! utility for iterator
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::iter::FusedIterator;
 
-use crate::util::alias::{GroupId, ItemId};
+use std::hash::Hash;
 
 /// iterator with peekable from first and last.
 #[derive(Clone, Debug)]
@@ -147,30 +147,30 @@ impl<I: DoubleEndedIterator + ExactSizeIterator> DoubleEndedPeekable<I> {
     }
 }
 
-/// iterator for all items ordering by item_id in all groups
+/// iterator for all items ordering by item's index in all groups
 #[derive(Debug, Clone)]
-pub struct IterGroupByAll<'a, I: 'a> {
-    iters: Vec<DoubleEndedPeekable<std::collections::btree_map::Iter<'a, ItemId, I>>>,
+pub struct IterGroupByAll<'a, K: Copy + Ord + 'a, V: 'a> {
+    iters: Vec<DoubleEndedPeekable<std::collections::btree_map::Iter<'a, K, V>>>,
 }
 
-impl<'a, I: 'a> Iterator for IterGroupByAll<'a, I> {
-    type Item = (&'a ItemId, &'a I);
+impl<'a, K: Copy + Ord + 'a, V: 'a> Iterator for IterGroupByAll<'a, K, V> {
+    type Item = (&'a K, &'a V);
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         let mut target_index: Option<usize> = None;
-        let mut min_item_id: Option<ItemId> = None;
-        // It is assumed that there are few registered group_ids.
+        let mut min_item_index: Option<K> = None;
+        // It is assumed that there are few registered group's indices.
         for (index, iterable) in self.iters.iter_mut().enumerate() {
-            if let Some((item_id, _)) = iterable.peek() {
-                match min_item_id {
+            if let Some((item_index, _)) = iterable.peek() {
+                match min_item_index {
                     None => {
                         target_index = Some(index);
-                        min_item_id = Some(**item_id);
+                        min_item_index = Some(**item_index);
                     }
-                    Some(_min_item_id) if _min_item_id >= **item_id => {
+                    Some(_min_item_index) if _min_item_index >= **item_index => {
                         target_index = Some(index);
-                        min_item_id = Some(**item_id);
+                        min_item_index = Some(**item_index);
                     }
                     _ => {}
                 }
@@ -202,24 +202,24 @@ impl<'a, I: 'a> Iterator for IterGroupByAll<'a, I> {
     }
 }
 
-impl<'a, I: 'a> ExactSizeIterator for IterGroupByAll<'a, I> {}
+impl<'a, K: Copy + Ord + 'a, V: 'a> ExactSizeIterator for IterGroupByAll<'a, K, V> {}
 
-impl<'a, I: 'a> DoubleEndedIterator for IterGroupByAll<'a, I> {
+impl<'a, K: Copy + Ord + 'a, V: 'a> DoubleEndedIterator for IterGroupByAll<'a, K, V> {
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
         let mut target_index: Option<usize> = None;
-        let mut max_item_id: Option<ItemId> = None;
-        // It is assumed that there are few registered group_ids.
+        let mut max_item_index: Option<K> = None;
+        // It is assumed that there are few registered group's indices.
         for (index, iterable) in self.iters.iter_mut().enumerate() {
-            if let Some((item_id, _)) = iterable.peek_back() {
-                match max_item_id {
+            if let Some((item_index, _)) = iterable.peek_back() {
+                match max_item_index {
                     None => {
                         target_index = Some(index);
-                        max_item_id = Some(**item_id);
+                        max_item_index = Some(**item_index);
                     }
-                    Some(_min_item_id) if _min_item_id <= **item_id => {
+                    Some(_min_item_index) if _min_item_index <= **item_index => {
                         target_index = Some(index);
-                        max_item_id = Some(**item_id);
+                        max_item_index = Some(**item_index);
                     }
                     _ => {}
                 }
@@ -236,12 +236,28 @@ impl<'a, I: 'a> DoubleEndedIterator for IterGroupByAll<'a, I> {
     }
 }
 
-impl<'a, I: 'a> FusedIterator for IterGroupByAll<'a, I> {}
+impl<'a, K: Copy + Ord + 'a, V: 'a> FusedIterator for IterGroupByAll<'a, K, V> {}
 
-impl<'a, I: 'a> IterGroupByAll<'a, I> {
+impl<'a, K: Copy + Ord + 'a, V: 'a> IterGroupByAll<'a, K, V> {
     /// initializer for this iterator.
     /// This group id is group's id for I.
-    pub fn from_btree_map(map: &'a BTreeMap<GroupId, BTreeMap<ItemId, I>>) -> Self {
+    pub fn from_btree_map<Group: Eq + Copy>(map: &'a BTreeMap<Group, BTreeMap<K, V>>) -> Self
+    where
+        Group: Ord,
+    {
+        let mut iters = Vec::new();
+        for (_, map) in map.iter() {
+            iters.push(DoubleEndedPeekable::from_iter(map.iter()));
+        }
+        IterGroupByAll { iters }
+    }
+
+    /// initializer for this iterator.
+    /// This group id is group's id for I.
+    pub fn from_hash_map<Group: Eq + Copy>(map: &'a HashMap<Group, BTreeMap<K, V>>) -> Self
+    where
+        Group: Hash,
+    {
         let mut iters = Vec::new();
         for (_, map) in map.iter() {
             iters.push(DoubleEndedPeekable::from_iter(map.iter()));
@@ -250,31 +266,31 @@ impl<'a, I: 'a> IterGroupByAll<'a, I> {
     }
 }
 
-/// iterator for all items ordering by item_id in specified groups
+/// iterator for all items ordering by item's index in specified groups
 #[derive(Debug, Clone)]
-pub struct IterGroupByList<'a, I: 'a> {
-    groups: Vec<GroupId>,
-    iters: Vec<DoubleEndedPeekable<std::collections::btree_map::Iter<'a, ItemId, I>>>,
+pub struct IterGroupByList<'a, Group, K: Copy + Ord + 'a, V: 'a> {
+    groups: Vec<Group>,
+    iters: Vec<DoubleEndedPeekable<std::collections::btree_map::Iter<'a, K, V>>>,
 }
 
-impl<'a, I: 'a> Iterator for IterGroupByList<'a, I> {
-    type Item = (&'a ItemId, &'a I);
+impl<'a, Group, K: Copy + Ord + 'a, V: 'a> Iterator for IterGroupByList<'a, Group, K, V> {
+    type Item = (&'a K, &'a V);
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         let mut target_index: Option<usize> = None;
-        let mut min_item_id: Option<ItemId> = None;
-        // It is assumed that there are few registered group_ids.
+        let mut min_item_index: Option<K> = None;
+        // It is assumed that there are few registered group's index.
         for (index, iterable) in self.iters.iter_mut().enumerate() {
-            if let Some((item_id, _)) = iterable.peek() {
-                match min_item_id {
+            if let Some((item_index, _)) = iterable.peek() {
+                match min_item_index {
                     None => {
                         target_index = Some(index);
-                        min_item_id = Some(**item_id);
+                        min_item_index = Some(**item_index);
                     }
-                    Some(_min_item_id) if _min_item_id >= **item_id => {
+                    Some(_min_item_index) if _min_item_index >= **item_index => {
                         target_index = Some(index);
-                        min_item_id = Some(**item_id);
+                        min_item_index = Some(**item_index);
                     }
                     _ => {}
                 }
@@ -306,24 +322,26 @@ impl<'a, I: 'a> Iterator for IterGroupByList<'a, I> {
     }
 }
 
-impl<'a, I: 'a> ExactSizeIterator for IterGroupByList<'a, I> {}
+impl<'a, Group, K: Copy + Ord + 'a, V: 'a> ExactSizeIterator for IterGroupByList<'a, Group, K, V> {}
 
-impl<'a, I: 'a> DoubleEndedIterator for IterGroupByList<'a, I> {
+impl<'a, Group, K: Copy + Ord + 'a, V: 'a> DoubleEndedIterator
+    for IterGroupByList<'a, Group, K, V>
+{
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
         let mut target_index: Option<usize> = None;
-        let mut max_item_id: Option<ItemId> = None;
-        // It is assumed that there are few registered group_ids.
+        let mut max_item_index: Option<K> = None;
+        // It is assumed that there are few registered group_indices.
         for (index, iterable) in self.iters.iter_mut().enumerate() {
-            if let Some((item_id, _)) = iterable.peek_back() {
-                match max_item_id {
+            if let Some((item_index, _)) = iterable.peek_back() {
+                match max_item_index {
                     None => {
                         target_index = Some(index);
-                        max_item_id = Some(**item_id);
+                        max_item_index = Some(**item_index);
                     }
-                    Some(_min_item_id) if _min_item_id <= **item_id => {
+                    Some(_min_item_index) if _min_item_index <= **item_index => {
                         target_index = Some(index);
-                        max_item_id = Some(**item_id);
+                        max_item_index = Some(**item_index);
                     }
                     _ => {}
                 }
@@ -340,20 +358,34 @@ impl<'a, I: 'a> DoubleEndedIterator for IterGroupByList<'a, I> {
     }
 }
 
-impl<'a, I: 'a> FusedIterator for IterGroupByList<'a, I> {}
+impl<'a, Group, K: Copy + Ord + 'a, V: 'a> FusedIterator for IterGroupByList<'a, Group, K, V> {}
 
-impl<'a, I: 'a> IterGroupByList<'a, I> {
+impl<'a, Group: Eq + Copy, K: Copy + Ord + 'a, V: 'a> IterGroupByList<'a, Group, K, V> {
     /// initializer for this iterator.
     /// This group id is group's id for I.
-    pub fn from_btree_map(
-        groups: &[GroupId],
-        map: &'a BTreeMap<GroupId, BTreeMap<ItemId, I>>,
-    ) -> Self {
+    pub fn from_btree_map(groups: &[Group], map: &'a BTreeMap<Group, BTreeMap<K, V>>) -> Self {
         let mut list = Vec::new();
         let mut iters = Vec::new();
-        for (group_id, map) in map.iter() {
-            if groups.contains(group_id) {
-                list.push(*group_id);
+        for (group, map) in map.iter() {
+            if groups.contains(group) {
+                list.push(*group);
+                iters.push(DoubleEndedPeekable::from_iter(map.iter()));
+            }
+        }
+        IterGroupByList {
+            groups: list,
+            iters,
+        }
+    }
+
+    /// initializer for this iterator.
+    /// This group id is group's id for I.
+    pub fn from_hash_map(groups: &[Group], map: &'a HashMap<Group, BTreeMap<K, V>>) -> Self {
+        let mut list = Vec::new();
+        let mut iters = Vec::new();
+        for (group, map) in map.iter() {
+            if groups.contains(group) {
+                list.push(*group);
                 iters.push(DoubleEndedPeekable::from_iter(map.iter()));
             }
         }
@@ -364,20 +396,20 @@ impl<'a, I: 'a> IterGroupByList<'a, I> {
     }
 
     /// get specified group list for limiter of this iterator.
-    pub fn using_groups(&self) -> &[GroupId] {
+    pub fn using_groups(&self) -> &[Group] {
         self.groups.as_slice()
     }
 }
 
-/// iterator for all items ordering by item_id grouped by group_id
+/// iterator for all items ordering by item's index grouped by group's index
 #[derive(Debug, Clone)]
-pub struct IterGroupById<'a, I: 'a> {
-    group_id: GroupId,
-    inner_iter: Option<std::collections::btree_map::Iter<'a, ItemId, I>>,
+pub struct IterGroupByOne<'a, Group, K: Ord + 'a, V: 'a> {
+    group: Group,
+    inner_iter: Option<std::collections::btree_map::Iter<'a, K, V>>,
 }
 
-impl<'a, I: 'a> Iterator for IterGroupById<'a, I> {
-    type Item = (&'a ItemId, &'a I);
+impl<'a, Group, K: Ord + 'a, V: 'a> Iterator for IterGroupByOne<'a, Group, K, V> {
+    type Item = (&'a K, &'a V);
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
@@ -396,9 +428,9 @@ impl<'a, I: 'a> Iterator for IterGroupById<'a, I> {
     }
 }
 
-impl<'a, I: 'a> ExactSizeIterator for IterGroupById<'a, I> {}
+impl<'a, Group, K: Ord + 'a, V: 'a> ExactSizeIterator for IterGroupByOne<'a, Group, K, V> {}
 
-impl<'a, I: 'a> DoubleEndedIterator for IterGroupById<'a, I> {
+impl<'a, Group, K: Ord + 'a, V: 'a> DoubleEndedIterator for IterGroupByOne<'a, Group, K, V> {
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
         match self.inner_iter.as_mut() {
@@ -442,24 +474,36 @@ impl<'a, I: 'a> DoubleEndedIterator for IterGroupById<'a, I> {
     }
 }
 
-impl<'a, I: 'a> FusedIterator for IterGroupById<'a, I> {}
+impl<'a, Group, K: Ord + 'a, V: 'a> FusedIterator for IterGroupByOne<'a, Group, K, V> {}
 
-impl<'a, I: 'a> IterGroupById<'a, I> {
+impl<'a, Group: Eq + Copy, K: Ord + 'a, V: 'a> IterGroupByOne<'a, Group, K, V> {
     /// initializer for this iterator.
     /// This group id is group's id for I.
-    pub fn from_btree_map(
-        group_id: &GroupId,
-        map: &'a BTreeMap<GroupId, BTreeMap<ItemId, I>>,
-    ) -> Self {
-        IterGroupById {
-            group_id: *group_id,
-            inner_iter: map.get(group_id).map(|map| map.iter()),
+    pub fn from_btree_map(group: &Group, map: &'a BTreeMap<Group, BTreeMap<K, V>>) -> Self
+    where
+        Group: Ord,
+    {
+        IterGroupByOne {
+            group: *group,
+            inner_iter: map.get(group).map(|map| map.iter()),
         }
     }
 
-    /// group id for grouping
-    pub fn get_group_id(&self) -> GroupId {
-        self.group_id
+    /// initializer for this iterator.
+    /// This group id is group's id for I.
+    pub fn from_hash_map(group: &Group, map: &'a HashMap<Group, BTreeMap<K, V>>) -> Self
+    where
+        Group: Hash,
+    {
+        IterGroupByOne {
+            group: *group,
+            inner_iter: map.get(group).map(|map| map.iter()),
+        }
+    }
+
+    /// group for grouping
+    pub fn get_group(&self) -> Group {
+        self.group
     }
 
     /// check iter has item. This is **NOT** checker for result of next() is None.
@@ -653,15 +697,15 @@ mod test {
         }
     }
 
-    mod group_by_id {
+    mod group_by_one {
         use crate::util::alias::{GroupId, ItemId};
-        use crate::util::iter::IterGroupById;
+        use crate::util::iter::IterGroupByOne;
         use std::collections::BTreeMap;
 
         const ITEM_COUNT: usize = 20;
         const GROUP_COUNT: usize = 5;
-        const EXIST_GROUP_ID: usize = 3;
-        const NOT_EXIST_GROUP_ID: usize = 30;
+        const EXIST_GROUP_INDEX: usize = 3;
+        const NOT_EXIST_GROUP_INDEX: usize = 30;
 
         fn tester_map() -> BTreeMap<GroupId, BTreeMap<ItemId, usize>> {
             let mut map_list: BTreeMap<GroupId, BTreeMap<ItemId, usize>> = BTreeMap::new();
@@ -677,10 +721,10 @@ mod test {
         #[test]
         fn exist_incremental() {
             let map = tester_map();
-            let mut iter = IterGroupById::from_btree_map(&EXIST_GROUP_ID, &map);
-            assert_eq!(iter.get_group_id(), EXIST_GROUP_ID);
+            let mut iter = IterGroupByOne::from_btree_map(&EXIST_GROUP_INDEX, &map);
+            assert_eq!(iter.get_group(), EXIST_GROUP_INDEX);
             for i in 0..ITEM_COUNT {
-                if iter.get_group_id() == i % GROUP_COUNT {
+                if iter.get_group() == i % GROUP_COUNT {
                     assert_eq!(iter.next().map(|(k, _)| k), Some(i).as_ref());
                 }
             }
@@ -690,8 +734,8 @@ mod test {
         #[test]
         fn not_exist_incremental() {
             let map = tester_map();
-            let mut iter = IterGroupById::from_btree_map(&NOT_EXIST_GROUP_ID, &map);
-            assert_eq!(iter.get_group_id(), NOT_EXIST_GROUP_ID);
+            let mut iter = IterGroupByOne::from_btree_map(&NOT_EXIST_GROUP_INDEX, &map);
+            assert_eq!(iter.get_group(), NOT_EXIST_GROUP_INDEX);
             assert!(!iter.has_iter());
             assert_eq!(iter.len(), 0);
             assert_eq!(iter.next(), None);
@@ -700,10 +744,10 @@ mod test {
         #[test]
         fn exist_decremental() {
             let map = tester_map();
-            let mut iter = IterGroupById::from_btree_map(&EXIST_GROUP_ID, &map);
-            assert_eq!(iter.get_group_id(), EXIST_GROUP_ID);
+            let mut iter = IterGroupByOne::from_btree_map(&EXIST_GROUP_INDEX, &map);
+            assert_eq!(iter.get_group(), EXIST_GROUP_INDEX);
             for i in (0..ITEM_COUNT).rev() {
-                if iter.get_group_id() == i % GROUP_COUNT {
+                if iter.get_group() == i % GROUP_COUNT {
                     assert_eq!(iter.next_back().map(|(k, _)| k), Some(i).as_ref());
                 }
             }
@@ -713,8 +757,8 @@ mod test {
         #[test]
         fn not_exist_decremental() {
             let map = tester_map();
-            let mut iter = IterGroupById::from_btree_map(&NOT_EXIST_GROUP_ID, &map);
-            assert_eq!(iter.get_group_id(), NOT_EXIST_GROUP_ID);
+            let mut iter = IterGroupByOne::from_btree_map(&NOT_EXIST_GROUP_INDEX, &map);
+            assert_eq!(iter.get_group(), NOT_EXIST_GROUP_INDEX);
             assert!(!iter.has_iter());
             assert_eq!(iter.len(), 0);
             assert_eq!(iter.next_back(), None);

@@ -11,7 +11,7 @@ use crate::grafo::layout_item::Layout;
 use crate::grafo::{GrafoError, Resolver, ResolverError};
 use crate::util::alias::{GroupId, ItemId, DEFAULT_ITEM_ID};
 use crate::util::item_base::FromWithItemId;
-use crate::util::iter::{IterGroupByAll, IterGroupById, IterGroupByList};
+use crate::util::iter::{IterGroupByAll, IterGroupByList, IterGroupByOne};
 use crate::util::kind::GraphItemKind;
 use crate::util::name_type::NameType;
 use crate::util::writer::DisplayAsJson;
@@ -351,7 +351,7 @@ impl<Name: NameType> Grafo<Name> {
     //
 
     /// iter for all Group item. This iterator sorted by ItemId.
-    pub fn get_group_item_iter_all(&self) -> IterGroupByAll<GroupItem> {
+    pub fn get_group_item_iter_all(&self) -> IterGroupByAll<ItemId, GroupItem> {
         self.group_arena.iter_all()
     }
 
@@ -359,7 +359,7 @@ impl<Name: NameType> Grafo<Name> {
     pub fn get_group_item_iter_group_by_list(
         &self,
         groups: &[GroupId],
-    ) -> IterGroupByList<GroupItem> {
+    ) -> IterGroupByList<GroupId, ItemId, GroupItem> {
         let mut iter = self.group_arena.iter_group_by_list(groups);
         if groups.contains(&DEFAULT_ITEM_ID) {
             // group item having id which is equal to DEFAULT_ITEM_ID is belong to self. So remove.
@@ -369,7 +369,10 @@ impl<Name: NameType> Grafo<Name> {
     }
 
     /// iter for all Group item grouping by specified group_id. This iterator sorted by ItemId
-    pub fn get_group_item_iter_group_by_id(&self, group_id: GroupId) -> IterGroupById<GroupItem> {
+    pub fn get_group_item_iter_group_by_id(
+        &self,
+        group_id: GroupId,
+    ) -> IterGroupByOne<GroupId, ItemId, GroupItem> {
         let mut iter = self.group_arena.iter_group_by_id(group_id);
         if group_id == DEFAULT_ITEM_ID {
             // group item having id which is equal to DEFAULT_ITEM_ID is belong to self. So remove.
@@ -379,7 +382,7 @@ impl<Name: NameType> Grafo<Name> {
     }
 
     /// iter for all Node item. This iterator sorted by ItemId.
-    pub fn get_node_item_iter_all(&self) -> IterGroupByAll<NodeItem> {
+    pub fn get_node_item_iter_all(&self) -> IterGroupByAll<ItemId, NodeItem> {
         self.node_arena.iter_all()
     }
 
@@ -387,17 +390,20 @@ impl<Name: NameType> Grafo<Name> {
     pub fn get_node_item_iter_group_by_list(
         &self,
         groups: &[GroupId],
-    ) -> IterGroupByList<NodeItem> {
+    ) -> IterGroupByList<GroupId, ItemId, NodeItem> {
         self.node_arena.iter_group_by_list(groups)
     }
 
     /// iter for all Node item grouping by specified group_id. This iterator sorted by ItemId
-    pub fn get_node_item_iter_group_by_id(&self, group_id: GroupId) -> IterGroupById<NodeItem> {
+    pub fn get_node_item_iter_group_by_id(
+        &self,
+        group_id: GroupId,
+    ) -> IterGroupByOne<GroupId, ItemId, NodeItem> {
         self.node_arena.iter_group_by_id(group_id)
     }
 
     /// iter for all Edge item. This iterator sorted by ItemId.
-    pub fn get_edge_item_iter_all(&self) -> IterGroupByAll<EdgeItem> {
+    pub fn get_edge_item_iter_all(&self) -> IterGroupByAll<ItemId, EdgeItem> {
         self.edge_arena.iter_all()
     }
 
@@ -405,12 +411,15 @@ impl<Name: NameType> Grafo<Name> {
     pub fn get_edge_item_iter_group_by_list(
         &self,
         groups: &[GroupId],
-    ) -> IterGroupByList<EdgeItem> {
+    ) -> IterGroupByList<GroupId, ItemId, EdgeItem> {
         self.edge_arena.iter_group_by_list(groups)
     }
 
     /// iter for all Edge item grouping by specified group_id. This iterator sorted by ItemId
-    pub fn get_edge_item_iter_group_by_id(&self, group_id: GroupId) -> IterGroupById<EdgeItem> {
+    pub fn get_edge_item_iter_group_by_id(
+        &self,
+        group_id: GroupId,
+    ) -> IterGroupByOne<GroupId, ItemId, EdgeItem> {
         self.edge_arena.iter_group_by_id(group_id)
     }
 

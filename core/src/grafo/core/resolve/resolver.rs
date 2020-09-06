@@ -9,6 +9,7 @@ use crate::grafo::layout_item::LayoutItemBase;
 use crate::grafo::{IdTree, IdTreeError, NameIdError, NameRefIndex};
 use crate::util::alias::{GroupId, ItemId, LayoutItemId};
 use crate::util::either::Either;
+use crate::util::iter::IterGroupByOne;
 use crate::util::kind::{GraphItemKind, LayoutGraphItemKind};
 use crate::util::name_type::NameType;
 use crate::util::writer::DisplayAsJson;
@@ -284,6 +285,14 @@ impl<Name: NameType> Resolver<Name> {
         self.graph_items.count_registered_names_by(item_kind)
     }
 
+    /// iter for graph item grouped by the item_kind
+    pub fn iter_graph_item_by(
+        &self,
+        item_kind: GraphItemKind,
+    ) -> IterGroupByOne<GraphItemKind, (GroupId, ItemId), Name> {
+        self.graph_items.iter_by_kind(item_kind)
+    }
+
     //
     // for layout with graph item
     //
@@ -378,5 +387,13 @@ impl<Name: NameType> Resolver<Name> {
     pub fn count_registered_graph_item_layout_names_by(&self, item_kind: GraphItemKind) -> usize {
         self.layout_items
             .count_registered_names_by(item_kind.into())
+    }
+
+    /// iter for layout item grouped by the item_kind
+    pub fn iter_layout_item_by(
+        &self,
+        item_kind: LayoutGraphItemKind,
+    ) -> IterGroupByOne<LayoutGraphItemKind, ItemId, Name> {
+        self.layout_items.iter_by_kind(item_kind)
     }
 }
