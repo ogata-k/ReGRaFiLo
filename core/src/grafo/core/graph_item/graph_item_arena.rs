@@ -254,8 +254,8 @@ impl<I: GraphItemBase + Default> ItemArena<I> {
     }
 
     /// item getter
-    pub(crate) fn get_default(&self, group_id: GroupId) -> Option<&I> {
-        self.get(group_id, self.get_default_index())
+    pub(crate) fn get_default(&self) -> Option<&I> {
+        self.get(self.get_default_index(), self.get_default_index())
     }
 }
 

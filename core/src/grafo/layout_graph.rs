@@ -327,7 +327,7 @@ impl<Name: NameType> Grafo<Name> {
 
     /// get root group item. This method is usually success you get item.
     pub fn get_root_group_item(&self) -> Option<&GroupItem> {
-        self.group_arena.get(DEFAULT_ITEM_ID, DEFAULT_ITEM_ID)
+        self.group_arena.get_default()
     }
 
     /// get group item of item_id belonging to group having id of belong_group_id.<br/>
@@ -412,6 +412,84 @@ impl<Name: NameType> Grafo<Name> {
     /// iter for all Edge item grouping by specified group_id. This iterator sorted by ItemId
     pub fn get_edge_item_iter_group_by_id(&self, group_id: GroupId) -> IterGroupById<EdgeItem> {
         self.edge_arena.iter_group_by_id(group_id)
+    }
+
+    //
+    // count
+    //
+
+    /// count all of Group items
+    pub fn count_all_of_group(&self) -> usize {
+        self.group_arena.count_all()
+    }
+
+    /// count all Group items in specified group
+    pub fn count_group_items_group_by(&self, group_id: GroupId) -> usize {
+        if group_id == DEFAULT_ITEM_ID {
+            // root group belong to self. So removed. But arena's count do not remove.
+            self.group_arena.count_by(group_id).wrapping_sub(1)
+        } else {
+            self.group_arena.count_by(group_id)
+        }
+    }
+
+    /// count all of Node items
+    pub fn count_all_of_node(&self) -> usize {
+        self.node_arena.count_all()
+    }
+
+    /// count all Node items in specified group
+    pub fn count_node_items_group_by(&self, group_id: GroupId) -> usize {
+        self.node_arena.count_by(group_id)
+    }
+
+    /// count all of Edge items
+    pub fn count_all_of_edge(&self) -> usize {
+        self.edge_arena.count_all()
+    }
+
+    /// count all Edge items in specified group
+    pub fn count_edge_items_group_by(&self, group_id: GroupId) -> usize {
+        self.edge_arena.count_by(group_id)
+    }
+
+    //
+    // checker
+    //
+
+    /// check has Group item
+    pub fn group_is_empty(&self) -> bool {
+        self.group_arena.is_empty_all()
+    }
+
+    /// check has Group item in specified group
+    pub fn group_is_empty_by(&self, group_id: GroupId) -> bool {
+        if group_id == DEFAULT_ITEM_ID {
+            // root group belong to self. So removed. But arena's count do not remove.
+            self.count_group_items_group_by(group_id) == 0
+        } else {
+            self.group_arena.is_empty_by(group_id)
+        }
+    }
+
+    /// check has Node item
+    pub fn node_is_empty(&self) -> bool {
+        self.node_arena.is_empty_all()
+    }
+
+    /// check has Node item in specified group
+    pub fn node_is_empty_by(&self, group_id: GroupId) -> bool {
+        self.node_arena.is_empty_by(group_id)
+    }
+
+    /// check has Edge item
+    pub fn edge_is_empty(&self) -> bool {
+        self.edge_arena.is_empty_all()
+    }
+
+    /// check has Edge item in specified group
+    pub fn edge_is_empty_by(&self, group_id: GroupId) -> bool {
+        self.edge_arena.is_empty_by(group_id)
     }
 }
 
