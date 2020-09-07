@@ -149,11 +149,11 @@ impl<I: DoubleEndedIterator + ExactSizeIterator> DoubleEndedPeekable<I> {
 
 /// iterator for all items ordering by item's index in all groups
 #[derive(Debug, Clone)]
-pub struct IterGroupByAll<'a, K: Copy + Ord + 'a, V: 'a> {
+pub struct IterLimitedByAllGroup<'a, K: Copy + Ord + 'a, V: 'a> {
     iters: Vec<DoubleEndedPeekable<std::collections::btree_map::Iter<'a, K, V>>>,
 }
 
-impl<'a, K: Copy + Ord + 'a, V: 'a> Iterator for IterGroupByAll<'a, K, V> {
+impl<'a, K: Copy + Ord + 'a, V: 'a> Iterator for IterLimitedByAllGroup<'a, K, V> {
     type Item = (&'a K, &'a V);
 
     #[inline]
@@ -202,9 +202,9 @@ impl<'a, K: Copy + Ord + 'a, V: 'a> Iterator for IterGroupByAll<'a, K, V> {
     }
 }
 
-impl<'a, K: Copy + Ord + 'a, V: 'a> ExactSizeIterator for IterGroupByAll<'a, K, V> {}
+impl<'a, K: Copy + Ord + 'a, V: 'a> ExactSizeIterator for IterLimitedByAllGroup<'a, K, V> {}
 
-impl<'a, K: Copy + Ord + 'a, V: 'a> DoubleEndedIterator for IterGroupByAll<'a, K, V> {
+impl<'a, K: Copy + Ord + 'a, V: 'a> DoubleEndedIterator for IterLimitedByAllGroup<'a, K, V> {
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
         let mut target_index: Option<usize> = None;
@@ -236,9 +236,9 @@ impl<'a, K: Copy + Ord + 'a, V: 'a> DoubleEndedIterator for IterGroupByAll<'a, K
     }
 }
 
-impl<'a, K: Copy + Ord + 'a, V: 'a> FusedIterator for IterGroupByAll<'a, K, V> {}
+impl<'a, K: Copy + Ord + 'a, V: 'a> FusedIterator for IterLimitedByAllGroup<'a, K, V> {}
 
-impl<'a, K: Copy + Ord + 'a, V: 'a> IterGroupByAll<'a, K, V> {
+impl<'a, K: Copy + Ord + 'a, V: 'a> IterLimitedByAllGroup<'a, K, V> {
     /// initializer for this iterator.
     /// This group id is group's id for I.
     pub fn from_btree_map<Group: Eq + Copy>(map: &'a BTreeMap<Group, BTreeMap<K, V>>) -> Self
@@ -249,7 +249,7 @@ impl<'a, K: Copy + Ord + 'a, V: 'a> IterGroupByAll<'a, K, V> {
         for (_, map) in map.iter() {
             iters.push(DoubleEndedPeekable::from_iter(map.iter()));
         }
-        IterGroupByAll { iters }
+        IterLimitedByAllGroup { iters }
     }
 
     /// initializer for this iterator.
@@ -262,18 +262,18 @@ impl<'a, K: Copy + Ord + 'a, V: 'a> IterGroupByAll<'a, K, V> {
         for (_, map) in map.iter() {
             iters.push(DoubleEndedPeekable::from_iter(map.iter()));
         }
-        IterGroupByAll { iters }
+        IterLimitedByAllGroup { iters }
     }
 }
 
 /// iterator for all items ordering by item's index in specified groups
 #[derive(Debug, Clone)]
-pub struct IterGroupByList<'a, Group, K: Copy + Ord + 'a, V: 'a> {
+pub struct IterLimitedByGroupList<'a, Group, K: Copy + Ord + 'a, V: 'a> {
     groups: Vec<Group>,
     iters: Vec<DoubleEndedPeekable<std::collections::btree_map::Iter<'a, K, V>>>,
 }
 
-impl<'a, Group, K: Copy + Ord + 'a, V: 'a> Iterator for IterGroupByList<'a, Group, K, V> {
+impl<'a, Group, K: Copy + Ord + 'a, V: 'a> Iterator for IterLimitedByGroupList<'a, Group, K, V> {
     type Item = (&'a K, &'a V);
 
     #[inline]
@@ -322,10 +322,13 @@ impl<'a, Group, K: Copy + Ord + 'a, V: 'a> Iterator for IterGroupByList<'a, Grou
     }
 }
 
-impl<'a, Group, K: Copy + Ord + 'a, V: 'a> ExactSizeIterator for IterGroupByList<'a, Group, K, V> {}
+impl<'a, Group, K: Copy + Ord + 'a, V: 'a> ExactSizeIterator
+    for IterLimitedByGroupList<'a, Group, K, V>
+{
+}
 
 impl<'a, Group, K: Copy + Ord + 'a, V: 'a> DoubleEndedIterator
-    for IterGroupByList<'a, Group, K, V>
+    for IterLimitedByGroupList<'a, Group, K, V>
 {
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
@@ -358,9 +361,12 @@ impl<'a, Group, K: Copy + Ord + 'a, V: 'a> DoubleEndedIterator
     }
 }
 
-impl<'a, Group, K: Copy + Ord + 'a, V: 'a> FusedIterator for IterGroupByList<'a, Group, K, V> {}
+impl<'a, Group, K: Copy + Ord + 'a, V: 'a> FusedIterator
+    for IterLimitedByGroupList<'a, Group, K, V>
+{
+}
 
-impl<'a, Group: Eq + Copy, K: Copy + Ord + 'a, V: 'a> IterGroupByList<'a, Group, K, V> {
+impl<'a, Group: Eq + Copy, K: Copy + Ord + 'a, V: 'a> IterLimitedByGroupList<'a, Group, K, V> {
     /// initializer for this iterator.
     /// This group id is group's id for I.
     pub fn from_btree_map(groups: &[Group], map: &'a BTreeMap<Group, BTreeMap<K, V>>) -> Self {
@@ -372,7 +378,7 @@ impl<'a, Group: Eq + Copy, K: Copy + Ord + 'a, V: 'a> IterGroupByList<'a, Group,
                 iters.push(DoubleEndedPeekable::from_iter(map.iter()));
             }
         }
-        IterGroupByList {
+        IterLimitedByGroupList {
             groups: list,
             iters,
         }
@@ -389,7 +395,7 @@ impl<'a, Group: Eq + Copy, K: Copy + Ord + 'a, V: 'a> IterGroupByList<'a, Group,
                 iters.push(DoubleEndedPeekable::from_iter(map.iter()));
             }
         }
-        IterGroupByList {
+        IterLimitedByGroupList {
             groups: list,
             iters,
         }
@@ -403,12 +409,12 @@ impl<'a, Group: Eq + Copy, K: Copy + Ord + 'a, V: 'a> IterGroupByList<'a, Group,
 
 /// iterator for all items ordering by item's index grouped by group's index
 #[derive(Debug, Clone)]
-pub struct IterGroupByOne<'a, Group, K: Ord + 'a, V: 'a> {
+pub struct IterLimitedByOneGroup<'a, Group, K: Ord + 'a, V: 'a> {
     group: Group,
     inner_iter: Option<std::collections::btree_map::Iter<'a, K, V>>,
 }
 
-impl<'a, Group, K: Ord + 'a, V: 'a> Iterator for IterGroupByOne<'a, Group, K, V> {
+impl<'a, Group, K: Ord + 'a, V: 'a> Iterator for IterLimitedByOneGroup<'a, Group, K, V> {
     type Item = (&'a K, &'a V);
 
     #[inline]
@@ -428,9 +434,9 @@ impl<'a, Group, K: Ord + 'a, V: 'a> Iterator for IterGroupByOne<'a, Group, K, V>
     }
 }
 
-impl<'a, Group, K: Ord + 'a, V: 'a> ExactSizeIterator for IterGroupByOne<'a, Group, K, V> {}
+impl<'a, Group, K: Ord + 'a, V: 'a> ExactSizeIterator for IterLimitedByOneGroup<'a, Group, K, V> {}
 
-impl<'a, Group, K: Ord + 'a, V: 'a> DoubleEndedIterator for IterGroupByOne<'a, Group, K, V> {
+impl<'a, Group, K: Ord + 'a, V: 'a> DoubleEndedIterator for IterLimitedByOneGroup<'a, Group, K, V> {
     #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
         match self.inner_iter.as_mut() {
@@ -474,16 +480,16 @@ impl<'a, Group, K: Ord + 'a, V: 'a> DoubleEndedIterator for IterGroupByOne<'a, G
     }
 }
 
-impl<'a, Group, K: Ord + 'a, V: 'a> FusedIterator for IterGroupByOne<'a, Group, K, V> {}
+impl<'a, Group, K: Ord + 'a, V: 'a> FusedIterator for IterLimitedByOneGroup<'a, Group, K, V> {}
 
-impl<'a, Group: Eq + Copy, K: Ord + 'a, V: 'a> IterGroupByOne<'a, Group, K, V> {
+impl<'a, Group: Eq + Copy, K: Ord + 'a, V: 'a> IterLimitedByOneGroup<'a, Group, K, V> {
     /// initializer for this iterator.
     /// This group id is group's id for I.
     pub fn from_btree_map(group: &Group, map: &'a BTreeMap<Group, BTreeMap<K, V>>) -> Self
     where
         Group: Ord,
     {
-        IterGroupByOne {
+        IterLimitedByOneGroup {
             group: *group,
             inner_iter: map.get(group).map(|map| map.iter()),
         }
@@ -495,7 +501,7 @@ impl<'a, Group: Eq + Copy, K: Ord + 'a, V: 'a> IterGroupByOne<'a, Group, K, V> {
     where
         Group: Hash,
     {
-        IterGroupByOne {
+        IterLimitedByOneGroup {
             group: *group,
             inner_iter: map.get(group).map(|map| map.iter()),
         }
@@ -593,9 +599,9 @@ mod test {
         }
     }
 
-    mod all_item {
+    mod all_group {
         use crate::util::alias::{GroupId, ItemId};
-        use crate::util::iter::IterGroupByAll;
+        use crate::util::iter::IterLimitedByAllGroup;
         use std::collections::BTreeMap;
 
         const ITEM_COUNT: usize = 20;
@@ -611,7 +617,7 @@ mod test {
         #[test]
         fn incremental() {
             let map = tester_map();
-            let mut iter = IterGroupByAll::from_btree_map(&map);
+            let mut iter = IterLimitedByAllGroup::from_btree_map(&map);
             for i in 0..ITEM_COUNT {
                 assert_eq!(iter.next().map(|(k, _)| k), Some(i).as_ref());
             }
@@ -622,7 +628,7 @@ mod test {
         #[test]
         fn decremental() {
             let map = tester_map();
-            let mut iter = IterGroupByAll::from_btree_map(&map);
+            let mut iter = IterLimitedByAllGroup::from_btree_map(&map);
             for i in (0..ITEM_COUNT).rev() {
                 assert_eq!(iter.next_back().map(|(k, _)| k), Some(i).as_ref());
             }
@@ -631,9 +637,9 @@ mod test {
         }
     }
 
-    mod group_by_list {
+    mod limited_by_group_list {
         use crate::util::alias::{GroupId, ItemId};
-        use crate::util::iter::IterGroupByList;
+        use crate::util::iter::IterLimitedByGroupList;
         use std::collections::BTreeMap;
 
         const ITEM_COUNT: usize = 20;
@@ -659,7 +665,7 @@ mod test {
             let map = tester_map();
             let mut creator_group_list = tester_group_list();
             creator_group_list.push(GROUP_COUNT * 10);
-            let mut iter = IterGroupByList::from_btree_map(&creator_group_list, &map);
+            let mut iter = IterLimitedByGroupList::from_btree_map(&creator_group_list, &map);
             assert!(iter
                 .using_groups()
                 .iter()
@@ -680,7 +686,7 @@ mod test {
             let map = tester_map();
             let mut creator_group_list = tester_group_list();
             creator_group_list.push(GROUP_COUNT * 10);
-            let mut iter = IterGroupByList::from_btree_map(&creator_group_list, &map);
+            let mut iter = IterLimitedByGroupList::from_btree_map(&creator_group_list, &map);
             assert!(iter
                 .using_groups()
                 .iter()
@@ -697,9 +703,9 @@ mod test {
         }
     }
 
-    mod group_by_one {
+    mod limited_by_one_group {
         use crate::util::alias::{GroupId, ItemId};
-        use crate::util::iter::IterGroupByOne;
+        use crate::util::iter::IterLimitedByOneGroup;
         use std::collections::BTreeMap;
 
         const ITEM_COUNT: usize = 20;
@@ -721,7 +727,7 @@ mod test {
         #[test]
         fn exist_incremental() {
             let map = tester_map();
-            let mut iter = IterGroupByOne::from_btree_map(&EXIST_GROUP_INDEX, &map);
+            let mut iter = IterLimitedByOneGroup::from_btree_map(&EXIST_GROUP_INDEX, &map);
             assert_eq!(iter.get_group(), EXIST_GROUP_INDEX);
             for i in 0..ITEM_COUNT {
                 if iter.get_group() == i % GROUP_COUNT {
@@ -734,7 +740,7 @@ mod test {
         #[test]
         fn not_exist_incremental() {
             let map = tester_map();
-            let mut iter = IterGroupByOne::from_btree_map(&NOT_EXIST_GROUP_INDEX, &map);
+            let mut iter = IterLimitedByOneGroup::from_btree_map(&NOT_EXIST_GROUP_INDEX, &map);
             assert_eq!(iter.get_group(), NOT_EXIST_GROUP_INDEX);
             assert!(!iter.has_iter());
             assert_eq!(iter.len(), 0);
@@ -744,7 +750,7 @@ mod test {
         #[test]
         fn exist_decremental() {
             let map = tester_map();
-            let mut iter = IterGroupByOne::from_btree_map(&EXIST_GROUP_INDEX, &map);
+            let mut iter = IterLimitedByOneGroup::from_btree_map(&EXIST_GROUP_INDEX, &map);
             assert_eq!(iter.get_group(), EXIST_GROUP_INDEX);
             for i in (0..ITEM_COUNT).rev() {
                 if iter.get_group() == i % GROUP_COUNT {
@@ -757,7 +763,7 @@ mod test {
         #[test]
         fn not_exist_decremental() {
             let map = tester_map();
-            let mut iter = IterGroupByOne::from_btree_map(&NOT_EXIST_GROUP_INDEX, &map);
+            let mut iter = IterLimitedByOneGroup::from_btree_map(&NOT_EXIST_GROUP_INDEX, &map);
             assert_eq!(iter.get_group(), NOT_EXIST_GROUP_INDEX);
             assert!(!iter.has_iter());
             assert_eq!(iter.len(), 0);

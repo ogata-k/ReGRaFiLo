@@ -7,7 +7,7 @@ use std::error::Error;
 use std::hash::Hash;
 
 use crate::util::alias::{GroupId, ItemId};
-use crate::util::iter::IterGroupByOne;
+use crate::util::iter::IterLimitedByOneGroup;
 use crate::util::kind::{GraphItemKind, LayoutGraphItemKind};
 use crate::util::name_type::NameType;
 use crate::util::writer::DisplayAsJson;
@@ -318,8 +318,8 @@ impl<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKeyTrait>
     }
 
     /// get iter grouped by the kind
-    pub fn iter_by_kind(&self, kind: Kind) -> IterGroupByOne<Kind, Value, Name> {
-        IterGroupByOne::from_hash_map(&kind, &self.rev_reference_index)
+    pub fn iter_by_kind(&self, kind: Kind) -> IterLimitedByOneGroup<Kind, Value, Name> {
+        IterLimitedByOneGroup::from_hash_map(&kind, &self.rev_reference_index)
     }
 }
 

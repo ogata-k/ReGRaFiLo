@@ -159,21 +159,24 @@ impl<I: GraphItemBase> ItemArena<I> {
     //
 
     /// iter for all item. This iterator sorted by ItemId.
-    pub fn iter_all(&self) -> iter::IterGroupByAll<ItemId, I> {
-        iter::IterGroupByAll::<ItemId, I>::from_btree_map(&self.arena)
+    pub fn iter_all(&self) -> iter::IterLimitedByAllGroup<ItemId, I> {
+        iter::IterLimitedByAllGroup::<ItemId, I>::from_btree_map(&self.arena)
     }
 
     /// iter for all item grouping by specified groups. This iterator sorted by ItemId.
     pub fn iter_group_by_list(
         &self,
         groups: &[GroupId],
-    ) -> iter::IterGroupByList<GroupId, ItemId, I> {
-        iter::IterGroupByList::<GroupId, ItemId, I>::from_btree_map(groups, &self.arena)
+    ) -> iter::IterLimitedByGroupList<GroupId, ItemId, I> {
+        iter::IterLimitedByGroupList::<GroupId, ItemId, I>::from_btree_map(groups, &self.arena)
     }
 
     /// iter for all item grouping by specified group_id. This iterator sorted by ItemId
-    pub fn iter_group_by_id(&self, group_id: GroupId) -> iter::IterGroupByOne<GroupId, ItemId, I> {
-        iter::IterGroupByOne::<GroupId, ItemId, I>::from_btree_map(&group_id, &self.arena)
+    pub fn iter_group_by_id(
+        &self,
+        group_id: GroupId,
+    ) -> iter::IterLimitedByOneGroup<GroupId, ItemId, I> {
+        iter::IterLimitedByOneGroup::<GroupId, ItemId, I>::from_btree_map(&group_id, &self.arena)
     }
 }
 

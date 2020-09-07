@@ -9,7 +9,7 @@ use crate::grafo::layout_item::LayoutItemBase;
 use crate::grafo::{IdTree, IdTreeError, NameIdError, NameRefIndex};
 use crate::util::alias::{GroupId, ItemId, LayoutItemId};
 use crate::util::either::Either;
-use crate::util::iter::IterGroupByOne;
+use crate::util::iter::IterLimitedByOneGroup;
 use crate::util::kind::{GraphItemKind, LayoutGraphItemKind};
 use crate::util::name_type::NameType;
 use crate::util::writer::DisplayAsJson;
@@ -289,7 +289,7 @@ impl<Name: NameType> Resolver<Name> {
     pub fn iter_graph_item_by(
         &self,
         item_kind: GraphItemKind,
-    ) -> IterGroupByOne<GraphItemKind, (GroupId, ItemId), Name> {
+    ) -> IterLimitedByOneGroup<GraphItemKind, (GroupId, ItemId), Name> {
         self.graph_items.iter_by_kind(item_kind)
     }
 
@@ -393,7 +393,7 @@ impl<Name: NameType> Resolver<Name> {
     pub fn iter_layout_item_by(
         &self,
         item_kind: LayoutGraphItemKind,
-    ) -> IterGroupByOne<LayoutGraphItemKind, ItemId, Name> {
+    ) -> IterLimitedByOneGroup<LayoutGraphItemKind, ItemId, Name> {
         self.layout_items.iter_by_kind(item_kind)
     }
 }
