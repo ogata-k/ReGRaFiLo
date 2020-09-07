@@ -80,6 +80,14 @@ impl<Id: Eq + Copy> IdTree<Id> {
             IdTree::None => Default::default(),
         }
     }
+
+    /// get id list of children and children's children
+    pub fn get_descendant_ids(&self, id: Id) -> Vec<Id> {
+        match self {
+            IdTree::Root(tree) => tree.get_descendant_ids(id),
+            IdTree::None => Default::default(),
+        }
+    }
 }
 
 impl<Id: Debug + Eq + Copy> IdTree<Id> {
@@ -151,6 +159,17 @@ impl<Id: Eq + Copy> IdTreeRoot<Id> {
             .map(|node| node.get_children().iter().map(|child| child.node).collect())
             .unwrap_or_else(Default::default)
     }
+
+    /// get id list of children and children's children
+    fn get_descendant_ids(&self, target_id: Id) -> Vec<Id> {
+        let mut result = vec![];
+        if let Some(tree) = self.root.find(target_id) {
+            for child in tree.children.iter() {
+                child.get_descendant_ids(&mut result);
+            }
+        }
+        result
+    }
 }
 
 impl<Id: Debug + Eq + Copy> IdTreeRoot<Id> {
@@ -218,6 +237,14 @@ impl<Id: Eq + Copy> UniqueTree<Id> {
     /// getter for children
     fn get_children(&self) -> &[Box<UniqueTree<Id>>] {
         self.children.as_ref()
+    }
+
+    /// get id list of children and children's children
+    fn get_descendant_ids(&self, ids: &mut Vec<Id>) {
+        ids.push(self.node);
+        for child in self.children.iter() {
+            child.get_descendant_ids(ids);
+        }
     }
 
     /// find node by specified id
@@ -402,5 +429,29 @@ mod test {
         let tree = new_tree_template();
         assert!(tree.contains_id(7));
         assert_eq!(tree.get_ancestor_ids(7), vec!(0, 1, 4));
+    }
+
+    #[test]
+    fn has_no_children() {
+        let tree = new_tree_template();
+        assert_eq!(tree.get_child_ids(7), vec![]);
+    }
+
+    #[test]
+    fn get_children() {
+        let tree = new_tree_template();
+        assert_eq!(tree.get_child_ids(0), vec![1, 2, 3]);
+    }
+
+    #[test]
+    fn has_no_descendant() {
+        let tree = new_tree_template();
+        assert_eq!(tree.get_descendant_ids(7), vec![]);
+    }
+
+    #[test]
+    fn get_descendant() {
+        let tree = new_tree_template();
+        assert_eq!(tree.get_descendant_ids(0), vec![1, 4, 7, 5, 2, 6, 3]);
     }
 }

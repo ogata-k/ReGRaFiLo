@@ -170,6 +170,11 @@ impl<Name: NameType> Resolver<Name> {
         self.group_id_tree.get_child_ids(group_id)
     }
 
+    /// get id list of children and children's children
+    pub fn get_descendant_ids(&self, group_id: GroupId) -> Vec<GroupId> {
+        self.group_id_tree.get_descendant_ids(group_id)
+    }
+
     /// get group tree but type as string
     pub fn group_tree_string(&self) -> String {
         self.group_id_tree.to_string()
