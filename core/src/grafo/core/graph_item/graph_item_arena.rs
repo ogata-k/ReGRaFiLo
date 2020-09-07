@@ -164,7 +164,7 @@ impl<I: GraphItemBase> ItemArena<I> {
     }
 
     /// iter for all item grouping by specified groups. This iterator sorted by ItemId.
-    pub fn iter_group_by_list(
+    pub fn iter_limit_by_list(
         &self,
         groups: &[GroupId],
     ) -> iter::IterLimitedByGroupList<GroupId, ItemId, I> {
@@ -172,7 +172,7 @@ impl<I: GraphItemBase> ItemArena<I> {
     }
 
     /// iter for all item grouping by specified group_id. This iterator sorted by ItemId
-    pub fn iter_group_by_id(
+    pub fn iter_limit_by_group_id(
         &self,
         group_id: GroupId,
     ) -> iter::IterLimitedByOneGroup<GroupId, ItemId, I> {

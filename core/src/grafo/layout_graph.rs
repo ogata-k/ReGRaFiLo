@@ -356,11 +356,11 @@ impl<Name: NameType> Grafo<Name> {
     }
 
     /// iter for all Group item grouping by specified groups. This iterator sorted by ItemId.
-    pub fn get_group_item_iter_group_by_list(
+    pub fn get_group_item_iter_limit_by_group_list(
         &self,
         groups: &[GroupId],
     ) -> IterLimitedByGroupList<GroupId, ItemId, GroupItem> {
-        let mut iter = self.group_arena.iter_group_by_list(groups);
+        let mut iter = self.group_arena.iter_limit_by_list(groups);
         if groups.contains(&DEFAULT_ITEM_ID) {
             // group item having id which is equal to DEFAULT_ITEM_ID is belong to self. So remove.
             let _next = iter.next();
@@ -369,11 +369,11 @@ impl<Name: NameType> Grafo<Name> {
     }
 
     /// iter for all Group item grouping by specified group_id. This iterator sorted by ItemId
-    pub fn get_group_item_iter_group_by_id(
+    pub fn get_group_item_iter_limit_by_group_id(
         &self,
         group_id: GroupId,
     ) -> IterLimitedByOneGroup<GroupId, ItemId, GroupItem> {
-        let mut iter = self.group_arena.iter_group_by_id(group_id);
+        let mut iter = self.group_arena.iter_limit_by_group_id(group_id);
         if group_id == DEFAULT_ITEM_ID {
             // group item having id which is equal to DEFAULT_ITEM_ID is belong to self. So remove.
             let _next = iter.next();
@@ -387,19 +387,19 @@ impl<Name: NameType> Grafo<Name> {
     }
 
     /// iter for all Node item grouping by specified groups. This iterator sorted by ItemId.
-    pub fn get_node_item_iter_group_by_list(
+    pub fn get_node_item_iter_limit_by_group_list(
         &self,
         groups: &[GroupId],
     ) -> IterLimitedByGroupList<GroupId, ItemId, NodeItem> {
-        self.node_arena.iter_group_by_list(groups)
+        self.node_arena.iter_limit_by_list(groups)
     }
 
     /// iter for all Node item grouping by specified group_id. This iterator sorted by ItemId
-    pub fn get_node_item_iter_group_by_id(
+    pub fn get_node_item_iter_limit_by_group_id(
         &self,
         group_id: GroupId,
     ) -> IterLimitedByOneGroup<GroupId, ItemId, NodeItem> {
-        self.node_arena.iter_group_by_id(group_id)
+        self.node_arena.iter_limit_by_group_id(group_id)
     }
 
     /// iter for all Edge item. This iterator sorted by ItemId.
@@ -408,19 +408,19 @@ impl<Name: NameType> Grafo<Name> {
     }
 
     /// iter for all Edge item grouping by specified groups. This iterator sorted by ItemId.
-    pub fn get_edge_item_iter_group_by_list(
+    pub fn get_edge_item_iter_limit_by_group_list(
         &self,
         groups: &[GroupId],
     ) -> IterLimitedByGroupList<GroupId, ItemId, EdgeItem> {
-        self.edge_arena.iter_group_by_list(groups)
+        self.edge_arena.iter_limit_by_list(groups)
     }
 
     /// iter for all Edge item grouping by specified group_id. This iterator sorted by ItemId
-    pub fn get_edge_item_iter_group_by_id(
+    pub fn get_edge_item_iter_limit_by_group_id(
         &self,
         group_id: GroupId,
     ) -> IterLimitedByOneGroup<GroupId, ItemId, EdgeItem> {
-        self.edge_arena.iter_group_by_id(group_id)
+        self.edge_arena.iter_limit_by_group_id(group_id)
     }
 
     //
@@ -790,7 +790,7 @@ mod test {
                 .filter(|i| i % 2 == 0)
                 .chain(vec![100])
                 .collect();
-            let mut iter = graph.get_group_item_iter_group_by_list(&group_list);
+            let mut iter = graph.get_group_item_iter_limit_by_group_list(&group_list);
             assert_eq!(
                 iter.using_groups(),
                 (0..GROUP_DIVIDE_COUNT)
@@ -809,7 +809,7 @@ mod test {
                 .filter(|i| i % 2 == 1)
                 .chain(vec![100])
                 .collect();
-            let mut iter = graph.get_group_item_iter_group_by_list(&group_list);
+            let mut iter = graph.get_group_item_iter_limit_by_group_list(&group_list);
             assert_eq!(
                 iter.using_groups(),
                 (1..GROUP_DIVIDE_COUNT)
@@ -824,14 +824,14 @@ mod test {
         #[test]
         fn iter_group_by_id_is_root_group() {
             let graph = make_template_graph();
-            let mut iter = graph.get_group_item_iter_group_by_id(0);
+            let mut iter = graph.get_group_item_iter_limit_by_group_id(0);
             assert_ne!(iter.next().map(|(i, _)| i), Some(0).as_ref());
         }
 
         #[test]
         fn iter_group_by_id_is_not_has_root_group() {
             let graph = make_template_graph();
-            let mut iter = graph.get_group_item_iter_group_by_id(usize::max_value());
+            let mut iter = graph.get_group_item_iter_limit_by_group_id(usize::max_value());
             assert_ne!(iter.next().map(|(i, _)| i), Some(0).as_ref());
         }
     }
