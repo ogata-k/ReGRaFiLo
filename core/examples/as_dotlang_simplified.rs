@@ -20,7 +20,7 @@ type GraphBuilder = NameStrGrafoBuilder;
 type GraphError = NameStrGrafoError;
 
 fn make_graph() -> Graph {
-    // TODO 今は仮置きなのでちゃんとしたグラフに置き換える
+    // TODO 今は仮置きなのでグループも使用したグラフに置き換える
 
     let mut graph: Graph = GraphBuilder::new().build_with_name_default_group("root group");
 
@@ -31,23 +31,19 @@ fn make_graph() -> Graph {
         let mut node_builder = NodeItemBuilder::new();
         // when not use following method, set root group automatically
         node_builder.set_belong_group("root group");
-        if i % 2 == 0 {
-            node_builder.set_name(format!("node {}", i));
-        }
+        node_builder.set_name(format!("node {}", i));
         let (_result, _errors) = graph.push_node(node_builder);
         result &= _result;
         errors.extend(_errors);
     }
 
-    for i in 0..5 {
+    for i in 0..10 {
         let mut edge_builder = EdgeItemBuilder::new();
         // when not use following method, set root group automatically
         edge_builder.set_belong_group("root group");
-        if i % 2 == 0 {
-            edge_builder.set_name(format!("edge {}", i));
-        }
-        edge_builder.set_start_endpoint(GraphItemKind::Node, format!("node {}", (2 * i) % 5));
-        edge_builder.set_end_endpoint(GraphItemKind::Node, format!("node {}", (2 * (i + 1)) % 5));
+        edge_builder.set_name(format!("edge {}", i));
+        edge_builder.set_start_endpoint(GraphItemKind::Node, format!("node {}", (2 * i) % 10));
+        edge_builder.set_end_endpoint(GraphItemKind::Node, format!("node {}", (7 * (i + 1)) % 10));
         let (_result, _errors) = graph.push_edge(edge_builder);
         result &= _result;
         errors.extend(_errors);
