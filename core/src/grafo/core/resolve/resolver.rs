@@ -5,6 +5,7 @@ use std::error::Error;
 use std::hash::Hash;
 
 use crate::grafo::core::graph_item::GraphItemBase;
+use crate::grafo::graph_item::edge::Endpoint;
 use crate::grafo::layout_item::LayoutItemBase;
 use crate::grafo::{IdTree, IdTreeError, NameIdError, NameRefIndex};
 use crate::util::alias::{GroupId, ItemId, LayoutItemId};
@@ -226,6 +227,14 @@ impl<Name: NameType> Resolver<Name> {
         self.graph_items.get_name(
             item.get_kind(),
             (item.get_belong_group_id(), item.get_item_id()),
+        )
+    }
+
+    /// get the graph item's name as the kind by the endpoint.
+    pub fn get_graph_item_name_by_endpoint(&self, endpoint: &Endpoint) -> Option<&Name> {
+        self.graph_items.get_name(
+            endpoint.get_kind(),
+            (endpoint.get_belong_group_id(), endpoint.get_item_id()),
         )
     }
 

@@ -40,7 +40,7 @@ impl Endpoint {
     }
 
     /// belonging group for endpoint's item
-    pub fn get_belong_group(&self) -> GroupId {
+    pub fn get_belong_group_id(&self) -> GroupId {
         self.group_id
     }
 
