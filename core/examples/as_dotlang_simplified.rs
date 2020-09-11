@@ -79,6 +79,7 @@ impl<'a, Name: NameType + Default> DotlangGraph<'a, Name> {
             .get_root_group_item()
             .expect("root group is not initialized yet.")
             .get_item_id();
+        // In future, be able to be label instead of item_name for label argument.
         writeln!(
             f,
             "digraph Grafo {{\n{}label = \"{}\";",
@@ -90,6 +91,7 @@ impl<'a, Name: NameType + Default> DotlangGraph<'a, Name> {
 
         writeln!(f, "\n{}// Nodes", " ".repeat(indent_count * INDENT_WIDTH))?;
         for (item_id, item) in self.grafo.get_node_item_iter_limit_by_group_id(root_id) {
+            // In future, be able to be label instead of item_name for label argument.
             writeln!(
                 f,
                 "{}{}_{}[label=\"{}\"];",
@@ -119,6 +121,7 @@ impl<'a, Name: NameType + Default> DotlangGraph<'a, Name> {
         for (_, item) in self.grafo.get_edge_item_iter_limit_by_group_id(root_id) {
             let start = item.get_start_endpoint();
             let end = item.get_end_endpoint();
+            // In future, be able to be label instead of item_name for label argument.
             writeln!(
                 f,
                 "{}{}_{} -> {}_{}[label=\"{}\"];",
@@ -144,6 +147,7 @@ impl<'a, Name: NameType + Default> DotlangGraph<'a, Name> {
     ) -> std::fmt::Result {
         let name_default = Name::default();
         let resolver = self.grafo.resolver();
+        // In future, be able to be label instead of item_name for label argument.
         writeln!(
             f,
             "{}subgraph subgraph_{} {{\n{}label=\"{}\";\n",
@@ -161,6 +165,7 @@ impl<'a, Name: NameType + Default> DotlangGraph<'a, Name> {
             " ".repeat((indent_count + 1) * INDENT_WIDTH)
         )?;
         for (item_id, item) in self.grafo.get_node_item_iter_limit_by_group_id(child_id) {
+            // In future, be able to be label instead of item_name for label argument.
             writeln!(
                 f,
                 "{}{}_{}[label=\"{}\"];",
@@ -195,6 +200,7 @@ impl<'a, Name: NameType + Default> DotlangGraph<'a, Name> {
         for (_, item) in self.grafo.get_edge_item_iter_limit_by_group_id(child_id) {
             let start = item.get_start_endpoint();
             let end = item.get_end_endpoint();
+            // In future, be able to be label instead of item_name for label argument.
             writeln!(
                 f,
                 "{}{}_{} -> {}_{}[label=\"{}\"];",
