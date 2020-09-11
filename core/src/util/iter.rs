@@ -7,7 +7,7 @@ use std::hash::Hash;
 
 /// iterator with peekable from first and last.
 #[derive(Clone, Debug)]
-pub struct DoubleEndedPeekable<I: DoubleEndedIterator + ExactSizeIterator> {
+struct DoubleEndedPeekable<I: DoubleEndedIterator + ExactSizeIterator> {
     iter: I,
     peeked: Option<Option<I::Item>>,
     peeked_last: Option<Option<I::Item>>,
