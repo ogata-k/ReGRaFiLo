@@ -10,7 +10,8 @@ use crate::util::name_type::NameType;
 pub trait GraphItemBuilderBase<Name: NameType>: ItemBuilderBase<Name> {
     /// setter for belong group
     fn set_belong_group<S: Into<Name>>(&mut self, group: S) -> &mut Self;
-    /// setter for graph item's name
+    /// setter for graph item's name. You can use the name for specified item.
+    /// However the name is not the item's label. If you want label, use label on item's parameter.
     fn set_name<S: Into<Name>>(&mut self, name: S) -> &mut Self;
 }
 
