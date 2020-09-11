@@ -68,7 +68,7 @@ impl<Name: NameType> HasItemBuilderMethod<Name> for EdgeItemBuilder<Name> {
             None
         };
         let item: Option<EdgeItem> =
-            self.resolve_item(item_id, &mut errors, belong_group, start, end);
+            self.resolve_item(item_id, resolver, &mut errors, belong_group, start, end);
         let item_option: Option<EdgeItemOption<Name>> =
             self.into_item_option(item_id, resolver, &mut errors);
 
@@ -171,6 +171,7 @@ impl<Name: NameType> EdgeItemBuilder<Name> {
     fn resolve_item(
         &self,
         item_id: ItemId,
+        resolver: &Resolver<Name>,
         errors: &mut Vec<GrafoError<Name>>,
         resolved_belong_group: Option<ItemId>,
         resolved_start: Option<(GraphItemKind, (GroupId, ItemId))>,
@@ -191,12 +192,11 @@ impl<Name: NameType> EdgeItemBuilder<Name> {
             (Some(gid), Some(start), Some(end)) => {
                 let (s_kind, (s_belong_group, s_item_id)) = start;
                 let (e_kind, (e_belong_group, e_item_id)) = end;
-                // item's belonging group id is endpoint's belonging group id
-                // or id of item which is group item as endpoint.
-                if gid == s_belong_group
-                    || gid == e_belong_group
-                    || (gid == s_item_id && s_kind == GraphItemKind::Group)
-                    || (gid == e_item_id && e_kind == GraphItemKind::Group)
+
+                // you use endpoint's ancestors group id for item's belong group
+                if (gid == s_belong_group && gid == e_belong_group)
+                    || (resolver.get_ancestor_ids(s_belong_group).contains(&gid)
+                        && resolver.get_ancestor_ids(e_belong_group).contains(&gid))
                 {
                     Some(EdgeItem::new(
                         gid,

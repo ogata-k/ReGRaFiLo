@@ -753,7 +753,9 @@ mod test {
         }
 
         // iterator
-        const GROUP_DIVIDE_COUNT: usize = 5; // > 0
+        const GROUP_DIVIDE_COUNT: usize = 5;
+
+        // > 0
         fn make_template_graph() -> Graph {
             // Group hierarchy tree
             //   root:               0
@@ -1134,7 +1136,7 @@ mod test {
         }
 
         #[test]
-        fn push_edge_success_group_endpoint() {
+        fn push_edge_success_same_group_endpoint() {
             let mut graph = GraphBuilder::new().build_with_name_default_group("root");
 
             let mut group_builder_1 = GroupItemBuilder::new();
@@ -1159,7 +1161,7 @@ mod test {
         }
 
         #[test]
-        fn push_edges_endpoints_is_not_same_group() {
+        fn push_edges_success_endpoints_is_not_same_group() {
             let mut graph = GraphBuilder::new().build_with_no_name_default_group();
 
             let mut group_builder_1 = GroupItemBuilder::new();
@@ -1197,15 +1199,29 @@ mod test {
             assert!(result);
             assert_eq!(errors, Vec::<GraphError>::new());
 
-            // in group_2
             let mut node_builder_2 = NodeItemBuilder::new();
             node_builder_2.set_name("node_2");
-            node_builder_2.set_belong_group("group_2");
+            node_builder_2.set_belong_group("group_1");
             let (result, errors) = graph.push_node(node_builder_2);
             assert!(result);
             assert_eq!(errors, Vec::<GraphError>::new());
 
-            assert_eq!(graph.node_arena.count_all(), 2);
+            // in group_2
+            let mut node_builder_3 = NodeItemBuilder::new();
+            node_builder_3.set_name("node_3");
+            node_builder_3.set_belong_group("group_2");
+            let (result, errors) = graph.push_node(node_builder_3);
+            assert!(result);
+            assert_eq!(errors, Vec::<GraphError>::new());
+
+            let mut node_builder_4 = NodeItemBuilder::new();
+            node_builder_4.set_name("node_4");
+            node_builder_4.set_belong_group("group_2");
+            let (result, errors) = graph.push_node(node_builder_4);
+            assert!(result);
+            assert_eq!(errors, Vec::<GraphError>::new());
+
+            assert_eq!(graph.node_arena.count_all(), 4);
 
             // edge
             // in root group
@@ -1213,32 +1229,57 @@ mod test {
             edge_builder_1.set_start_endpoint(GraphItemKind::Node, "node_1");
             edge_builder_1.set_end_endpoint(GraphItemKind::Node, "node_2");
             let (result, errors) = graph.push_edge(edge_builder_1);
-            // error
-            assert!(!result);
-            assert_eq!(
-                errors,
-                vec![EdgeItemError::InappropriateGroup(1, None, None).into()]
-            );
+            // success!
+            assert!(result);
+            assert_eq!(errors, vec![]);
 
-            // in group_1
             let mut edge_builder_2 = EdgeItemBuilder::new();
-            edge_builder_2.set_belong_group("group_1");
             edge_builder_2.set_start_endpoint(GraphItemKind::Node, "node_1");
-            edge_builder_2.set_end_endpoint(GraphItemKind::Node, "node_2");
+            edge_builder_2.set_end_endpoint(GraphItemKind::Node, "node_3");
             let (result, errors) = graph.push_edge(edge_builder_2);
+            // success!
             assert!(result);
-            assert_eq!(errors, Vec::<GraphError>::new());
+            assert_eq!(errors, vec![]);
 
-            // in group_2
+            // in group 1
             let mut edge_builder_3 = EdgeItemBuilder::new();
-            edge_builder_3.set_belong_group("group_2");
+            edge_builder_3.set_belong_group("group_1");
             edge_builder_3.set_start_endpoint(GraphItemKind::Node, "node_1");
-            edge_builder_3.set_end_endpoint(GraphItemKind::Node, "node_2");
+            edge_builder_3.set_end_endpoint(GraphItemKind::Node, "node_1");
             let (result, errors) = graph.push_edge(edge_builder_3);
+            // success!
             assert!(result);
-            assert_eq!(errors, Vec::<GraphError>::new());
+            assert_eq!(errors, vec![]);
 
-            assert_eq!(graph.edge_arena.count_all(), 2);
+            let mut edge_builder_4 = EdgeItemBuilder::new();
+            edge_builder_4.set_belong_group("group_1");
+            edge_builder_4.set_start_endpoint(GraphItemKind::Node, "node_1");
+            edge_builder_4.set_end_endpoint(GraphItemKind::Node, "node_2");
+            let (result, errors) = graph.push_edge(edge_builder_4);
+            // success!
+            assert!(result);
+            assert_eq!(errors, vec![]);
+
+            // in group 2
+            let mut edge_builder_5 = EdgeItemBuilder::new();
+            edge_builder_5.set_belong_group("group_2");
+            edge_builder_5.set_start_endpoint(GraphItemKind::Node, "node_3");
+            edge_builder_5.set_end_endpoint(GraphItemKind::Node, "node_3");
+            let (result, errors) = graph.push_edge(edge_builder_5);
+            // success!
+            assert!(result);
+            assert_eq!(errors, vec![]);
+
+            let mut edge_builder_6 = EdgeItemBuilder::new();
+            edge_builder_6.set_belong_group("group_2");
+            edge_builder_6.set_start_endpoint(GraphItemKind::Node, "node_3");
+            edge_builder_6.set_end_endpoint(GraphItemKind::Node, "node_4");
+            let (result, errors) = graph.push_edge(edge_builder_6);
+            // success!
+            assert!(result);
+            assert_eq!(errors, vec![]);
+
+            assert_eq!(graph.edge_arena.count_all(), 6);
         }
 
         #[test]
@@ -1272,13 +1313,16 @@ mod test {
             assert_eq!(errors, Vec::<GraphError>::new());
 
             let mut edge_builder = EdgeItemBuilder::new();
+            edge_builder.set_belong_group("group 1");
             edge_builder.set_start_endpoint(GraphItemKind::Node, "node 1");
             edge_builder.set_end_endpoint(GraphItemKind::Node, "node 2");
             let (result, errors) = graph.push_edge(edge_builder);
             assert!(!result);
             assert_eq!(
                 errors,
-                vec![EdgeItemError::InappropriateGroup(1, None, None).into()]
+                vec![
+                    EdgeItemError::InappropriateGroup(1, None, Some("group 1".to_string())).into()
+                ]
             );
         }
 
@@ -1313,14 +1357,16 @@ mod test {
             assert_eq!(errors, Vec::<GraphError>::new());
 
             let mut edge_builder = EdgeItemBuilder::new();
-            edge_builder.set_belong_group("root");
+            edge_builder.set_belong_group("group 1");
             edge_builder.set_start_endpoint(GraphItemKind::Group, "group 2");
             edge_builder.set_end_endpoint(GraphItemKind::Group, "group 4");
             let (result, errors) = graph.push_edge(edge_builder);
             assert!(!result);
             assert_eq!(
                 errors,
-                vec![EdgeItemError::InappropriateGroup(1, None, Some("root".to_string())).into()]
+                vec![
+                    EdgeItemError::InappropriateGroup(1, None, Some("group 1".to_string())).into()
+                ]
             );
         }
 
