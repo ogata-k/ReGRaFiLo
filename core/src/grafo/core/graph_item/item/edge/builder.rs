@@ -194,9 +194,10 @@ impl<Name: NameType> EdgeItemBuilder<Name> {
                 let (e_kind, (e_belong_group, e_item_id)) = end;
 
                 // you use endpoint's ancestors group id for item's belong group
-                if (gid == s_belong_group && gid == e_belong_group)
-                    || (resolver.get_ancestor_ids(s_belong_group).contains(&gid)
-                        && resolver.get_ancestor_ids(e_belong_group).contains(&gid))
+                if (gid == s_belong_group
+                    || resolver.get_ancestor_ids(s_belong_group).contains(&gid))
+                    && (gid == e_belong_group
+                        || resolver.get_ancestor_ids(e_belong_group).contains(&gid))
                 {
                     Some(EdgeItem::new(
                         gid,
