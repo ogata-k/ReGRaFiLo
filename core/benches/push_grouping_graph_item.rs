@@ -17,12 +17,14 @@ const GROUP_COUNT: u32 = 5;
 
 fn create_base_graph() -> Graph {
     let mut graph: Graph =
-        GraphBuilder::new().build_with_name_default_group("group 0", Option::<String>::None);
+        GraphBuilder::new().build_with_name_default_group("group 0", Some("root group"));
 
     for i in 0..GROUP_COUNT {
         let mut group = GroupItemBuilder::new();
-        group.set_belong_group(format!("group {}", i));
-        group.set_name(format!("group {}", i + 1));
+        group
+            .set_belong_group(format!("group {}", i))
+            .set_name(format!("group {}", i + 1))
+            .set_label(format!("group {}", i + 1));
         graph.push_group(group);
     }
 
@@ -40,8 +42,10 @@ fn push_items(count: u32) {
 fn push_nodes(graph: &mut Graph, errors: &mut Vec<GraphError>, count: u32) {
     for i in 0..count {
         let mut node_builder = NodeItemBuilder::new();
-        node_builder.set_belong_group(format!("group {}", i % GROUP_COUNT));
-        node_builder.set_name(format!("{}", i));
+        node_builder
+            .set_belong_group(format!("group {}", i % GROUP_COUNT))
+            .set_name(format!("node {}", i))
+            .set_label(format!("node {}", i));
         let (_result, _errors) = graph.push_node(node_builder);
         errors.extend(_errors);
     }
@@ -50,10 +54,12 @@ fn push_nodes(graph: &mut Graph, errors: &mut Vec<GraphError>, count: u32) {
 fn push_edges(graph: &mut Graph, errors: &mut Vec<GraphError>, count: u32) {
     for i in 0..count {
         let mut edge_builder = EdgeItemBuilder::new();
-        edge_builder.set_belong_group(format!("group {}", i % GROUP_COUNT));
-        edge_builder.set_name(format!("{}", i));
-        edge_builder.set_start_endpoint(GraphItemKind::Node, format!("{}", i));
-        edge_builder.set_end_endpoint(GraphItemKind::Node, format!("{}", (i + 1) % count));
+        edge_builder
+            .set_belong_group(format!("group {}", i % GROUP_COUNT))
+            .set_name(format!("edge {}", i))
+            .set_label(format!("edge {}", i))
+            .set_start_endpoint(GraphItemKind::Node, format!("node {}", i))
+            .set_end_endpoint(GraphItemKind::Node, format!("node {}", (i + 1) % count));
         let (_result, _errors) = graph.push_edge(edge_builder);
         errors.extend(_errors);
     }

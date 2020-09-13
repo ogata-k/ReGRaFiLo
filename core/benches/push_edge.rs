@@ -13,8 +13,7 @@ pub type GraphBuilder = NameStrGrafoBuilder;
 pub type GraphError = NameStrGrafoError;
 
 fn push_items(count: u32) {
-    let mut graph: Graph =
-        GraphBuilder::new().build_with_no_name_default_group(Option::<String>::None);
+    let mut graph: Graph = GraphBuilder::new().build_with_no_name_default_group(Some("root group"));
 
     let mut errors: Vec<GraphError> = Vec::new();
     push_nodes(&mut graph, &mut errors, count);
@@ -24,7 +23,9 @@ fn push_items(count: u32) {
 fn push_nodes(graph: &mut Graph, errors: &mut Vec<GraphError>, count: u32) {
     for i in 0..count {
         let mut node_builder = NodeItemBuilder::new();
-        node_builder.set_name(format!("{}", i));
+        node_builder
+            .set_name(format!("node {}", i))
+            .set_label(format!("node {}", i));
         let (_result, _errors) = graph.push_node(node_builder);
         errors.extend(_errors);
     }
@@ -33,9 +34,14 @@ fn push_nodes(graph: &mut Graph, errors: &mut Vec<GraphError>, count: u32) {
 fn push_edges(graph: &mut Graph, errors: &mut Vec<GraphError>, count: u32) {
     for i in 0..count {
         let mut edge_builder = EdgeItemBuilder::new();
-        edge_builder.set_name(format!("{}", i));
-        edge_builder.set_start_endpoint(GraphItemKind::Node, format!("{}", (2 * i) % count));
-        edge_builder.set_end_endpoint(GraphItemKind::Node, format!("{}", (2 * (i + 1)) % count));
+        edge_builder
+            .set_name(format!("edge {}", i))
+            .set_label(format!("edge {}", i))
+            .set_start_endpoint(GraphItemKind::Node, format!("node {}", (2 * i) % count))
+            .set_end_endpoint(
+                GraphItemKind::Node,
+                format!("node {}", (2 * (i + 1)) % count),
+            );
         let (_result, _errors) = graph.push_edge(edge_builder);
         errors.extend(_errors);
     }

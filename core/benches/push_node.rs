@@ -11,8 +11,7 @@ pub type GraphBuilder = NameStrGrafoBuilder;
 pub type GraphError = NameStrGrafoError;
 
 fn push_items(count: u32) {
-    let mut graph: Graph =
-        GraphBuilder::new().build_with_no_name_default_group(Option::<String>::None);
+    let mut graph: Graph = GraphBuilder::new().build_with_no_name_default_group(Some("root group"));
 
     let mut errors: Vec<GraphError> = Vec::new();
     push_nodes(&mut graph, &mut errors, count);
@@ -21,7 +20,9 @@ fn push_items(count: u32) {
 fn push_nodes(graph: &mut Graph, errors: &mut Vec<GraphError>, count: u32) {
     for i in 0..count {
         let mut node_builder = NodeItemBuilder::new();
-        node_builder.set_name(format!("{}", i));
+        node_builder
+            .set_name(format!("node {}", i))
+            .set_label(format!("node {}", i));
         let (_result, _errors) = graph.push_node(node_builder);
         errors.extend(_errors);
     }
