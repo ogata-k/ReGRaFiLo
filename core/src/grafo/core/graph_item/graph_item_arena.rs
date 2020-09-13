@@ -381,8 +381,7 @@ mod test {
                     self.belong_group.as_deref(),
                 );
                 if group_id.is_none() {
-                    errors
-                        .push(TargetBuilderError::NotFindGroup(item_id, self.name.clone()).into());
+                    errors.push(TargetBuilderError::NotFindGroup(item_id, self.name).into());
                     return (None, errors);
                 }
                 let group_id = group_id.unwrap();
@@ -460,7 +459,7 @@ mod test {
         impl FromWithItemId<NameIdError<String, GraphItemKind>, String> for TargetBuilderError {
             fn from_with_id(
                 _: ItemId,
-                name: Option<String>,
+                _: Option<String>,
                 _: NameIdError<String, GraphItemKind>,
             ) -> Self {
                 unimplemented!()
@@ -468,7 +467,7 @@ mod test {
         }
 
         impl FromWithItemId<ResolverError, String> for TargetBuilderError {
-            fn from_with_id(_: ItemId, name: Option<String>, _: ResolverError) -> Self {
+            fn from_with_id(_: ItemId, _: Option<String>, _: ResolverError) -> Self {
                 unimplemented!()
             }
         }
@@ -609,9 +608,8 @@ mod test {
                             group_id,
                             item_id,
                         ) {
-                            errors.push(
-                                TargetBuilderError::from_with_id(item_id, name.clone(), err).into(),
-                            );
+                            errors
+                                .push(TargetBuilderError::from_with_id(item_id, name, err).into());
                         }
 
                         (errors.is_empty(), errors)
