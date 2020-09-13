@@ -20,7 +20,8 @@ fn main() {
     println!("iter count: {}", ITERATE_COUNT);
 
     let start = SystemTime::now();
-    let mut graph: Graph = GraphBuilder::new().build_with_name_default_group("root group");
+    let mut graph: Graph =
+        GraphBuilder::new().build_with_name_default_group("root group", Some("no error graph"));
 
     let mut result = true;
     let mut errors: Vec<GraphError> = Vec::new();
@@ -32,6 +33,7 @@ fn main() {
         if i % 2 == 0 {
             node_builder.set_name(format!("node {}", i));
         }
+        node_builder.set_label(format!("n{}", i));
         let (_result, _errors) = graph.push_node(node_builder);
         result &= _result;
         errors.extend(_errors);
@@ -44,6 +46,7 @@ fn main() {
         if i % 2 == 0 {
             edge_builder.set_name(format!("edge {}", i));
         }
+        edge_builder.set_label(format!("e{}", i));
         edge_builder.set_start_endpoint(
             GraphItemKind::Node,
             format!("node {}", (2 * i) % ITERATE_COUNT),

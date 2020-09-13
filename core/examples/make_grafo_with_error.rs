@@ -34,7 +34,8 @@ fn main() {
     println!("iter count: {}", ITERATE_COUNT);
 
     let start = SystemTime::now();
-    let mut graph: Graph = GraphBuilder::new().build_with_name_default_group(0_usize);
+    let mut graph: Graph =
+        GraphBuilder::new().build_with_name_default_group(0_usize, Some("graph with error"));
 
     let mut result = true;
 
@@ -42,6 +43,7 @@ fn main() {
         let mut group_builder = GroupItemBuilder::new();
         group_builder.set_belong_group(i);
         group_builder.set_name(i + 1);
+        group_builder.set_label(format!("g{}", i));
         let (_result, _errors) = graph.push_group(group_builder);
         result &= _result;
         print_errors(_errors);
@@ -51,6 +53,7 @@ fn main() {
         let mut node_builder = NodeItemBuilder::new();
         node_builder.set_belong_group(i + 2);
         node_builder.set_name(i + 1);
+        node_builder.set_label(format!("n{}", i));
         let (_result, _errors) = graph.push_node(node_builder);
         result &= _result;
         print_errors(_errors);
@@ -59,6 +62,7 @@ fn main() {
     for i in 0..ITERATE_COUNT {
         let mut edge_builder = EdgeItemBuilder::new();
         edge_builder.set_belong_group(i);
+        edge_builder.set_label(format!("e{}", i));
         // Edge does not have name
         edge_builder.set_start_endpoint(select_kind(i), i);
         edge_builder.set_end_endpoint(select_kind(i.saturating_sub(1)), i.saturating_sub(1));
