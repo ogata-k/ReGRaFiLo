@@ -16,7 +16,8 @@ pub type GraphError = NameStrGrafoError;
 const GROUP_COUNT: u32 = 5;
 
 fn create_base_graph() -> Graph {
-    let mut graph: Graph = GraphBuilder::new().build_with_name_default_group("group 0");
+    let mut graph: Graph =
+        GraphBuilder::new().build_with_name_default_group("group 0", Option::<String>::None);
 
     for i in 0..GROUP_COUNT {
         let mut group = GroupItemBuilder::new();
