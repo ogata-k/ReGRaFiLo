@@ -17,6 +17,7 @@ use crate::util::name_type::NameType;
 pub struct NodeItemBuilder<Name: NameType> {
     belong_group: Option<Name>,
     name: Option<Name>,
+    label: Option<String>,
 }
 
 impl<Name: NameType> ItemBuilderBase<Name> for NodeItemBuilder<Name> {
@@ -34,6 +35,11 @@ impl<Name: NameType> GraphItemBuilderBase<Name> for NodeItemBuilder<Name> {
         self.name = Some(name.into());
         self
     }
+
+    fn set_label<S: Into<String>>(&mut self, label: S) -> &mut Self {
+        self.label = Some(label.into());
+        self
+    }
 }
 
 impl<Name: NameType> HasItemBuilderMethod<Name> for NodeItemBuilder<Name> {
@@ -46,13 +52,12 @@ impl<Name: NameType> HasItemBuilderMethod<Name> for NodeItemBuilder<Name> {
         let mut errors: Vec<GrafoError<Name>> = Vec::new();
         let belong_group: Option<GroupId> =
             self.resolve_belong_group(item_id, resolver, &mut errors);
-        let item: Option<NodeItem> = self.resolve_item(item_id, &mut errors, belong_group);
-        let item_option: Option<NodeItemOption<Name>> =
-            self.into_item_option(item_id, resolver, &mut errors);
+        let (item, option): (Option<NodeItem>, NodeItemOption<Name>) =
+            self.resolve_item(item_id, resolver, &mut errors, belong_group);
 
-        match (item, item_option) {
-            (Some(i), Some(o)) => (Some((i, o)), errors),
-            (_, _) => (None, errors),
+        match item {
+            Some(i) => (Some((i, option)), errors),
+            None => (None, errors),
         }
     }
 }
@@ -81,42 +86,37 @@ impl<Name: NameType> NodeItemBuilder<Name> {
 
     /// resolve Node item from builder's parameter
     fn resolve_item(
-        &self,
-        item_id: ItemId,
-        errors: &mut Vec<GrafoError<Name>>,
-        resolved_belong_group: Option<ItemId>,
-    ) -> Option<NodeItem> {
-        let mut validate = true;
-        if resolved_belong_group.is_none() {
-            errors.push(
-                NodeItemError::FailResolveBelongGroup(
-                    item_id,
-                    self.name.clone(),
-                    self.belong_group.clone(),
-                )
-                .into(),
-            );
-            validate = false;
-        }
-
-        if validate {
-            Some(NodeItem::new(resolved_belong_group.unwrap(), item_id))
-        } else {
-            None
-        }
-    }
-
-    /// resolve Node item's option from builder's parameter
-    fn into_item_option(
         self,
         item_id: ItemId,
         resolver: &Resolver<Name>,
         errors: &mut Vec<GrafoError<Name>>,
-    ) -> Option<NodeItemOption<Name>> {
+        resolved_belong_group: Option<ItemId>,
+    ) -> (Option<NodeItem>, NodeItemOption<Name>) {
+        let mut validate = true;
         let NodeItemBuilder {
-            belong_group: _,
+            belong_group,
             name,
+            label,
         } = self;
+
+        if resolved_belong_group.is_none() {
+            errors.push(
+                NodeItemError::FailResolveBelongGroup(item_id, name.clone(), belong_group).into(),
+            );
+            validate = false;
+        }
+
+        let item = if validate {
+            Some(NodeItem::new(
+                resolved_belong_group.unwrap(),
+                item_id,
+                label,
+            ))
+        } else {
+            None
+        };
+
+        // option
         if let Some(n) = &name {
             if resolver.is_usable_graph_item_name(NodeItem::kind(), n) {
                 errors.push(
@@ -130,7 +130,7 @@ impl<Name: NameType> NodeItemBuilder<Name> {
             }
         }
 
-        Some(NodeItemOption { name })
+        (item, NodeItemOption { name })
     }
 }
 
@@ -141,6 +141,7 @@ impl<Name: NameType> NodeItemBuilder<Name> {
         Self {
             belong_group: None,
             name: None,
+            label: None,
         }
     }
 }

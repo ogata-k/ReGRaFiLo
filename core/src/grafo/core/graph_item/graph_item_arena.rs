@@ -2,7 +2,9 @@
 
 use std::collections::BTreeMap;
 
-use crate::grafo::graph_item::{GraphBuilderErrorBase, GraphItemBase, GraphItemBuilderBase};
+use crate::grafo::graph_item::{
+    GraphBuilderErrorBase, GraphItemBase, GraphItemBuilderBase, WithMutable,
+};
 use crate::grafo::GrafoError;
 use crate::grafo::Resolver;
 use crate::util::alias::{GroupId, ItemId, DEFAULT_ITEM_ID};
@@ -189,10 +191,12 @@ impl<I: GraphItemBase + Default> ItemArena<I> {
     /// push the item into arena with action for conclusion
     pub(crate) fn push_default<Name: NameType, F, O: Default>(
         &mut self,
+        label: Option<String>,
         resolver: &mut Resolver<Name>,
         action: F,
     ) -> (bool, Vec<GrafoError<Name>>)
     where
+        I: WithMutable,
         F: FnOnce(
             &mut Resolver<Name>,
             GraphItemKind,
@@ -201,7 +205,8 @@ impl<I: GraphItemBase + Default> ItemArena<I> {
             O,
         ) -> (bool, Vec<GrafoError<Name>>),
     {
-        let item = I::default();
+        let mut item = I::default();
+        item.set_label(label);
         let group_id = item.get_belong_group_id();
         let push_id = self.get_default_index();
         let (result, errors) = action(resolver, item.get_kind(), group_id, push_id, O::default());
@@ -289,6 +294,7 @@ mod test {
         pub struct TargetItemBuilder {
             belong_group: Option<String>,
             name: Option<String>,
+            label: Option<String>,
         }
 
         impl ItemBuilderBase<String> for TargetItemBuilder {
@@ -306,6 +312,11 @@ mod test {
                 self.name = Some(name.into());
                 self
             }
+
+            fn set_label<S: Into<String>>(&mut self, label: S) -> &mut Self {
+                self.label = Some(label.into());
+                self
+            }
         }
 
         impl TargetItemBuilder {
@@ -313,6 +324,7 @@ mod test {
                 TargetItemBuilder {
                     belong_group: None,
                     name: None,
+                    label: None,
                 }
             }
             fn resolve_belong_group(
@@ -378,6 +390,7 @@ mod test {
                 let TargetItemBuilder {
                     belong_group: _,
                     name,
+                    label,
                 } = self;
                 if errors.is_empty() {
                     (
@@ -385,6 +398,7 @@ mod test {
                             TargetItem {
                                 belong_group_id: group_id,
                                 item_id,
+                                label,
                             },
                             TargetItemOption {
                                 belong_group_id: group_id,
@@ -475,10 +489,11 @@ mod test {
             }
         }
 
-        #[derive(Debug, Eq, PartialEq, Clone, Copy)]
+        #[derive(Debug, Eq, PartialEq, Clone)]
         pub struct TargetItem {
             belong_group_id: GroupId,
             item_id: ItemId,
+            label: Option<String>,
         }
 
         impl HasGraphItemKind for TargetItem {
@@ -496,6 +511,10 @@ mod test {
         impl GraphItemBase for TargetItem {
             fn get_belong_group_id(&self) -> ItemId {
                 self.belong_group_id
+            }
+
+            fn get_label(&self) -> Option<&str> {
+                self.label.as_deref()
             }
         }
     }

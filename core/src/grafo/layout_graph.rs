@@ -43,17 +43,28 @@ impl<Name: NameType> GrafoBuilder<Name> {
     }
 
     /// build to Grafo with default root group. But root group doesn't have name.
-    pub fn build_with_no_name_default_group(self) -> Grafo<Name> {
-        self.build_with_default_group(None)
+    pub fn build_with_no_name_default_group<S: Into<String>>(
+        self,
+        label: Option<S>,
+    ) -> Grafo<Name> {
+        self.build_with_default_group(None, label.map(|s| s.into()))
     }
 
     /// build to Grafo with default root group which has specified name.
-    pub fn build_with_name_default_group<S: Into<Name>>(self, group_name: S) -> Grafo<Name> {
-        self.build_with_default_group(Some(group_name.into()))
+    pub fn build_with_name_default_group<S1: Into<Name>, S2: Into<String>>(
+        self,
+        group_name: S1,
+        label: Option<S2>,
+    ) -> Grafo<Name> {
+        self.build_with_default_group(Some(group_name.into()), label.map(|s| s.into()))
     }
 
     /// build to Grafo with default root group. You can specify name by arg.
-    fn build_with_default_group(self, group_name: Option<Name>) -> Grafo<Name> {
+    fn build_with_default_group(
+        self,
+        group_name: Option<Name>,
+        label: Option<String>,
+    ) -> Grafo<Name> {
         let mut group_store = ItemArena::<GroupItem>::new();
         let GrafoBuilder {
             mut resolver,
@@ -61,6 +72,7 @@ impl<Name: NameType> GrafoBuilder<Name> {
         } = self;
 
         let (result, errors) = group_store.push_default(
+            label,
             &mut resolver,
             |resolver, item_kind, group_id, push_index, option: GroupItemOption<Name>| {
                 let mut errors: Vec<GrafoError<Name>> = Vec::new();
@@ -212,21 +224,27 @@ impl<Name: NameType> Grafo<Name> {
     //
 
     /// wrapper function for builder with default group. If you want to build with your group, use `GrafoBuilder`'s method.
-    pub fn with_no_name_default_group() -> Self {
-        GrafoBuilder::new().build_with_no_name_default_group()
+    pub fn with_no_name_default_group<S: Into<String>>(label: Option<S>) -> Self {
+        GrafoBuilder::new().build_with_no_name_default_group(label)
     }
 
     /// wrapper function for builder with default group which has name. If you want to build with your group, use `GrafoBuilder`'s method.
-    pub fn with_name_default_group<S: Into<Name>>(group_name: S) -> Self {
-        GrafoBuilder::new().build_with_name_default_group(group_name)
+    pub fn with_name_default_group<S1: Into<Name>, S2: Into<String>>(
+        group_name: S1,
+        label: Option<S2>,
+    ) -> Self {
+        GrafoBuilder::new().build_with_name_default_group(group_name, label)
     }
 
     /// wrapper function for builder with default group which has name as optional. If you want to build with your group, use `GrafoBuilder`'s method.
-    pub fn with_default_group<S: Into<Name>>(group_name: Option<S>) -> Self {
+    pub fn with_default_group<S1: Into<Name>, S2: Into<String>>(
+        group_name: Option<S1>,
+        label: Option<S2>,
+    ) -> Self {
         let builder = GrafoBuilder::new();
         match group_name {
-            None => builder.build_with_no_name_default_group(),
-            Some(name) => builder.build_with_name_default_group(name),
+            None => builder.build_with_no_name_default_group(label),
+            Some(name) => builder.build_with_name_default_group(name, label),
         }
     }
 
@@ -532,7 +550,18 @@ mod test {
         fn push_default_no_name_group_success() {
             let user_default_graph =
                 GraphBuilder::new().build_with_user_group(GroupItemBuilder::new());
-            let default_graph = GraphBuilder::new().build_with_no_name_default_group();
+            let default_graph =
+                GraphBuilder::new().build_with_no_name_default_group(Option::<String>::None);
+            assert_eq!(user_default_graph, Ok(default_graph));
+            assert!(user_default_graph.is_ok());
+        }
+
+        #[test]
+        fn push_default_no_name_group_with_label_success() {
+            let mut group_builder = GroupItemBuilder::new();
+            group_builder.set_label("label");
+            let user_default_graph = GraphBuilder::new().build_with_user_group(group_builder);
+            let default_graph = GraphBuilder::new().build_with_no_name_default_group(Some("label"));
             assert_eq!(user_default_graph, Ok(default_graph));
             assert!(user_default_graph.is_ok());
         }
@@ -542,7 +571,18 @@ mod test {
             let mut group_builder = GroupItemBuilder::new();
             group_builder.set_name("root");
             let user_default_graph = GraphBuilder::new().build_with_user_group(group_builder);
-            let default_graph = GraphBuilder::new().build_with_name_default_group("root");
+            let default_graph =
+                GraphBuilder::new().build_with_name_default_group("root", Option::<String>::None);
+            assert_eq!(user_default_graph, Ok(default_graph));
+            assert!(user_default_graph.is_ok());
+        }
+        #[test]
+        fn push_default_name_group_with_label_success() {
+            let mut group_builder = GroupItemBuilder::new();
+            group_builder.set_name("root").set_label("label");
+            let user_default_graph = GraphBuilder::new().build_with_user_group(group_builder);
+            let default_graph =
+                GraphBuilder::new().build_with_name_default_group("root", Some("label"));
             assert_eq!(user_default_graph, Ok(default_graph));
             assert!(user_default_graph.is_ok());
         }
@@ -564,7 +604,8 @@ mod test {
 
         #[test]
         fn push_two_group_success_and_push_node_each_group() {
-            let mut graph = GraphBuilder::new().build_with_no_name_default_group();
+            let mut graph =
+                GraphBuilder::new().build_with_no_name_default_group(Option::<String>::None);
 
             let mut group_builder_1 = GroupItemBuilder::new();
             group_builder_1.set_name("group_1");
@@ -647,7 +688,8 @@ mod test {
 
         #[test]
         pub fn push_group_success_to_not_root_group() {
-            let mut graph = GraphBuilder::new().build_with_no_name_default_group();
+            let mut graph =
+                GraphBuilder::new().build_with_no_name_default_group(Option::<String>::None);
 
             let mut group_builder_1 = GroupItemBuilder::new();
             group_builder_1.set_name("group_1");
@@ -678,7 +720,8 @@ mod test {
 
         #[test]
         fn push_group_success_with_name_override() {
-            let mut graph = GraphBuilder::new().build_with_no_name_default_group();
+            let mut graph =
+                GraphBuilder::new().build_with_no_name_default_group(Option::<String>::None);
 
             let mut group_builder_1 = GroupItemBuilder::new();
             group_builder_1.set_name("group");
@@ -731,7 +774,8 @@ mod test {
 
         #[test]
         fn build_group_fail() {
-            let mut graph = GraphBuilder::new().build_with_no_name_default_group();
+            let mut graph =
+                GraphBuilder::new().build_with_no_name_default_group(Option::<String>::None);
 
             let mut group_builder = GroupItemBuilder::new();
             group_builder.set_belong_group("hoge");
@@ -762,7 +806,7 @@ mod test {
             //         1  2    3        4            5
             // bottom: 6  7 8  9 10 11  12 13 14 15  16 17 18 19 20
 
-            let mut graph = Graph::with_name_default_group("group 0");
+            let mut graph = Graph::with_name_default_group("group 0", Option::<String>::None);
             for i in 1..=GROUP_DIVIDE_COUNT {
                 let mut builder = GroupItemBuilder::new();
                 builder.set_belong_group("group 0");
@@ -853,7 +897,8 @@ mod test {
 
         #[test]
         fn push_node_success() {
-            let mut graph = GraphBuilder::new().build_with_no_name_default_group();
+            let mut graph =
+                GraphBuilder::new().build_with_no_name_default_group(Option::<String>::None);
 
             for i in 0..2 * ITERATE_COUNT {
                 let mut node_builder = NodeItemBuilder::new();
@@ -876,7 +921,8 @@ mod test {
 
         #[test]
         fn push_node_success_with_name_override() {
-            let mut graph = GraphBuilder::new().build_with_no_name_default_group();
+            let mut graph =
+                GraphBuilder::new().build_with_no_name_default_group(Option::<String>::None);
 
             let mut node_builder_1 = NodeItemBuilder::new();
             node_builder_1.set_name("node");
@@ -915,7 +961,8 @@ mod test {
 
         #[test]
         fn build_node_fail() {
-            let mut graph = GraphBuilder::new().build_with_no_name_default_group();
+            let mut graph =
+                GraphBuilder::new().build_with_no_name_default_group(Option::<String>::None);
 
             let mut node_builder = NodeItemBuilder::new();
             node_builder.set_belong_group("hoge");
@@ -937,7 +984,8 @@ mod test {
 
         #[test]
         fn push_edge_success() {
-            let mut graph = GraphBuilder::new().build_with_no_name_default_group();
+            let mut graph =
+                GraphBuilder::new().build_with_no_name_default_group(Option::<String>::None);
 
             for i in 0..2 * ITERATE_COUNT {
                 let mut node_builder = NodeItemBuilder::new();
@@ -1002,7 +1050,8 @@ mod test {
 
         #[test]
         fn push_edge_success_edges_on_same_endpoints() {
-            let mut graph = GraphBuilder::new().build_with_no_name_default_group();
+            let mut graph =
+                GraphBuilder::new().build_with_no_name_default_group(Option::<String>::None);
 
             let mut node_builder_1 = NodeItemBuilder::new();
             node_builder_1.set_name("node1");
@@ -1033,7 +1082,8 @@ mod test {
 
         #[test]
         fn push_edge_success_loop_edge() {
-            let mut graph = GraphBuilder::new().build_with_no_name_default_group();
+            let mut graph =
+                GraphBuilder::new().build_with_no_name_default_group(Option::<String>::None);
 
             let mut node_builder = NodeItemBuilder::new();
             node_builder.set_name("node");
@@ -1051,7 +1101,8 @@ mod test {
 
         #[test]
         fn push_edge_success_opposite_edges() {
-            let mut graph = GraphBuilder::new().build_with_no_name_default_group();
+            let mut graph =
+                GraphBuilder::new().build_with_no_name_default_group(Option::<String>::None);
 
             let mut node_builder_1 = NodeItemBuilder::new();
             node_builder_1.set_name("node1");
@@ -1082,7 +1133,8 @@ mod test {
 
         #[test]
         fn push_edge_success_with_name_override() {
-            let mut graph = GraphBuilder::new().build_with_no_name_default_group();
+            let mut graph =
+                GraphBuilder::new().build_with_no_name_default_group(Option::<String>::None);
 
             let mut node_builder_1 = NodeItemBuilder::new();
             node_builder_1.set_name("node1");
@@ -1137,7 +1189,8 @@ mod test {
 
         #[test]
         fn push_edge_success_same_group_endpoint() {
-            let mut graph = GraphBuilder::new().build_with_name_default_group("root");
+            let mut graph =
+                GraphBuilder::new().build_with_name_default_group("root", Option::<String>::None);
 
             let mut group_builder_1 = GroupItemBuilder::new();
             group_builder_1.set_name("group 1");
@@ -1162,7 +1215,8 @@ mod test {
 
         #[test]
         fn push_edges_success_endpoints_is_not_same_group() {
-            let mut graph = GraphBuilder::new().build_with_no_name_default_group();
+            let mut graph =
+                GraphBuilder::new().build_with_no_name_default_group(Option::<String>::None);
 
             let mut group_builder_1 = GroupItemBuilder::new();
             group_builder_1.set_name("group_1");
@@ -1284,7 +1338,8 @@ mod test {
 
         #[test]
         fn build_edge_fail_inappropriate_node_as_endpoint_belong_group() {
-            let mut graph = GraphBuilder::new().build_with_no_name_default_group();
+            let mut graph =
+                GraphBuilder::new().build_with_no_name_default_group(Option::<String>::None);
 
             let mut group_builder_1 = GroupItemBuilder::new();
             group_builder_1.set_name("group 1");
@@ -1328,7 +1383,8 @@ mod test {
 
         #[test]
         fn build_edge_fail_inappropriate_group_as_endpoint_belong_group() {
-            let mut graph = GraphBuilder::new().build_with_name_default_group("root");
+            let mut graph =
+                GraphBuilder::new().build_with_name_default_group("root", Option::<String>::None);
 
             let mut group_builder_1 = GroupItemBuilder::new();
             group_builder_1.set_name("group 1");
@@ -1372,7 +1428,8 @@ mod test {
 
         #[test]
         fn build_edge_fail_not_found_belong_group_name() {
-            let mut graph = GraphBuilder::new().build_with_no_name_default_group();
+            let mut graph =
+                GraphBuilder::new().build_with_no_name_default_group(Option::<String>::None);
 
             let mut node_builder_1 = NodeItemBuilder::new();
             node_builder_1.set_name("node1");
@@ -1408,7 +1465,8 @@ mod test {
 
         #[test]
         fn build_edge_fail_specify_cannot_usable_end_endpoint() {
-            let mut graph = GraphBuilder::new().build_with_name_default_group("root group");
+            let mut graph = GraphBuilder::new()
+                .build_with_name_default_group("root group", Option::<String>::None);
 
             let mut node_builder = NodeItemBuilder::new();
             node_builder.set_name("node");
@@ -1442,7 +1500,8 @@ mod test {
 
         #[test]
         fn build_edge_fail_cannot_found_end_endpoint() {
-            let mut graph = GraphBuilder::new().build_with_no_name_default_group();
+            let mut graph =
+                GraphBuilder::new().build_with_no_name_default_group(Option::<String>::None);
 
             let mut node_builder = NodeItemBuilder::new();
             node_builder.set_name("node");
@@ -1476,7 +1535,8 @@ mod test {
 
         #[test]
         fn build_edge_fail_not_specify_end_endpoint() {
-            let mut graph = GraphBuilder::new().build_with_no_name_default_group();
+            let mut graph =
+                GraphBuilder::new().build_with_no_name_default_group(Option::<String>::None);
 
             let mut node_builder = NodeItemBuilder::new();
             node_builder.set_name("node");
@@ -1499,7 +1559,8 @@ mod test {
 
         #[test]
         fn build_edge_fail_not_specify_endpoints() {
-            let mut graph = GraphBuilder::new().build_with_no_name_default_group();
+            let mut graph =
+                GraphBuilder::new().build_with_no_name_default_group(Option::<String>::None);
 
             let (result, errors) = graph.push_edge(EdgeItemBuilder::new());
             assert!(!result);

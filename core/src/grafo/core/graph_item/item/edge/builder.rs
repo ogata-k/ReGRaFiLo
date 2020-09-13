@@ -18,6 +18,7 @@ use crate::util::name_type::NameType;
 pub struct EdgeItemBuilder<Name: NameType> {
     belong_group: Option<Name>,
     name: Option<Name>,
+    label: Option<String>,
     start: Option<(GraphItemKind, Name)>,
     end: Option<(GraphItemKind, Name)>,
 }
@@ -35,6 +36,11 @@ impl<Name: NameType> GraphItemBuilderBase<Name> for EdgeItemBuilder<Name> {
 
     fn set_name<S: Into<Name>>(&mut self, name: S) -> &mut Self {
         self.name = Some(name.into());
+        self
+    }
+
+    fn set_label<S: Into<String>>(&mut self, label: S) -> &mut Self {
+        self.label = Some(label.into());
         self
     }
 }
@@ -67,14 +73,12 @@ impl<Name: NameType> HasItemBuilderMethod<Name> for EdgeItemBuilder<Name> {
         } else {
             None
         };
-        let item: Option<EdgeItem> =
+        let (item, option): (Option<EdgeItem>, EdgeItemOption<Name>) =
             self.resolve_item(item_id, resolver, &mut errors, belong_group, start, end);
-        let item_option: Option<EdgeItemOption<Name>> =
-            self.into_item_option(item_id, resolver, &mut errors);
 
-        match (item, item_option) {
-            (Some(i), Some(o)) => (Some((i, o)), errors),
-            (_, _) => (None, errors),
+        match item {
+            Some(i) => (Some((i, option)), errors),
+            None => (None, errors),
         }
     }
 }
@@ -169,23 +173,26 @@ impl<Name: NameType> EdgeItemBuilder<Name> {
 
     /// resolve Edge item from builder's parameter
     fn resolve_item(
-        &self,
+        self,
         item_id: ItemId,
         resolver: &Resolver<Name>,
         errors: &mut Vec<GrafoError<Name>>,
         resolved_belong_group: Option<ItemId>,
         resolved_start: Option<(GraphItemKind, (GroupId, ItemId))>,
         resolved_end: Option<(GraphItemKind, (GroupId, ItemId))>,
-    ) -> Option<EdgeItem> {
-        match (resolved_belong_group, resolved_start, resolved_end) {
+    ) -> (Option<EdgeItem>, EdgeItemOption<Name>) {
+        let EdgeItemBuilder {
+            belong_group,
+            name,
+            start,
+            end,
+            label,
+        } = self;
+        let item = match (resolved_belong_group, resolved_start, resolved_end) {
             (None, _, _) => {
                 errors.push(
-                    EdgeItemError::FailResolveBelongGroup(
-                        item_id,
-                        self.name.clone(),
-                        self.belong_group.clone(),
-                    )
-                    .into(),
+                    EdgeItemError::FailResolveBelongGroup(item_id, name.clone(), belong_group)
+                        .into(),
                 );
                 None
             }
@@ -204,74 +211,37 @@ impl<Name: NameType> EdgeItemBuilder<Name> {
                         item_id,
                         Endpoint::new(s_kind, s_belong_group, s_item_id),
                         Endpoint::new(e_kind, e_belong_group, e_item_id),
+                        label,
                     ))
                 } else {
                     errors.push(
-                        EdgeItemError::InappropriateGroup(
-                            item_id,
-                            self.name.clone(),
-                            self.belong_group.clone(),
-                        )
-                        .into(),
+                        EdgeItemError::InappropriateGroup(item_id, name.clone(), belong_group)
+                            .into(),
                     );
                     None
                 }
             }
             (Some(_), None, None) => {
                 errors.extend(vec![
-                    EdgeItemError::FailResolveStartEndpoint(
-                        item_id,
-                        self.name.clone(),
-                        self.start.clone(),
-                    )
-                    .into(),
-                    EdgeItemError::FailResolveEndEndpoint(
-                        item_id,
-                        self.name.clone(),
-                        self.end.clone(),
-                    )
-                    .into(),
+                    EdgeItemError::FailResolveStartEndpoint(item_id, name.clone(), start).into(),
+                    EdgeItemError::FailResolveEndEndpoint(item_id, name.clone(), end).into(),
                 ]);
                 None
             }
             (Some(_), None, Some(_)) => {
                 errors.push(
-                    EdgeItemError::FailResolveStartEndpoint(
-                        item_id,
-                        self.name.clone(),
-                        self.start.clone(),
-                    )
-                    .into(),
+                    EdgeItemError::FailResolveStartEndpoint(item_id, name.clone(), start).into(),
                 );
                 None
             }
             (Some(_), Some(_), None) => {
-                errors.push(
-                    EdgeItemError::FailResolveEndEndpoint(
-                        item_id,
-                        self.name.clone(),
-                        self.end.clone(),
-                    )
-                    .into(),
-                );
+                errors
+                    .push(EdgeItemError::FailResolveEndEndpoint(item_id, name.clone(), end).into());
                 None
             }
-        }
-    }
-
-    /// resolve Edge item's option from builder's parameter
-    fn into_item_option(
-        self,
-        item_id: ItemId,
-        resolver: &Resolver<Name>,
-        errors: &mut Vec<GrafoError<Name>>,
-    ) -> Option<EdgeItemOption<Name>> {
-        let EdgeItemBuilder {
-            belong_group: _,
-            name,
-            start: _,
-            end: _,
-        } = self;
+        };
+        
+        // option
         if let Some(n) = &name {
             if resolver.is_usable_graph_item_name(EdgeItem::kind(), n) {
                 errors.push(
@@ -284,8 +254,7 @@ impl<Name: NameType> EdgeItemBuilder<Name> {
                 );
             }
         }
-
-        Some(EdgeItemOption { name })
+        (item, EdgeItemOption { name })
     }
 }
 
@@ -298,6 +267,7 @@ impl<Name: NameType> EdgeItemBuilder<Name> {
             name: None,
             start: None,
             end: None,
+            label: None,
         }
     }
 

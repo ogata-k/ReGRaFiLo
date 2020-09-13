@@ -7,20 +7,22 @@ use crate::util::kind::{GraphItemKind, HasGraphItemKind};
 use crate::util::writer::DisplayAsJson;
 
 /// Node Item
-#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct NodeItem {
     belong_group_id: GroupId,
     item_id: ItemId,
+    label: Option<String>,
 }
 
 impl DisplayAsJson for NodeItem {
     fn fmt_as_json(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{{\"kind\": \"{}\", \"belong_group_id\": {}, \"item_id\": {}}}",
+            "{{\"kind\": \"{}\", \"belong_group_id\": {}, \"item_id\": {}, \"label\": \"{}\"}}",
             &self.get_kind(),
             &self.belong_group_id,
-            &self.item_id
+            &self.item_id,
+            self.label.as_deref().unwrap_or_else(|| ""),
         )
     }
 }
@@ -48,14 +50,19 @@ impl GraphItemBase for NodeItem {
     fn get_belong_group_id(&self) -> GroupId {
         self.belong_group_id
     }
+
+    fn get_label(&self) -> Option<&str> {
+        self.label.as_deref()
+    }
 }
 
 impl NodeItem {
     /// initializer for Node item
-    pub(crate) fn new(belong_group: GroupId, item_id: ItemId) -> Self {
+    pub(crate) fn new(belong_group: GroupId, item_id: ItemId, label: Option<String>) -> Self {
         Self {
             belong_group_id: belong_group,
             item_id,
+            label,
         }
     }
 }

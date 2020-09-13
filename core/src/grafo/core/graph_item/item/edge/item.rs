@@ -51,11 +51,12 @@ impl Endpoint {
 }
 
 /// Edge Item
-#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct EdgeItem {
     // TODO Align can use RelativeAlign and AbsoluteAlign
     belong_group_id: GroupId,
     item_id: ItemId,
+    label: Option<String>,
     start: Endpoint,
     end: Endpoint,
 }
@@ -64,10 +65,11 @@ impl DisplayAsJson for EdgeItem {
     fn fmt_as_json(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{{\"kind\": \"{}\", \"belong_group_id\": {}, \"item_id\": {}, \"start_endpoint\": ",
+            "{{\"kind\": \"{}\", \"belong_group_id\": {}, \"item_id\": {}, \"label\": \"{}\", \"start_endpoint\": ",
             self.get_kind(),
             self.belong_group_id,
-            self.item_id
+            self.item_id,
+            self.label.as_deref().unwrap_or_else(|| ""),
         )?;
         self.start.fmt_as_json(f)?;
         write!(f, ", \"end_endpoint\": ")?;
@@ -99,6 +101,10 @@ impl GraphItemBase for EdgeItem {
     fn get_belong_group_id(&self) -> GroupId {
         self.belong_group_id
     }
+
+    fn get_label(&self) -> Option<&str> {
+        self.label.as_deref()
+    }
 }
 
 impl EdgeItem {
@@ -108,10 +114,12 @@ impl EdgeItem {
         item_id: ItemId,
         start: Endpoint,
         end: Endpoint,
+        label: Option<String>,
     ) -> Self {
         Self {
             belong_group_id: belong_group,
             item_id,
+            label,
             start,
             end,
         }

@@ -13,11 +13,23 @@ pub trait GraphItemBuilderBase<Name: NameType>: ItemBuilderBase<Name> {
     /// setter for graph item's name. You can use the name for specified item.
     /// However the name is not the item's label. If you want label, use label on item's parameter.
     fn set_name<S: Into<Name>>(&mut self, name: S) -> &mut Self;
+
+    /// setter for graph item's label
+    fn set_label<S: Into<String>>(&mut self, label: S) -> &mut Self;
 }
 
 /// Item's base set
-pub trait GraphItemBase: Copy + ItemBase + HasGraphItemKind {
+pub trait GraphItemBase: ItemBase + HasGraphItemKind {
+    /// getter for item's belong group
     fn get_belong_group_id(&self) -> GroupId;
+
+    /// getter for item's label
+    fn get_label(&self) -> Option<&str>;
+}
+
+/// Item's mutability for Default initializer
+pub(crate) trait WithMutable: GraphItemBase + Default {
+    fn set_label<S: Into<String>>(&mut self, label: Option<S>)->&mut Self;
 }
 
 /// base of build result's error for graph item's builder
