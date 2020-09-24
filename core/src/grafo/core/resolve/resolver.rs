@@ -6,12 +6,11 @@ use std::hash::Hash;
 
 use crate::grafo::core::graph_item::GraphItemBase;
 use crate::grafo::graph_item::edge::Endpoint;
-use crate::grafo::layout_item::LayoutItemBase;
 use crate::grafo::{IdTree, IdTreeError, NameIdError, NameRefIndex};
-use crate::util::alias::{GroupId, ItemId, LayoutItemId};
+use crate::util::alias::{GroupId, ItemId};
 use crate::util::either::Either;
 use crate::util::iter::IterLimitedByOneGroup;
-use crate::util::kind::{GraphItemKind, LayoutGraphItemKind};
+use crate::util::kind::GraphItemKind;
 use crate::util::name_type::NameType;
 use crate::util::writer::DisplayAsJson;
 
@@ -61,8 +60,6 @@ pub struct Resolver<Name: NameType> {
     group_id_tree: IdTree<GroupId>,
     /// names reference indexes name:(group_id, graph_item_id)
     graph_items: NameRefIndex<Name, GraphItemKind, (GroupId, ItemId)>,
-    /// layout reference indexes layout_type: layout_item_id
-    layout_items: NameRefIndex<Name, LayoutGraphItemKind, ItemId>,
 }
 
 impl<Name: NameType> Default for Resolver<Name> {
@@ -70,7 +67,6 @@ impl<Name: NameType> Default for Resolver<Name> {
         Self {
             group_id_tree: IdTree::None,
             graph_items: NameRefIndex::new(),
-            layout_items: NameRefIndex::initialize_without_no_name(),
         }
     }
 }
@@ -83,8 +79,6 @@ impl<Name: NameType> DisplayAsJson for Resolver<Name> {
             self.group_id_tree
         )?;
         self.graph_items.fmt_as_json(f)?;
-        write!(f, ", \"layout_items\": ")?;
-        self.layout_items.fmt_as_json(f)?;
         write!(f, "}}")
     }
 }
@@ -305,109 +299,5 @@ impl<Name: NameType> Resolver<Name> {
         item_kind: GraphItemKind,
     ) -> IterLimitedByOneGroup<GraphItemKind, (GroupId, ItemId), Name> {
         self.graph_items.iter_by_kind(item_kind)
-    }
-
-    //
-    // for layout with graph item
-    //
-
-    /// insert item id for layout item. layout item always has name because the no name item cannot be specified.
-    pub(crate) fn insert_layout_id<S: Into<Name>>(
-        &mut self,
-        item_kind: GraphItemKind,
-        name: S,
-        layout_item_id: LayoutItemId,
-    ) -> Result<(), NameIdError<Name, LayoutGraphItemKind>> {
-        self.layout_items
-            .insert_value_or_override(item_kind.into(), Some(name), layout_item_id)
-    }
-
-    /// get item id for layout item
-    pub fn get_layout_item_id<S: ?Sized>(
-        &self,
-        item_kind: GraphItemKind,
-        name: &S,
-    ) -> Result<ItemId, NameIdError<Name, LayoutGraphItemKind>>
-    where
-        Name: Borrow<S>,
-        S: ToOwned<Owned = Name> + Hash + Eq,
-    {
-        let layout_kind = item_kind.into();
-        self.layout_items
-            .get_value(layout_kind, name)
-            .ok_or_else(|| NameIdError::NotExist(layout_kind, name.to_owned()))
-    }
-
-    /// get layout item's name
-    pub fn get_layout_item_name_by(
-        &self,
-        item_kind: GraphItemKind,
-        item_id: ItemId,
-    ) -> Option<&Name> {
-        self.layout_items.get_name(item_kind.into(), item_id)
-    }
-
-    /// get layout item's name by specified layout item
-    pub fn get_layout_item_name_by_item<I: LayoutItemBase>(&self, item: &I) -> Option<&Name> {
-        self.layout_items
-            .get_name(item.get_layout_kind(), item.get_item_id())
-    }
-
-    /// check the layout item is already registered
-    pub fn is_already_registered_layout_item(
-        &self,
-        item_kind: GraphItemKind,
-        item_id: ItemId,
-    ) -> bool {
-        self.layout_items
-            .is_already_registered(item_kind.into(), item_id)
-    }
-
-    /// check the name usable as reference key for layout item
-    pub fn is_usable_layout_item_name<S: ?Sized>(&self, item_kind: GraphItemKind, name: &S) -> bool
-    where
-        Name: Borrow<S>,
-        S: ToOwned<Owned = Name> + Hash + Eq,
-    {
-        self.layout_items.is_usable_name(item_kind.into(), name)
-    }
-
-    /// check the layout item as the kind has a name for the layout item's key.
-    pub fn has_registered_layout_item_name(
-        &self,
-        item_kind: GraphItemKind,
-        item_id: ItemId,
-    ) -> bool {
-        self.layout_items
-            .has_registered_name(item_kind.into(), item_id)
-    }
-
-    /// count all usable names as reference key for layout item.
-    pub fn count_usable_layout_item_names(&self) -> usize {
-        self.layout_items.count_usable_names_all()
-    }
-
-    /// count usable names as reference key for layout item limited by specify kind.
-    pub fn count_usable_graph_item_layout_names_by(&self, item_kind: GraphItemKind) -> usize {
-        self.layout_items.count_usable_names_by(item_kind.into())
-    }
-
-    /// count all layout items as the kind has a name for the layout item's key.
-    pub fn count_registered_graph_item_layout_names(&self) -> usize {
-        self.layout_items.count_registered_names_all()
-    }
-
-    /// count all layout items as the kind has a name for the layout item's key limited by specify kind.
-    pub fn count_registered_graph_item_layout_names_by(&self, item_kind: GraphItemKind) -> usize {
-        self.layout_items
-            .count_registered_names_by(item_kind.into())
-    }
-
-    /// iter for layout item grouped by the item_kind
-    pub fn iter_layout_item_by(
-        &self,
-        item_kind: LayoutGraphItemKind,
-    ) -> IterLimitedByOneGroup<LayoutGraphItemKind, ItemId, Name> {
-        self.layout_items.iter_by_kind(item_kind)
     }
 }

@@ -31,50 +31,6 @@ pub trait HasGraphItemKind {
     }
 }
 
-/// kind of layout item.
-#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone, Hash)]
-pub enum LayoutGraphItemKind {
-    /// This layout kind is group item.
-    Group,
-    /// This layout kind is node item.
-    Node,
-    /// This layout kind is edge item.
-    Edge,
-}
-
-impl std::fmt::Display for LayoutGraphItemKind {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            LayoutGraphItemKind::Group => write!(f, "Group layout"),
-            LayoutGraphItemKind::Node => write!(f, "Node layout"),
-            LayoutGraphItemKind::Edge => write!(f, "Edge layout"),
-        }
-    }
-}
-
-impl From<GraphItemKind> for LayoutGraphItemKind {
-    fn from(graph_item_kind: GraphItemKind) -> Self {
-        use LayoutGraphItemKind::*;
-        match graph_item_kind {
-            GraphItemKind::Group => Group,
-            GraphItemKind::Node => Node,
-            GraphItemKind::Edge => Edge,
-        }
-    }
-}
-
-/// add methods of getter for layout graph item kind.
-pub trait HasLayoutGraphItemKind: HasGraphItemKind {
-    /// get the kind of graph layout item.
-    fn layout_kind() -> LayoutGraphItemKind {
-        Self::kind().into()
-    }
-    /// helper method. self.get_layout_kind() == Self::layout_kind().
-    fn get_layout_kind(&self) -> LayoutGraphItemKind {
-        Self::layout_kind()
-    }
-}
-
 #[cfg(test)]
 pub mod test {
     use crate::util::kind::GraphItemKind;

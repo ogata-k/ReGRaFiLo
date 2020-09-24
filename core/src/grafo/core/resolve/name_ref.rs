@@ -8,7 +8,7 @@ use std::hash::Hash;
 
 use crate::util::alias::{GroupId, ItemId};
 use crate::util::iter::IterLimitedByOneGroup;
-use crate::util::kind::{GraphItemKind, LayoutGraphItemKind};
+use crate::util::kind::GraphItemKind;
 use crate::util::name_type::NameType;
 use crate::util::writer::DisplayAsJson;
 
@@ -105,35 +105,6 @@ impl<Name: NameType> DisplayAsJson for NameRefIndex<Name, GraphItemKind, (GroupI
     }
 }
 
-impl<Name: NameType> DisplayAsJson for NameRefIndex<Name, LayoutGraphItemKind, ItemId> {
-    fn fmt_as_json(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{{\"reference\": [")?;
-        let mut is_first = true;
-        // fix order
-        for kind in [
-            LayoutGraphItemKind::Group,
-            LayoutGraphItemKind::Node,
-            LayoutGraphItemKind::Edge,
-        ]
-        .iter()
-        {
-            for (item_id, name) in self.iter_by_kind(*kind) {
-                if is_first {
-                    is_first = false;
-                } else {
-                    write!(f, ", ")?;
-                }
-                write!(
-                    f,
-                    "{{\"kind\": \"{}\", \"item_id\": {}, \"name\": \"{}\"}}",
-                    kind, item_id, name
-                )?;
-            }
-        }
-        write!(f, "]}}")
-    }
-}
-
 impl<
         Name: NameType,
         Kind: NameRefKeyTrait + std::fmt::Display,
@@ -167,15 +138,6 @@ impl<Name: NameType, Kind: NameRefKeyTrait, Value: NameRefKeyTrait>
     /// initializer
     pub fn new() -> Self {
         NameRefIndex::default()
-    }
-
-    /// initializer with no name item's store is smallest store.
-    pub fn initialize_without_no_name() -> Self {
-        NameRefIndex {
-            reference_index: Default::default(),
-            rev_reference_index: Default::default(),
-            no_name_reference: HashMap::with_capacity(0),
-        }
     }
 
     /// insert value by reference name. If name already exist, override name's value.

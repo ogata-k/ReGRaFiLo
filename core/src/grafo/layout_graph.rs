@@ -7,7 +7,6 @@ use crate::grafo::graph_item::group::{
 };
 use crate::grafo::graph_item::node::{NodeItem, NodeItemOption};
 use crate::grafo::graph_item::ItemArena;
-use crate::grafo::layout_item::Layout;
 use crate::grafo::{GrafoError, Resolver, ResolverError};
 use crate::util::alias::{GroupId, ItemId, DEFAULT_ITEM_ID};
 use crate::util::item_base::FromWithItemId;
@@ -21,21 +20,16 @@ use crate::util::writer::DisplayAsJson;
 pub struct GrafoBuilder<Name: NameType> {
     // structure resolver
     resolver: Resolver<Name>,
-
-    // layout
-    layout: Layout,
 }
 
 impl<Name: NameType> Default for GrafoBuilder<Name> {
     fn default() -> Self {
         Self {
             resolver: Resolver::new(),
-            layout: Default::default(),
         }
     }
 }
 
-// TODO Layout関係のメソッド
 impl<Name: NameType> GrafoBuilder<Name> {
     /// initializer for Grafo Builder
     pub fn new() -> Self {
@@ -66,10 +60,7 @@ impl<Name: NameType> GrafoBuilder<Name> {
         label: Option<String>,
     ) -> Grafo<Name> {
         let mut group_store = ItemArena::<GroupItem>::new();
-        let GrafoBuilder {
-            mut resolver,
-            layout,
-        } = self;
+        let GrafoBuilder { mut resolver } = self;
 
         let (result, errors) = group_store.push_default(
             label,
@@ -118,7 +109,6 @@ impl<Name: NameType> GrafoBuilder<Name> {
             node_arena: Default::default(),
             edge_arena: Default::default(),
             resolver,
-            layout,
         }
     }
 
@@ -128,10 +118,7 @@ impl<Name: NameType> GrafoBuilder<Name> {
         group_builder: GroupItemBuilder<Name>,
     ) -> Result<Grafo<Name>, Vec<GrafoError<Name>>> {
         let mut group_store = ItemArena::<GroupItem>::new();
-        let GrafoBuilder {
-            mut resolver,
-            layout,
-        } = self;
+        let GrafoBuilder { mut resolver } = self;
         let (result, mut errors) = group_store.push_user_item_as_default(
             &mut resolver,
             group_builder,
@@ -173,7 +160,6 @@ impl<Name: NameType> GrafoBuilder<Name> {
                 node_arena: Default::default(),
                 edge_arena: Default::default(),
                 resolver,
-                layout,
             })
         }
     }
@@ -182,16 +168,13 @@ impl<Name: NameType> GrafoBuilder<Name> {
 /// Grafo is Graph with Layout
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct Grafo<Name: NameType> {
-    // structure resolver
+    // resolver
     resolver: Resolver<Name>,
 
     // item arena
     group_arena: ItemArena<GroupItem>,
     node_arena: ItemArena<NodeItem>,
     edge_arena: ItemArena<EdgeItem>,
-
-    // layout
-    layout: Layout,
 }
 
 impl<Name: NameType> DisplayAsJson for Grafo<Name> {
@@ -204,8 +187,6 @@ impl<Name: NameType> DisplayAsJson for Grafo<Name> {
         self.node_arena.fmt_as_json(f)?;
         write!(f, ", \"edge_items\": ")?;
         self.edge_arena.fmt_as_json(f)?;
-        write!(f, ", \"layout_items\": ")?;
-        self.layout.fmt_as_json(f)?;
         write!(f, "}}")
     }
 }
@@ -217,7 +198,6 @@ impl<Name: NameType> std::fmt::Display for Grafo<Name> {
     }
 }
 
-// TODO Layout関係のメソッド
 impl<Name: NameType> Grafo<Name> {
     //
     // initializer
