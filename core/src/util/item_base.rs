@@ -25,6 +25,9 @@ pub(crate) trait HasItemBuilderMethod<Name: NameType>: ItemBuilderBase<Name> {
     ) -> ItemBuilderResult<Name, Self::Item, Self::ItemOption>;
 }
 
+/// trait for base of style item for any item
+pub trait ItemStyleItemBase: Default + Eq + Clone + Copy {}
+
 /// trait for base of builder for item
 pub trait ItemBuilderBase<Name: NameType> {
     /// result when build success

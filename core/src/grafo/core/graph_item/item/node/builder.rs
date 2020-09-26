@@ -3,6 +3,7 @@
 use crate::grafo::core::graph_item::node::{NodeItem, NodeItemError, NodeItemOption};
 use crate::grafo::core::graph_item::GraphItemBuilderBase;
 use crate::grafo::core::resolve::Resolver;
+use crate::grafo::graph_item::node::NodeItemStyle;
 use crate::grafo::{GrafoError, NameIdError};
 use crate::util::alias::{GroupId, ItemId};
 use crate::util::either::Either;
@@ -18,6 +19,7 @@ pub struct NodeItemBuilder<Name: NameType> {
     belong_group: Option<Name>,
     name: Option<Name>,
     label: Option<String>,
+    style: Option<NodeItemStyle>,
 }
 
 impl<Name: NameType> ItemBuilderBase<Name> for NodeItemBuilder<Name> {
@@ -26,6 +28,8 @@ impl<Name: NameType> ItemBuilderBase<Name> for NodeItemBuilder<Name> {
 }
 
 impl<Name: NameType> GraphItemBuilderBase<Name> for NodeItemBuilder<Name> {
+    type ItemStyle = NodeItemStyle;
+
     fn set_belong_group<S: Into<Name>>(&mut self, group: S) -> &mut Self {
         self.belong_group = Some(group.into());
         self
@@ -38,6 +42,11 @@ impl<Name: NameType> GraphItemBuilderBase<Name> for NodeItemBuilder<Name> {
 
     fn set_label<S: Into<String>>(&mut self, label: S) -> &mut Self {
         self.label = Some(label.into());
+        self
+    }
+
+    fn set_item_style(&mut self, style: Self::ItemStyle) -> &mut Self {
+        self.style = Some(style);
         self
     }
 }
@@ -97,6 +106,7 @@ impl<Name: NameType> NodeItemBuilder<Name> {
             belong_group,
             name,
             label,
+            style,
         } = self;
 
         if resolved_belong_group.is_none() {
@@ -106,11 +116,14 @@ impl<Name: NameType> NodeItemBuilder<Name> {
             validate = false;
         }
 
+        // todo?? if self use outer file, check file exist. but not fail build.
+
         let item = if validate {
             Some(NodeItem::new(
                 resolved_belong_group.unwrap(),
                 item_id,
                 label,
+                style.unwrap_or_default(),
             ))
         } else {
             None
@@ -142,6 +155,7 @@ impl<Name: NameType> NodeItemBuilder<Name> {
             belong_group: None,
             name: None,
             label: None,
+            style: None,
         }
     }
 }

@@ -8,6 +8,9 @@ use crate::util::name_type::NameType;
 
 /// Item Builder's base set
 pub trait GraphItemBuilderBase<Name: NameType>: ItemBuilderBase<Name> {
+    /// Style for item. eg. shape, label's color.
+    type ItemStyle;
+
     /// setter for belong group
     fn set_belong_group<S: Into<Name>>(&mut self, group: S) -> &mut Self;
     /// setter for graph item's name. You can use the name for specified item.
@@ -16,21 +19,33 @@ pub trait GraphItemBuilderBase<Name: NameType>: ItemBuilderBase<Name> {
 
     /// setter for graph item's label
     fn set_label<S: Into<String>>(&mut self, label: S) -> &mut Self;
+
+    /// setter for item's style
+    fn set_item_style(&mut self, style: Self::ItemStyle) -> &mut Self;
 }
 
 /// Item's base set
 pub trait GraphItemBase: ItemBase + HasGraphItemKind {
+    /// Style for item. eg. shape, label's color.
+    type ItemStyle: GraphItemStyleBase;
+
     /// getter for item's belong group
     fn get_belong_group_id(&self) -> GroupId;
 
     /// getter for item's label
     fn get_label(&self) -> Option<&str>;
+
+    /// getter for item's style
+    fn get_item_style(&self) -> &Self::ItemStyle;
 }
 
 /// Item's mutability for Default initializer
 pub(crate) trait WithMutable: GraphItemBase + Default {
-    fn set_label<S: Into<String>>(&mut self, label: Option<S>)->&mut Self;
+    fn set_label<S: Into<String>>(&mut self, label: Option<S>) -> &mut Self;
 }
+
+/// base of graph item's style
+pub trait GraphItemStyleBase: Default + Eq + Clone {}
 
 /// base of build result's error for graph item's builder
 pub trait GraphBuilderErrorBase<Name: NameType>:

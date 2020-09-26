@@ -4,6 +4,7 @@ use crate::grafo::core::graph_item::group::{GroupItem, GroupItemError};
 use crate::grafo::core::graph_item::item::group::GroupItemOption;
 use crate::grafo::core::graph_item::GraphItemBuilderBase;
 use crate::grafo::core::resolve::Resolver;
+use crate::grafo::graph_item::group::GroupItemStyle;
 use crate::grafo::{GrafoError, NameIdError};
 use crate::util::alias::{GroupId, ItemId, DEFAULT_ITEM_ID};
 use crate::util::either::Either;
@@ -19,6 +20,7 @@ pub struct GroupItemBuilder<Name: NameType> {
     belong_group: Option<Name>,
     name: Option<Name>,
     label: Option<String>,
+    style: Option<GroupItemStyle>,
 }
 
 impl<Name: NameType> ItemBuilderBase<Name> for GroupItemBuilder<Name> {
@@ -27,6 +29,8 @@ impl<Name: NameType> ItemBuilderBase<Name> for GroupItemBuilder<Name> {
 }
 
 impl<Name: NameType> GraphItemBuilderBase<Name> for GroupItemBuilder<Name> {
+    type ItemStyle = GroupItemStyle;
+
     fn set_belong_group<S: Into<Name>>(&mut self, group: S) -> &mut Self {
         self.belong_group = Some(group.into());
         self
@@ -41,6 +45,11 @@ impl<Name: NameType> GraphItemBuilderBase<Name> for GroupItemBuilder<Name> {
         self.label = Some(label.into());
         self
     }
+
+    fn set_item_style(&mut self, style: Self::ItemStyle) -> &mut Self {
+        self.style = Some(style);
+        self
+    }
 }
 
 impl<Name: NameType> HasItemBuilderMethod<Name> for GroupItemBuilder<Name> {
@@ -53,9 +62,10 @@ impl<Name: NameType> HasItemBuilderMethod<Name> for GroupItemBuilder<Name> {
         let mut errors: Vec<GrafoError<Name>> = Vec::new();
         let belong_group: Option<GroupId> =
             self.resolve_belong_group(item_id, resolver, &mut errors);
-        let (item, option): (Option<GroupItem>, GroupItemOption<Name>) = self.resolve_item(item_id, resolver,&mut errors, belong_group);
+        let (item, option): (Option<GroupItem>, GroupItemOption<Name>) =
+            self.resolve_item(item_id, resolver, &mut errors, belong_group);
         match item {
-            Some(i)=> (Some((i, option)), errors),
+            Some(i) => (Some((i, option)), errors),
             None => (None, errors),
         }
     }
@@ -67,6 +77,7 @@ impl<Name: NameType> Default for GroupItemBuilder<Name> {
             belong_group: None,
             name: None,
             label: None,
+            style: None,
         }
     }
 }
@@ -121,28 +132,32 @@ impl<Name: NameType> GroupItemBuilder<Name> {
             belong_group,
             name,
             label,
+            style,
         } = self;
-        
+
         if resolved_belong_group.is_none() {
             if item_id != DEFAULT_ITEM_ID {
                 errors.push(
-                    GroupItemError::FailResolveBelongGroup(
-                        item_id,
-                        name.clone(), 
-                        belong_group,
-                    )
-                    .into(),
+                    GroupItemError::FailResolveBelongGroup(item_id, name.clone(), belong_group)
+                        .into(),
                 );
             }
             validate = false;
         }
 
-       let item =  if validate {
-            Some(GroupItem::new(resolved_belong_group.unwrap(), item_id, label))
+        // todo?? if self use outer file, check file exist. but not fail build.
+
+        let item = if validate {
+            Some(GroupItem::new(
+                resolved_belong_group.unwrap(),
+                item_id,
+                label,
+                style.unwrap_or_default(),
+            ))
         } else {
             None
         };
-        
+
         // option
         if let Some(n) = &name {
             if resolver.is_usable_graph_item_name(GroupItem::kind(), n) {
@@ -152,11 +167,11 @@ impl<Name: NameType> GroupItemBuilder<Name> {
                         Some(n.clone()),
                         NameIdError::AlreadyExist(GroupItem::kind(), n.clone()),
                     )
-                        .into(),
+                    .into(),
                 );
             }
         }
-        (item, GroupItemOption { name }) 
+        (item, GroupItemOption { name })
     }
 }
 
