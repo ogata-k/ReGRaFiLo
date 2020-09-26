@@ -3,6 +3,7 @@
 mod graph_item_arena;
 mod graph_item_base;
 mod item;
+pub mod style_item;
 
 pub(crate) use graph_item_arena::*;
 pub use graph_item_base::*;

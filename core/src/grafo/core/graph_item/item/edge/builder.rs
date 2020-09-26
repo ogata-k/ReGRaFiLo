@@ -3,7 +3,7 @@
 use crate::grafo::core::graph_item::edge::{EdgeItem, EdgeItemError, EdgeItemOption};
 use crate::grafo::core::graph_item::GraphItemBuilderBase;
 use crate::grafo::core::resolve::Resolver;
-use crate::grafo::graph_item::edge::Endpoint;
+use crate::grafo::graph_item::edge::{EdgeItemStyle, Endpoint};
 use crate::grafo::{GrafoError, NameIdError};
 use crate::util::alias::{GroupId, ItemId};
 use crate::util::either::Either;
@@ -19,6 +19,7 @@ pub struct EdgeItemBuilder<Name: NameType> {
     belong_group: Option<Name>,
     name: Option<Name>,
     label: Option<String>,
+    style: Option<EdgeItemStyle>,
     start: Option<(GraphItemKind, Name)>,
     end: Option<(GraphItemKind, Name)>,
 }
@@ -29,6 +30,8 @@ impl<Name: NameType> ItemBuilderBase<Name> for EdgeItemBuilder<Name> {
 }
 
 impl<Name: NameType> GraphItemBuilderBase<Name> for EdgeItemBuilder<Name> {
+    type ItemStyle = EdgeItemStyle;
+
     fn set_belong_group<S: Into<Name>>(&mut self, group: S) -> &mut Self {
         self.belong_group = Some(group.into());
         self
@@ -41,6 +44,11 @@ impl<Name: NameType> GraphItemBuilderBase<Name> for EdgeItemBuilder<Name> {
 
     fn set_label<S: Into<String>>(&mut self, label: S) -> &mut Self {
         self.label = Some(label.into());
+        self
+    }
+
+    fn set_item_style(&mut self, style: Self::ItemStyle) -> &mut Self {
+        self.style = Some(style);
         self
     }
 }
@@ -184,10 +192,14 @@ impl<Name: NameType> EdgeItemBuilder<Name> {
         let EdgeItemBuilder {
             belong_group,
             name,
+            label,
+            style,
             start,
             end,
-            label,
         } = self;
+
+        // todo?? if self use outer file, check file exist. but not fail build.
+
         let item = match (resolved_belong_group, resolved_start, resolved_end) {
             (None, _, _) => {
                 errors.push(
@@ -212,6 +224,7 @@ impl<Name: NameType> EdgeItemBuilder<Name> {
                         Endpoint::new(s_kind, s_belong_group, s_item_id),
                         Endpoint::new(e_kind, e_belong_group, e_item_id),
                         label,
+                        style.unwrap_or_default(),
                     ))
                 } else {
                     errors.push(
@@ -240,7 +253,7 @@ impl<Name: NameType> EdgeItemBuilder<Name> {
                 None
             }
         };
-        
+
         // option
         if let Some(n) = &name {
             if resolver.is_usable_graph_item_name(EdgeItem::kind(), n) {
@@ -265,9 +278,10 @@ impl<Name: NameType> EdgeItemBuilder<Name> {
         Self {
             belong_group: None,
             name: None,
+            label: None,
+            style: None,
             start: None,
             end: None,
-            label: None,
         }
     }
 

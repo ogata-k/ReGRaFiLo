@@ -279,6 +279,7 @@ mod test {
             GraphBuilderErrorBase, GraphItemBase, GraphItemBuilderBase,
         };
         use crate::grafo::core::{NameIdError, Resolver};
+        use crate::grafo::graph_item::GraphItemStyleBase;
         use crate::grafo::{GrafoError, ResolverError};
         use crate::util::alias::{GroupId, ItemId};
         use crate::util::item_base::{
@@ -295,6 +296,7 @@ mod test {
             belong_group: Option<String>,
             name: Option<String>,
             label: Option<String>,
+            style: Option<TargetItemStyle>,
         }
 
         impl ItemBuilderBase<String> for TargetItemBuilder {
@@ -303,6 +305,8 @@ mod test {
         }
 
         impl GraphItemBuilderBase<String> for TargetItemBuilder {
+            type ItemStyle = TargetItemStyle;
+
             fn set_belong_group<S: Into<String>>(&mut self, group: S) -> &mut Self {
                 self.belong_group = Some(group.into());
                 self
@@ -317,6 +321,11 @@ mod test {
                 self.label = Some(label.into());
                 self
             }
+
+            fn set_item_style(&mut self, style: Self::ItemStyle) -> &mut Self {
+                self.style = Some(style);
+                self
+            }
         }
 
         impl TargetItemBuilder {
@@ -325,8 +334,10 @@ mod test {
                     belong_group: None,
                     name: None,
                     label: None,
+                    style: None,
                 }
             }
+
             fn resolve_belong_group(
                 &self,
                 item_id: ItemId,
@@ -390,6 +401,7 @@ mod test {
                     belong_group: _,
                     name,
                     label,
+                    style,
                 } = self;
                 if errors.is_empty() {
                     (
@@ -398,6 +410,7 @@ mod test {
                                 belong_group_id: group_id,
                                 item_id,
                                 label,
+                                style: style.unwrap_or_default(),
                             },
                             TargetItemOption {
                                 belong_group_id: group_id,
@@ -488,11 +501,25 @@ mod test {
             }
         }
 
+        #[derive(Debug, Eq, PartialEq, Clone, Copy)]
+        pub struct TargetItemStyle {
+            // eg. shape: Option<Either<Diamond, Custom>>
+        }
+
+        impl Default for TargetItemStyle {
+            fn default() -> Self {
+                Self {}
+            }
+        }
+
+        impl GraphItemStyleBase for TargetItemStyle {}
+
         #[derive(Debug, Eq, PartialEq, Clone)]
         pub struct TargetItem {
             belong_group_id: GroupId,
             item_id: ItemId,
             label: Option<String>,
+            style: TargetItemStyle,
         }
 
         impl HasGraphItemKind for TargetItem {
@@ -508,12 +535,18 @@ mod test {
         }
 
         impl GraphItemBase for TargetItem {
+            type ItemStyle = TargetItemStyle;
+
             fn get_belong_group_id(&self) -> ItemId {
                 self.belong_group_id
             }
 
             fn get_label(&self) -> Option<&str> {
                 self.label.as_deref()
+            }
+
+            fn get_item_style(&self) -> &Self::ItemStyle {
+                &self.style
             }
         }
     }
