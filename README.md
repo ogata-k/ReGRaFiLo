@@ -5,18 +5,16 @@
 ちなみに読み方は「レグラフィーロ」です。エスペラント語で「再度グラフを扱う道具」の意味です。<br/>
 ```cargo install regrafilo```などでインストールした後に```regrafilo input.dot output.png```のように扱います。
 
-サポートしている形式は次の通りです。
-## 対応している入力形式
-1. [.regrf](#.regrfのファイル形式) <br/>ReGRaFiLoの中間形式。詳細は後述。
+# サポートしている入出力形式 (実装予定)
+## 入力形式
 1. [.dot](https://www.graphviz.org/doc/info/lang.html) <br/>グラフといえばおなじみのdot言語です。
 1. [.gml](http://www.fim.uni-passau.de/index.php?id=17297&L=1) <br/>グラフモデリング言語（GML）形式です。階層的なAscii形式をベースとした宣言的な形式。非常に簡単な構文でネットワークデータをサポートしている。
 1. [.xgmml](http://xml.coverpages.org/xgmml-draft-xgmml-20000315.html) <br/>GMLの機能をベースとしたXML形式です。.gmlとお互いに容易に変換できます。
 1. [.gexf](https://gephi.org/gexf/format/) <br/>オープンなグラフ可視化プラットフォームである[Gephi](http://oss.infoscience.co.jp/gephi/gephi.org/index.html) の内部形式で使われています。非常に変換元として優秀です。
 1. [.gdf](http://graphexploration.cond.org/manual.html#_Toc116465166) <br/>CSVのデータテーブル風に頂点や辺を定義していく形式です。
 1. [.graphml](http://graphml.graphdrawing.org/specification.html) <br/>XML形式のGMLですはノードとエッジの属性、階層グラフをサポートしており、柔軟なアーキテクチャによって多くのメリットを持っている。
-## 対応している出力形式
+## 出力形式
 * テキスト形式
-1. [.regrf](#.regrfのファイル形式)<br/> ReGRaFiLoの中間形式。詳細は後述。
 1. [対応している入力形式に出ている形式](#対応している入力形式)
 * 画像形式
 1. [.png](https://www.w3.org/TR/PNG/) <br/>画像データを無劣化な可逆圧縮により記録するラスタ画像形式の一つ。透過も可能。
@@ -29,78 +27,4 @@
 # 作成可能なグラフ
 まず丁寧に記述された[dot言語のファイル](document/example.dot)をご覧ください。
 このファイルを入力としてgraphvizのコマンド```dot -T png document/example.dot -o document/example.png```により同名のpng画像を出力出力すると次のようになります。<br/>
-![出力例](document/example.png)<br/>
-そしてこのdotファイルをregrf形式で記述すると[このregrfファイル](document/example.regrf)になります。
-
-# .regrfのファイル形式
-（変更予定あり）
-regrf形式のファイルは先にみたように属性無しのXML風の形式で記述します。
-XML同様タグを用いて宣言していきますが、XMLと違いいくつかの制限がかかっています。
-その制限は
-   1. 属性を利用できない
-   1. タグ名はハイフンが文字列の終始にならない文字列で、半角英文字の小文字とハイフンのみからなる
-   1. <hoge/>形式の中身を持たないタグは利用できない
-   1. 値を持たない場合は<hoge></hoge>としなければいけない
-   
-となっています。
-
-.regrfでは最初にレイアウト構造を定義し、次にグラフを定義していく形で記述していきます。
-regrf形式の全体構造の外形は次のように表現されます。
-
-```xml:example.regrf
-<regrf>
-    <meta>
-        <charset>utf8</charset>
-        <version>0.0.1</version>
-    </meta>
-    <layout>
-        <colors>
-            <color>color</color>
-        </colors>
-        <labels>
-            <label>label structure</label>
-        </labels>
-        <graphs>
-            <graph>inner graph structure</graph>
-        </graphs>
-        <nodes>
-            <node>node structure</node>
-        </nodes>
-        <edges>
-            <edge>edge structure</edge>
-        </edges>
-    </layout>
-    <outer-graph>
-        <nodes>
-            <node>node body</node>
-        </nodes>
-        <inner-graphs>
-            <inner-graph>inner graph body</inner-graph>
-        </inner-graphs>
-        <edges>
-            <edge>edge body</edge>
-        </edges>
-    </outer-graph>
-</regrf>
-```
-このように.regrfは属性を用いないXML風の形式で記述されます。
-中身を見ていくと、regrfタグの下にはmeta、layout、outer-graphタグが定義されています。これらは必須です。<br/>
-文法について詳しく知りたければ[こちらのファイル](document/regrf_syntax.md) をご覧ください。
-
-# Git
-階層が深い順に作成し、一つ上にプルリクして開発していきます。
-* master
-    * staging
-        * hotfix/XXX
-        * develop
-            * feature/XXX
-            
-また、コミットメッセージは以下のフォーマットを期待します。
-```
-<status>: <title>
-
-<message>
-```
-* \<status\>はリファクタリングのclean、コード修正のmod、バグ修正のfix、機能追加のadd、のどれかです。
-* \<title\>はコミットメッセージの概要を表すタイトルです。
-* \<message\>は詳細な説明をしたいときにつかう説明本文です。
+![出力例](document/example.png)
