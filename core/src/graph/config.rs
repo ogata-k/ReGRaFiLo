@@ -1,35 +1,135 @@
 //! Module for graph configuration
 
-/// configuration for graph without layout
+use std::fmt;
+
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
-pub enum GraphConfig {
-    /// Config for Graph with undirected edge.
-    /// multiple_edge option is a flag which can be used multiple edge.
-    /// group option is a flag which can be used node grouping.
-    UndirectedGraph { multiple_edge: bool, group: bool },
+pub enum GraphKind {
+    Graph,
+    HyperGraph,
+}
 
-    /// Config for Graph with Directed edge.
-    /// multiple_edge option is a flag which can be used multiple edge.
-    /// group option is a flag which can be used node grouping.
-    DirectedGraph { multiple_edge: bool, group: bool },
+impl fmt::Display for GraphKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_fmt(format_args!("{:?}", &self))
+    }
+}
 
-    /// Config for Graph with undirected edge or Directed edge.
-    /// multiple_edge option is a flag which can be used multiple edge.
-    /// group option is a flag which can be used node grouping.
-    MixedGraph { multiple_edge: bool, group: bool },
+impl GraphKind {
+    /// check graph is graph which has edge
+    pub fn is_graph(&self) -> bool {
+        self == &GraphKind::Graph
+    }
 
-    /// Config for Graph with undirected Hyper edge.
-    /// multiple_hyper_edge option is a flag which can be used multiple edge. But usually false.
-    /// If show graph with the option specified true, the order of a hierarchy of the group made by the edges is not specified.
-    HyperGraph { multiple_hyper_edge: bool },
+    /// check graph is graph which has hyper edge
+    pub fn is_hyper_graph(&self) -> bool {
+        self == &GraphKind::HyperGraph
+    }
+}
 
-    /// Config for Graph with Directed Hyper edge.
-    /// multiple_hyper_edge option is a flag which can be used multiple edge. But usually false.
-    DirectedHyperGraph { multiple_hyper_edge: bool },
+#[derive(Debug, Eq, PartialEq, Copy, Clone)]
+pub enum GraphType {
+    /// Type for Graph with undirected edge.
+    UndirectedGraph,
+
+    /// Type for Graph with Directed edge.
+    DirectedGraph,
+
+    /// Type for Graph with undirected edge or Directed edge.
+    MixedGraph,
+
+    /// Type for Graph with undirected Hyper edge.
+    UndirectedHyperGraph,
+
+    /// Type for Graph with Directed Hyper edge.
+    DirectedHyperGraph,
 
     /// Config for Graph with undirected Hyper edge or Directed Hyper edge.
-    /// multiple_hyper_edge option is a flag which can be used multiple edge. But usually false.
-    MixedHyperGraph { multiple_hyper_edge: bool },
+    MixedHyperGraph,
+}
+
+impl fmt::Display for GraphType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use GraphType::*;
+
+        match self {
+            UndirectedGraph => f.write_str("Graph"),
+            DirectedGraph => f.write_str("DirectedGraph"),
+            MixedGraph => f.write_str("MixedGraph"),
+            UndirectedHyperGraph => f.write_str("HyperGraph"),
+            DirectedHyperGraph => f.write_str("DirectedHyperGraph"),
+            MixedHyperGraph => f.write_str("MixedHyperGraph"),
+        }
+    }
+}
+
+impl GraphType {
+    /// check type is for Graph
+    pub fn is_undirected_graph(&self) -> bool {
+        self == &GraphType::UndirectedGraph
+    }
+
+    /// check type is for Directed Graph
+    pub fn is_directed_graph(&self) -> bool {
+        self == &GraphType::DirectedGraph
+    }
+
+    /// check type is for Mixed Graph
+    pub fn is_mixed_graph(&self) -> bool {
+        self == &GraphType::MixedGraph
+    }
+
+    /// check type is for Hyper Graph
+    pub fn is_undirected_hyper_graph(&self) -> bool {
+        self == &GraphType::UndirectedHyperGraph
+    }
+
+    /// check type is for Directed Hyper Graph
+    pub fn is_directed_hyper_graph(&self) -> bool {
+        self == &GraphType::DirectedHyperGraph
+    }
+
+    /// check type is for Mixed Hyper Graph
+    pub fn is_mixed_hyper_graph(&self) -> bool {
+        self == &GraphType::MixedHyperGraph
+    }
+}
+
+/// configuration for graph without layout
+#[derive(Debug, Eq, PartialEq, Copy, Clone)]
+pub struct GraphConfig {
+    // ---
+    // common
+    // ---
+    /// kind of graph
+    kind: GraphKind,
+
+    // ---
+    // for graph or directed graph
+    // ---
+    /// undirected edge
+    undirected_edge: bool,
+    /// directed edge
+    directed_edge: bool,
+    /// this option is a flag which we can use check to make multiple edge
+    multiple_edge: bool,
+
+    // ---
+    // for hyper graph or directed hyper graph
+    // ---
+    /// undirected hyper edge
+    undirected_hyper_edge: bool,
+    /// directed hyper edge
+    directed_hyper_edge: bool,
+    /// this option is a flag which we can use check to make multiple hyper edge
+    multiple_hyper_edge: bool,
+}
+
+impl fmt::Display for GraphConfig {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_fmt(format_args!(
+            "{{kind: {}, undirected: {}, directed: {}, can_multiple: {}, undirected_hyper: {}, directed_hyper: {}, can_hyper_multiple: {}}}",
+            self.kind, self.undirected_edge, self.directed_edge, self.multiple_edge, self.undirected_hyper_edge, self.directed_hyper_edge, self.multiple_hyper_edge))
+    }
 }
 
 impl GraphConfig {
@@ -39,45 +139,78 @@ impl GraphConfig {
 
     /// construtor for Graph
     pub fn undirected_graph(can_multiple_edge: bool, use_grouping: bool) -> Self {
-        Self::UndirectedGraph {
+        Self {
+            kind: GraphKind::Graph,
+            undirected_edge: true,
+            directed_edge: false,
             multiple_edge: can_multiple_edge,
-            group: use_grouping,
+            undirected_hyper_edge: use_grouping,
+            directed_hyper_edge: false,
+            multiple_hyper_edge: false,
         }
     }
 
     /// construtor for Directed Graph
     pub fn directed_graph(can_multiple_edge: bool, use_grouping: bool) -> Self {
-        Self::DirectedGraph {
+        Self {
+            kind: GraphKind::Graph,
+            undirected_edge: false,
+            directed_edge: true,
             multiple_edge: can_multiple_edge,
-            group: use_grouping,
+            undirected_hyper_edge: use_grouping,
+            directed_hyper_edge: false,
+            multiple_hyper_edge: false,
         }
     }
 
     /// construtor for Mixed Graph
     pub fn mixed_graph(can_multiple_edge: bool, use_grouping: bool) -> Self {
-        Self::MixedGraph {
+        Self {
+            kind: GraphKind::Graph,
+            undirected_edge: true,
+            directed_edge: true,
             multiple_edge: can_multiple_edge,
-            group: use_grouping,
+            undirected_hyper_edge: use_grouping,
+            directed_hyper_edge: false,
+            multiple_hyper_edge: false,
         }
     }
 
     /// construtor for Hyper Graph
-    pub fn hyper_graph(can_multiple_edge: bool) -> Self {
-        Self::HyperGraph {
-            multiple_hyper_edge: can_multiple_edge,
+    pub fn undirected_hyper_graph(can_multiple_hyper_edge: bool) -> Self {
+        Self {
+            kind: GraphKind::HyperGraph,
+            undirected_edge: false,
+            directed_edge: false,
+            multiple_edge: false,
+            undirected_hyper_edge: true,
+            directed_hyper_edge: false,
+            multiple_hyper_edge: can_multiple_hyper_edge,
         }
     }
 
     /// construtor for Directed Hyper Graph
     pub fn directed_hyper_graph(can_multiple_hyper_edge: bool) -> Self {
-        Self::DirectedHyperGraph {
+        Self {
+            kind: GraphKind::HyperGraph,
+            undirected_edge: false,
+            directed_edge: false,
+            multiple_edge: false,
+            undirected_hyper_edge: false,
+            directed_hyper_edge: true,
             multiple_hyper_edge: can_multiple_hyper_edge,
         }
     }
 
     /// construtor for Mixed Hyper Graph
     pub fn mixed_hyper_graph(can_multiple_hyper_edge: bool) -> Self {
-        Self::MixedHyperGraph {
+        Self {
+            kind: GraphKind::HyperGraph,
+            undirected_edge: false,
+            directed_edge: false,
+            multiple_edge: false,
+            undirected_hyper_edge: true,
+            directed_hyper_edge: true,
             multiple_hyper_edge: can_multiple_hyper_edge,
         }
     }
@@ -85,6 +218,41 @@ impl GraphConfig {
     // ---
     // getter
     // ---
+
+    /// get graph type
+    pub fn get_type(&self) -> GraphType {
+        match self {
+            Self {
+                kind: GraphKind::Graph,
+                undirected_edge: is_undirected,
+                directed_edge: is_directed,
+                multiple_edge: _,
+                undirected_hyper_edge: _,
+                directed_hyper_edge: false,
+                multiple_hyper_edge: false,
+            } => match (is_undirected, is_directed) {
+                (true, true) => GraphType::MixedGraph,
+                (true, false) => GraphType::UndirectedGraph,
+                (false, true) => GraphType::DirectedGraph,
+                _ => panic!("Illegal config: {:?}", self),
+            },
+            Self {
+                kind: GraphKind::HyperGraph,
+                undirected_edge: false,
+                directed_edge: false,
+                multiple_edge: false,
+                undirected_hyper_edge: is_undirected_hyper,
+                directed_hyper_edge: is_directed_hyper,
+                multiple_hyper_edge: _,
+            } => match (is_undirected_hyper, is_directed_hyper) {
+                (true, true) => GraphType::MixedHyperGraph,
+                (true, false) => GraphType::UndirectedHyperGraph,
+                (false, true) => GraphType::DirectedHyperGraph,
+                _ => panic!("Illegal config: {:?}", self),
+            },
+            _ => panic!("Illegal config: {:?}", self),
+        }
+    }
 
     // ---
     // setter
@@ -96,125 +264,61 @@ impl GraphConfig {
 
     /// check configure is for Graph
     pub fn is_undirected_graph(&self) -> bool {
-        match self {
-            GraphConfig::UndirectedGraph {
-                multiple_edge: _,
-                group: _,
-            } => true,
-            _ => false,
-        }
+        self.get_type().is_undirected_graph()
     }
 
     /// check configure is for Directed Graph
     pub fn is_directed_graph(&self) -> bool {
-        match self {
-            GraphConfig::DirectedGraph {
-                multiple_edge: _,
-                group: _,
-            } => true,
-            _ => false,
-        }
+        self.get_type().is_directed_graph()
     }
 
     /// check configure is for Mixed Graph
     pub fn is_mixed_graph(&self) -> bool {
-        match self {
-            GraphConfig::MixedGraph {
-                multiple_edge: _,
-                group: _,
-            } => true,
-            _ => false,
-        }
+        self.get_type().is_mixed_graph()
     }
 
     /// check configure is for Hyper Graph
-    pub fn is_hyper_graph(&self) -> bool {
-        match self {
-            GraphConfig::HyperGraph {
-                multiple_hyper_edge: _,
-            } => true,
-            _ => false,
-        }
+    pub fn is_undirected_hyper_graph(&self) -> bool {
+        self.get_type().is_undirected_hyper_graph()
     }
 
     /// check configure is for Directed Hyper Graph
     pub fn is_directed_hyper_graph(&self) -> bool {
-        match self {
-            GraphConfig::DirectedHyperGraph {
-                multiple_hyper_edge: _,
-            } => true,
-            _ => false,
-        }
+        self.get_type().is_directed_hyper_graph()
     }
 
     /// check configure is for Mixed Hyper Graph
     pub fn is_mixed_hyper_graph(&self) -> bool {
-        match self {
-            GraphConfig::MixedHyperGraph {
-                multiple_hyper_edge: _,
-            } => true,
-            _ => false,
-        }
+        self.get_type().is_mixed_hyper_graph()
     }
 
-    /// check graph can node grouping
-    pub fn has_group(&self) -> bool {
-        match self {
-            GraphConfig::UndirectedGraph {
-                multiple_edge: _,
-                group: true,
-            }
-            | GraphConfig::DirectedGraph {
-                multiple_edge: _,
-                group: true,
-            }
-            | GraphConfig::MixedGraph {
-                multiple_edge: _,
-                group: true,
-            }
-            | GraphConfig::HyperGraph {
-                multiple_hyper_edge: _,
-            }
-            | GraphConfig::MixedHyperGraph {
-                multiple_hyper_edge: _,
-            } => true,
-            _ => false,
-        }
+    /// check graph can create node grouping
+    pub fn can_group_node(&self) -> bool {
+        let graph_type = self.get_type();
+
+        (graph_type.is_undirected_graph() && self.undirected_hyper_edge)
+            || (graph_type.is_directed_graph() && self.undirected_hyper_edge)
+            || (graph_type.is_mixed_graph() && self.undirected_hyper_edge)
+            || graph_type.is_undirected_hyper_graph()
+            || graph_type.is_mixed_hyper_graph()
     }
 
     /// check graph can multiple edge
     pub fn can_multiple_edge(&self) -> bool {
-        match self {
-            GraphConfig::UndirectedGraph {
-                multiple_edge: true,
-                group: _,
-            }
-            | GraphConfig::DirectedGraph {
-                multiple_edge: true,
-                group: _,
-            }
-            | GraphConfig::MixedGraph {
-                multiple_edge: true,
-                group: _,
-            } => true,
-            _ => false,
-        }
+        let graph_type = self.get_type();
+
+        (graph_type.is_undirected_graph() && self.multiple_edge)
+            || (graph_type.is_directed_graph() && self.multiple_edge)
+            || (graph_type.is_mixed_graph() && self.multiple_edge)
     }
 
     /// check graph can multiple edge for hyper edge
     pub fn can_multiple_hyper_edge(&self) -> bool {
-        match self {
-            GraphConfig::HyperGraph {
-                multiple_hyper_edge: true,
-            }
-            | GraphConfig::DirectedHyperGraph {
-                multiple_hyper_edge: true,
-            }
-            | GraphConfig::MixedHyperGraph {
-                multiple_hyper_edge: true,
-            } => true,
-            _ => false,
-        }
+        let graph_type = self.get_type();
+
+        (graph_type.is_undirected_hyper_graph() && self.multiple_hyper_edge)
+            || (graph_type.is_directed_hyper_graph() && self.multiple_hyper_edge)
+            || (graph_type.is_mixed_hyper_graph() && self.multiple_hyper_edge)
     }
 
     // ---

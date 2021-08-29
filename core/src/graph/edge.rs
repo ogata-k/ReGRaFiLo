@@ -1,7 +1,7 @@
 //! Module for edge and it's store
-
 use crate::graph::GraphConfig;
 use crate::util::Identity;
+use std::borrow::Borrow;
 use std::collections::BTreeMap;
 use std::fmt;
 
@@ -38,6 +38,43 @@ pub enum Edge<Id: Identity> {
         source_ids: Vec<Id>,
         target_ids: Vec<Id>,
     },
+}
+
+impl<Id: Identity> fmt::Display for Edge<Id> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use Edge::*;
+
+        match self {
+            Undirected { weight, ids } => f.write_fmt(format_args!(
+                "{{weight: {}, link: {:?}--{:?}}}",
+                weight, ids[0], ids[1]
+            )),
+            Directed {
+                weight,
+                source_id,
+                target_id,
+            } => f.write_fmt(format_args!(
+                "{{weight: {}, link: {:?}->{:?}}}",
+                weight, source_id, target_id
+            )),
+            UndirectedHyper { weight, ids } => {
+                f.write_fmt(format_args!("{{weight: {}, link: ", weight))?;
+                f.debug_set().entries(ids.iter()).finish()?;
+                f.write_str("}")
+            }
+            DirectedHyper {
+                weight,
+                source_ids,
+                target_ids,
+            } => {
+                f.write_fmt(format_args!("{{weight: {}, link: ", weight))?;
+                f.debug_set().entries(source_ids.iter()).finish()?;
+                f.write_str("->")?;
+                f.debug_set().entries(target_ids.iter()).finish()?;
+                f.write_str("}")
+            }
+        }
+    }
 }
 
 impl<Id: Identity> Edge<Id> {
@@ -158,6 +195,14 @@ impl<Id: Identity> Edge<Id> {
         }
     }
 
+    /// check edge is undirected or directed edge
+    pub fn is_edge(&self) -> bool {
+        match self {
+            Self::Undirected { .. } | Self::Directed { .. } => true,
+            _ => false,
+        }
+    }
+
     /// check edge is undirected hyper edge
     pub fn is_undirected_hyper(&self) -> bool {
         if let Self::UndirectedHyper { .. } = self {
@@ -176,6 +221,14 @@ impl<Id: Identity> Edge<Id> {
         }
     }
 
+    /// check edge is undirected or directed hyper edge
+    pub fn is_hyper_edge(&self) -> bool {
+        match self {
+            Self::UndirectedHyper { .. } | Self::DirectedHyper { .. } => true,
+            _ => false,
+        }
+    }
+
     /// check configure support this edge type.
     pub fn is_support(&self, config: &GraphConfig) -> bool {
         use Edge::*;
@@ -184,9 +237,31 @@ impl<Id: Identity> Edge<Id> {
             Undirected { .. } => config.is_undirected_graph() || config.is_mixed_graph(),
             Directed { .. } => config.is_directed_graph() || config.is_mixed_graph(),
             UndirectedHyper { .. } => {
-                config.is_hyper_graph() || config.is_mixed_hyper_graph() || config.has_group()
+                config.is_undirected_hyper_graph()
+                    || config.is_mixed_hyper_graph()
+                    || config.can_group_node()
             }
-            DirectedHyper { .. } => config.is_hyper_graph() || config.is_mixed_hyper_graph(),
+            DirectedHyper { .. } => {
+                config.is_undirected_hyper_graph() || config.is_mixed_hyper_graph()
+            }
+        }
+    }
+
+    /// check edge has illegal parameter
+    pub fn has_illegal(&self) -> bool {
+        match self {
+            Edge::Undirected { ids, .. } => ids.len() != 2,
+            Edge::Directed {
+                source_id: _,
+                target_id: _,
+                ..
+            } => false,
+            Edge::UndirectedHyper { ids, .. } => ids.is_empty(),
+            Edge::DirectedHyper {
+                source_ids,
+                target_ids,
+                ..
+            } => source_ids.is_empty() || target_ids.is_empty(),
         }
     }
 
@@ -201,26 +276,39 @@ pub struct EdgeStore<Id: Identity> {
     inner: BTreeMap<Id, Edge<Id>>,
 }
 
-impl<Id: Identity> Default for EdgeStore<Id> {
-    fn default() -> Self {
-        Self {
-            inner: Default::default(),
-        }
-    }
-}
-
-impl<Id: Identity + fmt::Debug> fmt::Debug for EdgeStore<Id> {
+impl<Id: Identity> fmt::Debug for EdgeStore<Id> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_fmt(format_args!("{:?}", self.inner))
     }
 }
 
-impl<Id: Identity> EdgeStore<Id> {
-    // TODO 必要な実装を必要な時に
+impl<Id: Identity> fmt::Display for EdgeStore<Id> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut is_first = true;
+        f.write_str("{")?;
+        for (edge_id, edge) in self.inner.iter() {
+            if is_first {
+                f.write_fmt(format_args!("{:?}:{}", edge_id, edge))?;
+            } else {
+                f.write_fmt(format_args!(", {:?}:{}", edge_id, edge))?;
+            }
+            is_first = false;
+        }
+        f.write_str("}")
+    }
+}
 
+impl<Id: Identity> EdgeStore<Id> {
     // ---
     // constructor
     // ---
+
+    /// create empty store
+    pub fn create() -> Self {
+        Self {
+            inner: Default::default(),
+        }
+    }
 
     // ---
     // getter
@@ -230,11 +318,51 @@ impl<Id: Identity> EdgeStore<Id> {
     // setter
     // ---
 
+    /// add edge with pop old edge
+    pub fn add_edge_with_pop_old(&mut self, edge_id: Id, edge: Edge<Id>) -> Option<Edge<Id>> {
+        self.inner.insert(edge_id, edge)
+    }
+
     // ---
     // checker
     // ---
 
+    /// check exist edge_id
+    pub fn has_edge_id<B: ?Sized>(&self, edge_id: &B) -> bool
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        self.inner.contains_key(edge_id)
+    }
+
     // ---
     // delete
     // ---
+
+    /// delete edge with same edge and get deleted edge_ids
+    pub fn remove_by_same_edge_with_collect_removed(&mut self, edge: &Edge<Id>) -> Vec<Id> {
+        /*
+            let deleted: Vec<Id> = self
+                .inner
+                .drain_filter(|_, stored_edge| stored_edge == edge)
+                .map(|(deleted_edge_id, _)| deleted_edge_id)
+                .collect();
+
+            deleted
+        */
+
+        // @todo この方法だとここから削除する必要があるので上の方法に置き換える
+        let deleted: Vec<Id> = self
+            .inner
+            .iter()
+            .filter(|(_, stored_edge)| *stored_edge == edge)
+            .map(|(stored_edge_id, _)| stored_edge_id.clone())
+            .collect();
+        for delete_id in deleted.iter() {
+            self.inner.remove_entry(delete_id);
+        }
+
+        deleted
+    }
 }

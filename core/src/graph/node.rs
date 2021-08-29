@@ -28,6 +28,39 @@ pub enum Incidence<Id: Identity> {
     DirectedHyperTarget { edge_id: Id },
 }
 
+impl<Id: Identity> fmt::Display for Incidence<Id> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use Incidence::*;
+
+        match self {
+            Undirected { edge_id } => f.write_fmt(format_args!(
+                "{{type: (Undirected, Source/Target), edge_id: {:?}}}",
+                edge_id
+            )),
+            DirectedSource { edge_id } => f.write_fmt(format_args!(
+                "{{type: (Directed, Source), edge_id: {:?}}}",
+                edge_id
+            )),
+            DirectedTarget { edge_id } => f.write_fmt(format_args!(
+                "{{type: (Directed, Target), edge_id: {:?}}}",
+                edge_id
+            )),
+            UndirectedHyper { edge_id } => f.write_fmt(format_args!(
+                "{{type: (UndirectedHyper, Source/Target), edge_id: {:?}}}",
+                edge_id
+            )),
+            DirectedHyperSource { edge_id } => f.write_fmt(format_args!(
+                "{{type: (DirectedHyper, Source), edge_id: {:?}}}",
+                edge_id
+            )),
+            DirectedHyperTarget { edge_id } => f.write_fmt(format_args!(
+                "{{type: (DirectedHyper, Target), edge_id: {:?}}}",
+                edge_id
+            )),
+        }
+    }
+}
+
 impl<Id: Identity> Incidence<Id> {
     // ---
     // constructor
@@ -165,10 +198,12 @@ impl<Id: Identity> Incidence<Id> {
                 config.is_directed_graph() || config.is_mixed_graph()
             }
             UndirectedHyper { .. } => {
-                config.is_hyper_graph() || config.is_mixed_hyper_graph() || config.has_group()
+                config.is_undirected_hyper_graph()
+                    || config.is_mixed_hyper_graph()
+                    || config.can_group_node()
             }
             DirectedHyperSource { .. } | DirectedHyperTarget { .. } => {
-                config.is_hyper_graph() || config.is_mixed_hyper_graph()
+                config.is_undirected_hyper_graph() || config.is_mixed_hyper_graph()
             }
         }
     }
@@ -184,6 +219,22 @@ impl<Id: Identity> Incidence<Id> {
 pub struct Node<Id: Identity> {
     weight: i16,
     incidences: Vec<Incidence<Id>>,
+}
+
+impl<Id: Identity> fmt::Display for Node<Id> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_fmt(format_args!("{{weight: {}, incidences: {{", self.weight))?;
+        let mut is_first = true;
+        for incidence in self.incidences.iter() {
+            if is_first {
+                f.write_fmt(format_args!("{}", incidence))?;
+            } else {
+                f.write_fmt(format_args!(", {}", incidence))?;
+            }
+            is_first = false;
+        }
+        f.write_str("}}")
+    }
 }
 
 impl<Id: Identity> Default for Node<Id> {
@@ -268,6 +319,28 @@ impl<Id: Identity> Node<Id> {
 
         deleted
     }
+
+    /// delete incidence with exist in edge_ids and get deleted count
+    pub fn remove_incidence_by_ids<B: ?Sized>(&mut self, edge_ids: &[B]) -> usize
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        let mut deleted = 0;
+        self.incidences.retain(|incidence| {
+            // check as borrowed because of no clone.
+            if !edge_ids.contains(incidence.get_edge_id().borrow()) {
+                // retain
+                true
+            } else {
+                // to delete
+                deleted += 1;
+                false
+            }
+        });
+
+        deleted
+    }
 }
 
 /// Store structure for node.
@@ -276,26 +349,39 @@ pub struct NodeStore<Id: Identity> {
     inner: BTreeMap<Id, Node<Id>>,
 }
 
-impl<Id: Identity> Default for NodeStore<Id> {
-    fn default() -> Self {
-        Self {
-            inner: Default::default(),
-        }
-    }
-}
-
 impl<Id: Identity + fmt::Debug> fmt::Debug for NodeStore<Id> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_fmt(format_args!("{:?}", self.inner))
     }
 }
 
-impl<Id: Identity> NodeStore<Id> {
-    // TODO 必要な実装を必要な時に
+impl<Id: Identity> fmt::Display for NodeStore<Id> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut is_first = true;
+        f.write_str("{")?;
+        for (node_id, node) in self.inner.iter() {
+            if is_first {
+                f.write_fmt(format_args!("{:?}:{}", node_id, node))?;
+            } else {
+                f.write_fmt(format_args!(", {:?}:{}", node_id, node))?;
+            }
+            is_first = false;
+        }
+        f.write_str("}")
+    }
+}
 
+impl<Id: Identity> NodeStore<Id> {
     // ---
     // constructor
     // ---
+
+    /// create empty store
+    pub fn create() -> Self {
+        Self {
+            inner: Default::default(),
+        }
+    }
 
     // ---
     // getter
@@ -305,6 +391,25 @@ impl<Id: Identity> NodeStore<Id> {
     // setter
     // ---
 
+    /// Add node if not exist. If exist, not replace.
+    pub fn set_as_node(&mut self, node_id: Id) {
+        let entry = self.inner.entry(node_id);
+        entry.or_insert_with(|| Node::create());
+    }
+
+    /// add incidence for the node
+    pub fn add_incidence(&mut self, node_id: Id, incidence: Incidence<Id>) {
+        let entry_node = self.inner.entry(node_id).or_insert_with(|| Node::create());
+        entry_node.incidences.push(incidence);
+    }
+
+    /// add incidence for each node
+    pub fn add_incidences_each_node(&mut self, node_incidences: Vec<(Id, Incidence<Id>)>) {
+        for (node_id, incidences) in node_incidences.into_iter() {
+            self.add_incidence(node_id, incidences);
+        }
+    }
+
     // ---
     // checker
     // ---
@@ -312,4 +417,13 @@ impl<Id: Identity> NodeStore<Id> {
     // ---
     // delete
     // ---
+
+    // TODO remove node(削除時の接続情報をもとに編も削除する必要があるので接続情報は取得できるようにしたい)
+
+    /// Remove incidence edge whose edge_id is in specified.
+    pub fn remove_edges_by_ids(&mut self, removed_edge_ids: &[Id]) {
+        for (_, node) in self.inner.iter_mut() {
+            node.remove_incidence_by_ids(removed_edge_ids);
+        }
+    }
 }

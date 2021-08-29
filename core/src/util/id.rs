@@ -1,6 +1,7 @@
 //! Module for id
+use std::fmt;
 
 /// Id trait for ReGRaFiLo's Item
-pub trait Identity: Eq + Ord {}
+pub trait Identity: Eq + Ord + Clone + fmt::Debug {}
 
-impl<T: Eq + Ord> Identity for T {}
+impl<T: Eq + Ord + Clone + fmt::Debug> Identity for T {}
