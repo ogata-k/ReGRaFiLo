@@ -100,13 +100,18 @@ impl GraphType {
 }
 
 /// configuration for graph without layout
-#[derive(Debug, Eq, PartialEq, Copy, Clone)]
+/// Not impl Copy because use reference and not create again and again.
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct GraphConfig {
     // ---
     // common
     // ---
     /// kind of graph
     kind: GraphKind,
+
+    /// this optional option is a flag remove same edge when insert.
+    /// If set the mode and cannot use multiple edge, replace same edge.
+    can_replace: bool,
 
     // ---
     // Kind: Graph
@@ -176,6 +181,7 @@ impl GraphConfig {
     pub fn undirected_graph(can_multiple_edge: bool, node_grouping: bool) -> Self {
         Self {
             kind: GraphKind::Graph,
+            can_replace: false,
             undirected_edge: true,
             directed_edge: false,
             multiple_edge: can_multiple_edge,
@@ -190,6 +196,7 @@ impl GraphConfig {
     pub fn directed_graph(can_multiple_edge: bool, node_grouping: bool) -> Self {
         Self {
             kind: GraphKind::Graph,
+            can_replace: false,
             undirected_edge: false,
             directed_edge: true,
             multiple_edge: can_multiple_edge,
@@ -204,6 +211,7 @@ impl GraphConfig {
     pub fn mixed_graph(can_multiple_edge: bool, node_grouping: bool) -> Self {
         Self {
             kind: GraphKind::Graph,
+            can_replace: false,
             undirected_edge: true,
             directed_edge: true,
             multiple_edge: can_multiple_edge,
@@ -218,6 +226,7 @@ impl GraphConfig {
     pub fn undirected_hyper_graph(can_multiple_hyper_edge: bool) -> Self {
         Self {
             kind: GraphKind::HyperGraph,
+            can_replace: false,
             undirected_edge: false,
             directed_edge: false,
             multiple_edge: false,
@@ -232,6 +241,7 @@ impl GraphConfig {
     pub fn directed_hyper_graph(can_multiple_hyper_edge: bool) -> Self {
         Self {
             kind: GraphKind::HyperGraph,
+            can_replace: false,
             undirected_edge: false,
             directed_edge: false,
             multiple_edge: false,
@@ -246,6 +256,7 @@ impl GraphConfig {
     pub fn mixed_hyper_graph(can_multiple_hyper_edge: bool) -> Self {
         Self {
             kind: GraphKind::HyperGraph,
+            can_replace: false,
             undirected_edge: false,
             directed_edge: false,
             multiple_edge: false,
@@ -271,6 +282,7 @@ impl GraphConfig {
         match self {
             Self {
                 kind: GraphKind::Graph,
+                can_replace: _,
                 undirected_edge: is_undirected,
                 directed_edge: is_directed,
                 multiple_edge: _,
@@ -286,6 +298,7 @@ impl GraphConfig {
             },
             Self {
                 kind: GraphKind::HyperGraph,
+                can_replace: _,
                 undirected_edge: false,
                 directed_edge: false,
                 multiple_edge: false,
@@ -306,10 +319,21 @@ impl GraphConfig {
     // ---
     // setter
     // ---
+    /// to replace same edge mode when insert edge
+    /// If set the mode and cannot use multiple edge, replace same edge.
+    pub fn to_replace_same_edge_mode(mut self) -> Self {
+        self.can_replace = true;
+        self
+    }
 
     // ---
     // checker
     // ---
+    /// check can replace same edge when insert edge.
+    /// If set the mode and cannot use multiple edge, replace same edge.
+    pub fn can_replace_same_edge(&self) -> bool {
+        self.can_replace
+    }
 
     /// check configure is for Graph
     #[inline]

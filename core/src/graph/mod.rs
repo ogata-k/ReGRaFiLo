@@ -215,7 +215,7 @@ impl<Id: Identity> Graph<Id> {
     /// Add edge. If exist at the edge_id, not replace when replace is false.
     /// If inserted at the edge_id, replace insert at the edge_id
     fn add_edge(&mut self, edge_id: Id, edge: Edge<Id>) -> Result<(), GraphError<Id>> {
-        let config = self.get_config();
+        let config: &GraphConfig = self.get_config();
 
         // check illegal edge
         if edge.has_illegal() {
@@ -241,7 +241,8 @@ impl<Id: Identity> Graph<Id> {
         } else {
             config.can_multiple_hyper_edge()
         };
-        let exist_same_edge: bool = if can_multiple {
+        let can_replace = config.can_replace_same_edge();
+        let exist_same_edge: bool = if can_multiple || can_replace {
             false
         } else {
             self.edges.exist_same_edge(&edge)
@@ -250,9 +251,30 @@ impl<Id: Identity> Graph<Id> {
             return Err(GraphError::ExistSameEdge(edge_id, edge));
         }
 
-        // remove incidence data for node before add new edge
-        if self.edges.has_edge_id(&edge_id) {
-            self.nodes.remove_edges_by_id(&edge_id);
+        let exist_edge_id = self.edges.has_edge_id(&edge_id);
+        if can_replace {
+            // get same edge to remove
+            let mut removed_edge_ids: Vec<Id> = if can_multiple {
+                Vec::new()
+            } else {
+                self.edges.remove_by_same_edge_with_collect_removed(&edge)
+            };
+            if exist_edge_id {
+                // replace true or not true, if exist_old_edge removed it when insert new edge.
+                removed_edge_ids.push(edge_id.clone());
+            }
+            // remove mutable
+            let removed_edge_ids = removed_edge_ids;
+
+            // remove old incidence data for node
+            if !removed_edge_ids.is_empty() {
+                self.nodes.remove_edges_by_ids(&removed_edge_ids);
+            }
+        } else {
+            // remove old incidence data at the id for node before add new edge
+            if exist_edge_id {
+                self.nodes.remove_edges_by_id(&edge_id);
+            }
         }
 
         //create incidence data from edge
