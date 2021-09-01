@@ -123,6 +123,16 @@ impl<Id: Identity> Graph<Id> {
         )
     }
 
+    /// Add undirected hyper edge as node group. If exist at the edge_id, not replace when replace is false.
+    pub fn add_node_grouping(
+        &mut self,
+        replace: bool,
+        edge_id: Id,
+        node_ids: Vec<Id>,
+    ) -> Result<(), GraphError<Id>> {
+        self.add_edge(replace, edge_id, Edge::undirected_hyper(node_ids))
+    }
+
     /// Add undirected hyper edge without weight. If exist at the edge_id, not replace when replace is false.
     pub fn add_undirected_hyper_edge(
         &mut self,
@@ -230,6 +240,11 @@ impl<Id: Identity> Graph<Id> {
             return Err(GraphError::EdgeNotSupported(edge_id, edge));
         }
 
+        let exist_edge_id = self.edges.has_edge_id(&edge_id);
+        if !replace && exist_edge_id {
+            return Err(GraphError::EdgeAlreadyExist(edge_id));
+        }
+
         // If use node grouping, check intersect node on nodes of edge and nodes of other edges.
         // In other words, this software only supports one grouping hierarchy.
         //
@@ -237,11 +252,6 @@ impl<Id: Identity> Graph<Id> {
         if config.can_use_node_group() && self.edges.has_intersect_node_at_grouping(&edge_id, &edge)
         {
             return Err(GraphError::NodeGroupHaveIntersection(edge_id, edge));
-        }
-
-        let exist_edge_id = self.edges.has_edge_id(&edge_id);
-        if !replace && exist_edge_id {
-            return Err(GraphError::EdgeAlreadyExist(edge_id));
         }
 
         // create incidence data
