@@ -2,9 +2,13 @@
 
 use std::fmt;
 
+/// Kind of Graph. The kind is HyperGraph or not.
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub enum GraphKind {
+    /// Undirected Graph or Directed Graph
     Graph,
+
+    /// Undirected Hyper Graph or Directed Hyper Graph
     HyperGraph,
 }
 
@@ -26,6 +30,7 @@ impl GraphKind {
     }
 }
 
+/// Type of Graph. We use the type to check edge type.
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub enum GraphType {
     /// Type for Graph with undirected edge.
