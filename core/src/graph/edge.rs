@@ -234,16 +234,12 @@ impl<Id: Identity> Edge<Id> {
         use Edge::*;
 
         match self {
-            Undirected { .. } => config.is_undirected_graph() || config.is_mixed_graph(),
-            Directed { .. } => config.is_directed_graph() || config.is_mixed_graph(),
+            Undirected { .. } => config.can_use_undirected_edge(),
+            Directed { .. } => config.can_use_directed_edge(),
             UndirectedHyper { .. } => {
-                config.is_undirected_hyper_graph()
-                    || config.is_mixed_hyper_graph()
-                    || config.can_group_node()
+                config.can_use_node_group() || config.can_use_undirected_hyper_edge()
             }
-            DirectedHyper { .. } => {
-                config.is_undirected_hyper_graph() || config.is_mixed_hyper_graph()
-            }
+            DirectedHyper { .. } => config.can_use_directed_hyper_edge(),
         }
     }
 
@@ -334,6 +330,40 @@ impl<Id: Identity> EdgeStore<Id> {
         B: Identity,
     {
         self.inner.contains_key(edge_id)
+    }
+
+    /// If edge is undirected hyper edge as node grouping, we cannot use the edge wich has intersect node to other edges.
+    pub fn has_intersect_node_at_grouping<B: ?Sized>(
+        &self,
+        except_edge_id: &B,
+        edge: &Edge<Id>,
+    ) -> bool
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        if let Edge::UndirectedHyper { ids, .. } = edge {
+            for stored_edge in self
+                .inner
+                .iter()
+                .filter(|(k, _)| &(*k).borrow() != &except_edge_id)
+                .map(|(_, v)| v)
+            {
+                if let Edge::UndirectedHyper {
+                    ids: stored_ids, ..
+                } = stored_edge
+                {
+                    for id in ids.iter() {
+                        if stored_ids.contains(id) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            false
+        } else {
+            false
+        }
     }
 
     // ---

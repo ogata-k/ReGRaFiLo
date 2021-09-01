@@ -12,6 +12,7 @@ pub enum GraphError<Id: Identity> {
     EdgeNotSupported(Id, Edge<Id>),
     IllegalEdge(Id),
     EdgeAlreadyExist(Id),
+    NodeGroupHaveIntersection(Id, Edge<Id>),
 }
 
 impl<Id: Identity> fmt::Display for GraphError<Id> {
@@ -25,11 +26,16 @@ impl<Id: Identity> fmt::Display for GraphError<Id> {
                 edge, edge_id
             ),
             IllegalEdge(edge_id) => {
-                write!(f, "An edge has illegal parameter at the id {:?}", edge_id)
+                write!(f, "An edge has illegal parameter at the id {:?}.", edge_id)
             }
             EdgeAlreadyExist(edge_id) => {
-                write!(f, "An edge is already exist at the id {:?}", edge_id)
+                write!(f, "An edge is already exist at the id {:?}.", edge_id)
             }
+            NodeGroupHaveIntersection(edge_id, edge) => write!(
+                f,
+                "Already node group has intersection to the edge {} at the id {:?} as node grouping.",
+                edge, edge_id
+            ),
         }
     }
 }

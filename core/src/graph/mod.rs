@@ -235,11 +235,75 @@ impl<Id: Identity> Graph<Id> {
             return Err(GraphError::EdgeAlreadyExist(edge_id));
         }
 
+        // create incidence data
+        let mut incidences = Vec::new();
+        // No check support incidence with config because of already check support edge.
+        // So impl by inline
+        match &edge {
+            Edge::Undirected { ids, .. } => {
+                for node_id in ids {
+                    incidences.push((node_id.clone(), Incidence::undirected(edge_id.clone())));
+                }
+            }
+            Edge::Directed {
+                source_id,
+                target_id,
+                ..
+            } => {
+                incidences.push((
+                    source_id.clone(),
+                    Incidence::directed_source(edge_id.clone()),
+                ));
+                incidences.push((
+                    target_id.clone(),
+                    Incidence::directed_target(edge_id.clone()),
+                ));
+            }
+            Edge::UndirectedHyper { ids, .. } => {
+                for node_id in ids {
+                    incidences.push((
+                        node_id.clone(),
+                        Incidence::undirected_hyper(edge_id.clone()),
+                    ));
+                }
+            }
+            Edge::DirectedHyper {
+                source_ids,
+                target_ids,
+                ..
+            } => {
+                for source_id in source_ids {
+                    incidences.push((
+                        source_id.clone(),
+                        Incidence::directed_hyper_source(edge_id.clone()),
+                    ));
+                }
+
+                for target_id in target_ids {
+                    incidences.push((
+                        target_id.clone(),
+                        Incidence::directed_hyper_target(edge_id.clone()),
+                    ));
+                }
+            }
+        }
+        // remove imutable
+        let incidences = incidences;
+
         let can_multiple = if edge.is_edge() {
             config.can_multiple_edge()
         } else {
             config.can_multiple_hyper_edge()
         };
+
+        // If use node grouping, check intersect node on nodes of edge and nodes of other edges.
+        // In other words, this software only supports one grouping hierarchy.
+        //
+        // i.e. Usually use subgraph in subgraph at other soft if the one contains another. But this soft cannot use.
+        if config.can_use_node_group() && self.edges.has_intersect_node_at_grouping(&edge_id, &edge)
+        {
+            return Err(GraphError::NodeGroupHaveIntersection(edge_id, edge));
+        }
 
         // remove edge
         let mut removed_edge_ids: Vec<Id> = if can_multiple {
@@ -254,9 +318,6 @@ impl<Id: Identity> Graph<Id> {
         // remove mutable
         let removed_edge_ids = removed_edge_ids;
 
-        // create incidence data
-        let incidences = self._generate_edge_incidences(&edge_id, &edge);
-
         // add edge (and old edge delete)
         let _ = self.edges.add_edge_with_pop_old(edge_id, edge);
 
@@ -269,61 +330,6 @@ impl<Id: Identity> Graph<Id> {
         self.nodes.add_incidences_each_node(incidences);
 
         Ok(())
-    }
-
-    /// the helper function. generate incidence data
-    fn _generate_edge_incidences(&self, edge_id: &Id, edge: &Edge<Id>) -> Vec<(Id, Incidence<Id>)> {
-        let mut result = Vec::new();
-        match edge {
-            Edge::Undirected { ids, .. } => {
-                for node_id in ids {
-                    result.push((node_id.clone(), Incidence::undirected(edge_id.clone())));
-                }
-            }
-            Edge::Directed {
-                source_id,
-                target_id,
-                ..
-            } => {
-                result.push((
-                    source_id.clone(),
-                    Incidence::directed_source(edge_id.clone()),
-                ));
-                result.push((
-                    target_id.clone(),
-                    Incidence::directed_target(edge_id.clone()),
-                ));
-            }
-            Edge::UndirectedHyper { ids, .. } => {
-                for node_id in ids {
-                    result.push((
-                        node_id.clone(),
-                        Incidence::undirected_hyper(edge_id.clone()),
-                    ));
-                }
-            }
-            Edge::DirectedHyper {
-                source_ids,
-                target_ids,
-                ..
-            } => {
-                for source_id in source_ids {
-                    result.push((
-                        source_id.clone(),
-                        Incidence::directed_hyper_source(edge_id.clone()),
-                    ));
-                }
-
-                for target_id in target_ids {
-                    result.push((
-                        target_id.clone(),
-                        Incidence::directed_hyper_target(edge_id.clone()),
-                    ));
-                }
-            }
-        }
-
-        result
     }
 
     // ---

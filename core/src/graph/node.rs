@@ -188,26 +188,6 @@ impl<Id: Identity> Incidence<Id> {
         }
     }
 
-    /// check configure support this edge type.
-    pub fn is_support(&self, config: &GraphConfig) -> bool {
-        use Incidence::*;
-
-        match self {
-            Undirected { .. } => config.is_undirected_graph() || config.is_mixed_graph(),
-            DirectedSource { .. } | DirectedTarget { .. } => {
-                config.is_directed_graph() || config.is_mixed_graph()
-            }
-            UndirectedHyper { .. } => {
-                config.is_undirected_hyper_graph()
-                    || config.is_mixed_hyper_graph()
-                    || config.can_group_node()
-            }
-            DirectedHyperSource { .. } | DirectedHyperTarget { .. } => {
-                config.is_undirected_hyper_graph() || config.is_mixed_hyper_graph()
-            }
-        }
-    }
-
     // ---
     // delete
     // ---
