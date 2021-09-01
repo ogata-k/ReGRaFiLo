@@ -10,8 +10,8 @@ use std::fmt::Debug;
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum GraphError<Id: Identity> {
     EdgeNotSupported(Id, Edge<Id>),
-    IllegalEdge(Id),
-    EdgeAlreadyExist(Id),
+    IllegalEdge(Id, Edge<Id>),
+    ExistSameEdge(Id, Edge<Id>),
     NotSameNodeGroupHaveIntersect(Id, Edge<Id>),
 }
 
@@ -25,12 +25,14 @@ impl<Id: Identity> fmt::Display for GraphError<Id> {
                 "Not support undirected edge which is the edge {} at the id {:?}.",
                 edge, edge_id
             ),
-            IllegalEdge(edge_id) => {
-                write!(f, "An edge has illegal parameter at the id {:?}.", edge_id)
+            IllegalEdge(edge_id, edge) => {
+                write!(f, "An edge {} has illegal parameter at the id {:?}.",edge,  edge_id)
             }
-            EdgeAlreadyExist(edge_id) => {
-                write!(f, "An edge is already exist at the id {:?}.", edge_id)
-            }
+            ExistSameEdge(edge_id, edge) =>write!(
+                f,
+                "Cannot insert the edge {} at the id {:?} because of exist same edge.",
+                edge, edge_id
+            ),
             NotSameNodeGroupHaveIntersect(edge_id, edge) => write!(
                 f,
                 "Already node group has intersection to the edge {} at the id {:?} as node grouping.",

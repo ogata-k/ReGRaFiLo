@@ -98,151 +98,133 @@ impl<Id: Identity> Graph<Id> {
     }
 
     /// Add undirected edge without weight. If exist at the edge_id, not replace when replace is false.
+    /// If inserted at the edge_id, replace insert at the edge_id
     pub fn add_undirected_edge(
         &mut self,
-        replace: bool,
         edge_id: Id,
         node_id1: Id,
         node_id2: Id,
     ) -> Result<(), GraphError<Id>> {
-        self.add_edge(replace, edge_id, Edge::undirected(node_id1, node_id2))
+        self.add_edge(edge_id, Edge::undirected(node_id1, node_id2))
     }
 
     /// Add directed edge without weight. If exist at the edge_id, not replace when replace is false.
+    /// If inserted at the edge_id, replace insert at the edge_id
     pub fn add_directed_edge(
         &mut self,
-        replace: bool,
         edge_id: Id,
         source_node_id: Id,
         target_node_id: Id,
     ) -> Result<(), GraphError<Id>> {
-        self.add_edge(
-            replace,
-            edge_id,
-            Edge::directed(source_node_id, target_node_id),
-        )
+        self.add_edge(edge_id, Edge::directed(source_node_id, target_node_id))
     }
 
     /// Add undirected hyper edge as node group. If exist at the edge_id, not replace when replace is false.
+    /// If inserted at the edge_id, replace insert at the edge_id
     pub fn add_node_grouping(
         &mut self,
-        replace: bool,
         edge_id: Id,
         node_ids: Vec<Id>,
     ) -> Result<(), GraphError<Id>> {
-        self.add_edge(replace, edge_id, Edge::undirected_hyper(node_ids))
+        self.add_edge(edge_id, Edge::undirected_hyper(node_ids))
     }
 
     /// Add undirected hyper edge without weight. If exist at the edge_id, not replace when replace is false.
+    /// If inserted at the edge_id, replace insert at the edge_id
     pub fn add_undirected_hyper_edge(
         &mut self,
-        replace: bool,
         edge_id: Id,
         node_ids: Vec<Id>,
     ) -> Result<(), GraphError<Id>> {
-        self.add_edge(replace, edge_id, Edge::undirected_hyper(node_ids))
+        self.add_edge(edge_id, Edge::undirected_hyper(node_ids))
     }
 
     /// Add directed hyper edge without weight. If exist at the edge_id, not replace when replace is false.
+    /// If inserted at the edge_id, replace insert at the edge_id
     pub fn add_directed_hyper_edge(
         &mut self,
-        replace: bool,
         edge_id: Id,
         source_node_ids: Vec<Id>,
         target_node_ids: Vec<Id>,
     ) -> Result<(), GraphError<Id>> {
         self.add_edge(
-            replace,
             edge_id,
             Edge::directed_hyper(source_node_ids, target_node_ids),
         )
     }
 
     /// Add undirected edge with weight. If exist at the edge_id, not replace when replace is false.
+    /// If inserted at the edge_id, replace insert at the edge_id
     pub fn add_undirected_edge_with_weight(
         &mut self,
-        replace: bool,
         edge_id: Id,
         node_id1: Id,
         node_id2: Id,
         weight: i16,
     ) -> Result<(), GraphError<Id>> {
         self.add_edge(
-            replace,
             edge_id,
             Edge::undirected_with_weight(node_id1, node_id2, weight),
         )
     }
 
     /// Add directed edge with weight. If exist at the edge_id, not replace when replace is false.
+    /// If inserted at the edge_id, replace insert at the edge_id
     pub fn add_directed_edge_with_weight(
         &mut self,
-        replace: bool,
         edge_id: Id,
         source_node_id: Id,
         target_node_id: Id,
         weight: i16,
     ) -> Result<(), GraphError<Id>> {
         self.add_edge(
-            replace,
             edge_id,
             Edge::directed_with_weight(source_node_id, target_node_id, weight),
         )
     }
 
     /// Add undirected hyper edge with weight. If exist at the edge_id, not replace when replace is false.
+    /// If inserted at the edge_id, replace insert at the edge_id
     pub fn add_undirected_hyper_edge_with_weight(
         &mut self,
-        replace: bool,
         edge_id: Id,
         node_ids: Vec<Id>,
         weight: i16,
     ) -> Result<(), GraphError<Id>> {
         self.add_edge(
-            replace,
             edge_id,
             Edge::undirected_hyper_with_weight(node_ids, weight),
         )
     }
 
     /// Add directed hyper edge with weight. If exist at the edge_id, not replace when replace is false.
+    /// If inserted at the edge_id, replace insert at the edge_id
     pub fn add_directed_hyper_edge_with_weight(
         &mut self,
-        replace: bool,
         edge_id: Id,
         source_node_ids: Vec<Id>,
         target_node_ids: Vec<Id>,
         weight: i16,
     ) -> Result<(), GraphError<Id>> {
         self.add_edge(
-            replace,
             edge_id,
             Edge::directed_hyper_with_weight(source_node_ids, target_node_ids, weight),
         )
     }
 
     /// Add edge. If exist at the edge_id, not replace when replace is false.
-    fn add_edge(
-        &mut self,
-        replace: bool,
-        edge_id: Id,
-        edge: Edge<Id>,
-    ) -> Result<(), GraphError<Id>> {
+    /// If inserted at the edge_id, replace insert at the edge_id
+    fn add_edge(&mut self, edge_id: Id, edge: Edge<Id>) -> Result<(), GraphError<Id>> {
         let config = self.get_config();
 
         // check illegal edge
         if edge.has_illegal() {
-            return Err(GraphError::IllegalEdge(edge_id));
+            return Err(GraphError::IllegalEdge(edge_id, edge));
         }
 
         // check or get flag
         if !edge.is_support(config) {
             return Err(GraphError::EdgeNotSupported(edge_id, edge));
-        }
-
-        let exist_edge_id = self.edges.has_edge_id(&edge_id);
-        if !replace && exist_edge_id {
-            return Err(GraphError::EdgeAlreadyExist(edge_id));
         }
 
         // If use node grouping, check intersect node on nodes of edge and nodes of other edges.
@@ -253,35 +235,31 @@ impl<Id: Identity> Graph<Id> {
             return Err(GraphError::NotSameNodeGroupHaveIntersect(edge_id, edge));
         }
 
-        // create incidence data
-        let incidences = self._generate_incidences_without_check(&edge_id, &edge);
-
+        // check same edge
         let can_multiple = if edge.is_edge() {
             config.can_multiple_edge()
         } else {
             config.can_multiple_hyper_edge()
         };
-
-        // remove edge
-        let mut removed_edge_ids: Vec<Id> = if can_multiple {
-            Vec::new()
+        let exist_same_edge: bool = if can_multiple {
+            false
         } else {
-            self.edges.remove_by_same_edge_with_collect_removed(&edge)
+            self.edges.exist_same_edge(&edge)
         };
-        if exist_edge_id {
-            // replace true or not true, if exist_old_edge removed it when insert new edge.
-            removed_edge_ids.push(edge_id.clone());
+        if !can_multiple && exist_same_edge {
+            return Err(GraphError::ExistSameEdge(edge_id, edge));
         }
-        // remove mutable
-        let removed_edge_ids = removed_edge_ids;
+
+        // remove incidence data for node before add new edge
+        if self.edges.has_edge_id(&edge_id) {
+            self.nodes.remove_edges_by_id(&edge_id);
+        }
+
+        //create incidence data from edge
+        let incidences = self._generate_incidences_without_check(&edge_id, &edge);
 
         // add edge (and old edge delete)
         let _ = self.edges.add_edge_with_pop_old(edge_id, edge);
-
-        // remove incidence data for node
-        if !removed_edge_ids.is_empty() {
-            self.nodes.remove_edges_by_ids(&removed_edge_ids);
-        }
 
         // add incidence data for node
         self.nodes.add_incidences_each_node(incidences);

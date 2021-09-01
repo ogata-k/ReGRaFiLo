@@ -368,6 +368,15 @@ impl<Id: Identity> EdgeStore<Id> {
         self.inner.contains_key(edge_id)
     }
 
+    /// check exist same edge
+    pub fn exist_same_edge(&mut self, edge: &Edge<Id>) -> bool {
+        self.inner
+            .iter()
+            .filter(|(_, stored_edge)| (*stored_edge).is_equal_to_without_weight(edge))
+            .next()
+            .is_some()
+    }
+
     /// If edge is undirected hyper edge as node grouping, we cannot use the edge wich has intersect node to other edges.
     pub fn has_intersect_group_without_same(&self, edge: &Edge<Id>) -> bool {
         if let Edge::UndirectedHyper { ids, .. } = edge {
@@ -397,30 +406,4 @@ impl<Id: Identity> EdgeStore<Id> {
     // ---
     // delete
     // ---
-
-    /// delete edge with same edge and get deleted edge_ids
-    pub fn remove_by_same_edge_with_collect_removed(&mut self, edge: &Edge<Id>) -> Vec<Id> {
-        /*
-            let deleted: Vec<Id> = self
-                .inner
-                .drain_filter(|_, stored_edge| stored_edge == edge)
-                .map(|(deleted_edge_id, _)| deleted_edge_id)
-                .collect();
-
-            deleted
-        */
-
-        // @todo この方法だとここから削除する必要があるので上の方法に置き換える
-        let deleted: Vec<Id> = self
-            .inner
-            .iter()
-            .filter(|(_, stored_edge)| (*stored_edge).is_equal_to_without_weight(edge))
-            .map(|(stored_edge_id, _)| stored_edge_id.clone())
-            .collect();
-        for delete_id in deleted.iter() {
-            self.inner.remove_entry(delete_id);
-        }
-
-        deleted
-    }
 }

@@ -299,28 +299,6 @@ impl<Id: Identity> Node<Id> {
 
         deleted
     }
-
-    /// delete incidence with exist in edge_ids and get deleted count
-    pub fn remove_incidence_by_ids<B: ?Sized>(&mut self, edge_ids: &[B]) -> usize
-    where
-        Id: Borrow<B>,
-        B: Identity,
-    {
-        let mut deleted = 0;
-        self.incidences.retain(|incidence| {
-            // check as borrowed because of no clone.
-            if !edge_ids.contains(incidence.get_edge_id().borrow()) {
-                // retain
-                true
-            } else {
-                // to delete
-                deleted += 1;
-                false
-            }
-        });
-
-        deleted
-    }
 }
 
 /// Store structure for node.
@@ -401,9 +379,9 @@ impl<Id: Identity> NodeStore<Id> {
     // TODO remove node(削除時の接続情報をもとに編も削除する必要があるので接続情報は取得できるようにしたい)
 
     /// Remove incidence edge whose edge_id is in specified.
-    pub fn remove_edges_by_ids(&mut self, removed_edge_ids: &[Id]) {
+    pub fn remove_edges_by_id(&mut self, removed_edge_id: &Id) {
         for (_, node) in self.inner.iter_mut() {
-            node.remove_incidence_by_ids(removed_edge_ids);
+            node.remove_incidence_by_id(removed_edge_id);
         }
     }
 }
