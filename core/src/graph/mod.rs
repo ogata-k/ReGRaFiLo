@@ -230,6 +230,15 @@ impl<Id: Identity> Graph<Id> {
             return Err(GraphError::EdgeNotSupported(edge_id, edge));
         }
 
+        // If use node grouping, check intersect node on nodes of edge and nodes of other edges.
+        // In other words, this software only supports one grouping hierarchy.
+        //
+        // i.e. Usually use subgraph in subgraph at other soft if the one contains another. But this soft cannot use.
+        if config.can_use_node_group() && self.edges.has_intersect_node_at_grouping(&edge_id, &edge)
+        {
+            return Err(GraphError::NodeGroupHaveIntersection(edge_id, edge));
+        }
+
         let exist_edge_id = self.edges.has_edge_id(&edge_id);
         if !replace && exist_edge_id {
             return Err(GraphError::EdgeAlreadyExist(edge_id));
@@ -295,15 +304,6 @@ impl<Id: Identity> Graph<Id> {
         } else {
             config.can_multiple_hyper_edge()
         };
-
-        // If use node grouping, check intersect node on nodes of edge and nodes of other edges.
-        // In other words, this software only supports one grouping hierarchy.
-        //
-        // i.e. Usually use subgraph in subgraph at other soft if the one contains another. But this soft cannot use.
-        if config.can_use_node_group() && self.edges.has_intersect_node_at_grouping(&edge_id, &edge)
-        {
-            return Err(GraphError::NodeGroupHaveIntersection(edge_id, edge));
-        }
 
         // remove edge
         let mut removed_edge_ids: Vec<Id> = if can_multiple {
