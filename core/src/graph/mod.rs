@@ -218,13 +218,15 @@ impl<Id: Identity> Graph<Id> {
         edge_id: Id,
         edge: Edge<Id>,
     ) -> Result<(), GraphError<Id>> {
+        let config = self.get_config();
+
         // check illegal edge
         if edge.has_illegal() {
             return Err(GraphError::IllegalEdge(edge_id));
         }
 
         // check or get flag
-        if !edge.is_support(self.get_config()) {
+        if !edge.is_support(config) {
             return Err(GraphError::EdgeNotSupported(edge_id, edge));
         }
 
@@ -234,9 +236,9 @@ impl<Id: Identity> Graph<Id> {
         }
 
         let can_multiple = if edge.is_edge() {
-            self.get_config().can_multiple_edge()
+            config.can_multiple_edge()
         } else {
-            self.get_config().can_multiple_hyper_edge()
+            config.can_multiple_hyper_edge()
         };
 
         // remove edge

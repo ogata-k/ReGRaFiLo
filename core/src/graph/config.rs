@@ -225,6 +225,7 @@ impl GraphConfig {
     // ---
 
     /// get graph type
+    #[inline]
     pub fn get_type(&self) -> GraphType {
         match self {
             Self {
