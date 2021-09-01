@@ -176,6 +176,42 @@ impl<Id: Identity> Edge<Id> {
     // ---
     // checker
     // ---
+    /// check edge is same to other edge without weight
+    pub fn is_equal_to_without_weight(&self, other: &Self) -> bool {
+        use Edge::*;
+
+        match (self, other) {
+            (Undirected { ids, .. }, Undirected { ids: other_ids, .. }) => ids == other_ids,
+            (
+                Directed {
+                    source_id,
+                    target_id,
+                    ..
+                },
+                Directed {
+                    source_id: other_source_id,
+                    target_id: other_target_id,
+                    ..
+                },
+            ) => source_id == other_source_id && target_id == other_source_id,
+            (UndirectedHyper { ids, .. }, UndirectedHyper { ids: other_ids, .. }) => {
+                ids == other_ids
+            }
+            (
+                DirectedHyper {
+                    source_ids,
+                    target_ids,
+                    ..
+                },
+                DirectedHyper {
+                    source_ids: other_source_ids,
+                    target_ids: other_target_ids,
+                    ..
+                },
+            ) => source_ids == other_source_ids && target_ids == other_source_ids,
+            _ => false,
+        }
+    }
 
     /// check edge is undirected edge
     pub fn is_undirected(&self) -> bool {
@@ -333,20 +369,12 @@ impl<Id: Identity> EdgeStore<Id> {
     }
 
     /// If edge is undirected hyper edge as node grouping, we cannot use the edge wich has intersect node to other edges.
-    pub fn has_intersect_node_at_grouping<B: ?Sized>(
-        &self,
-        except_edge_id: &B,
-        edge: &Edge<Id>,
-    ) -> bool
-    where
-        Id: Borrow<B>,
-        B: Identity,
-    {
+    pub fn has_intersect_group_without_same(&self, edge: &Edge<Id>) -> bool {
         if let Edge::UndirectedHyper { ids, .. } = edge {
             for stored_edge in self
                 .inner
                 .iter()
-                .filter(|(k, _)| &(*k).borrow() != &except_edge_id)
+                .filter(|(_, v)| !(*v).is_equal_to_without_weight(edge))
                 .map(|(_, v)| v)
             {
                 if let Edge::UndirectedHyper {
@@ -386,7 +414,7 @@ impl<Id: Identity> EdgeStore<Id> {
         let deleted: Vec<Id> = self
             .inner
             .iter()
-            .filter(|(_, stored_edge)| *stored_edge == edge)
+            .filter(|(_, stored_edge)| (*stored_edge).is_equal_to_without_weight(edge))
             .map(|(stored_edge_id, _)| stored_edge_id.clone())
             .collect();
         for delete_id in deleted.iter() {
