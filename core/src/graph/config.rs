@@ -109,7 +109,8 @@ pub struct GraphConfig {
     kind: GraphKind,
 
     // ---
-    // for graph or directed graph
+    // Kind: Graph
+    // usually use in graph or directed graph.
     // ---
     /// undirected edge
     undirected_edge: bool,
@@ -121,7 +122,8 @@ pub struct GraphConfig {
     node_group: bool,
 
     // ---
-    // for hyper graph or directed hyper graph
+    // Kind: HyperGraph
+    // usually use in hyper graph or directed hyper graph
     // ---
     /// undirected hyper edge
     undirected_hyper_edge: bool,
@@ -133,9 +135,35 @@ pub struct GraphConfig {
 
 impl fmt::Display for GraphConfig {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_fmt(format_args!(
-            "{{kind: {}, undirected: {}, directed: {}, can_multiple: {}, node_group: {}, undirected_hyper: {}, directed_hyper: {}, can_hyper_multiple: {}}}",
-            self.kind, self.undirected_edge, self.directed_edge, self.multiple_edge, self.node_group, self.undirected_hyper_edge, self.directed_hyper_edge, self.multiple_hyper_edge))
+        let graph_type = self.get_type();
+        let kind = self.get_kind();
+
+        match &graph_type {
+            GraphType::UndirectedGraph => f.write_fmt(format_args!(
+                "{{kind: {}, can_multiple: {}, node_group: {}}}",
+                kind, self.multiple_edge, self.node_group
+            )),
+            GraphType::DirectedGraph => f.write_fmt(format_args!(
+                "{{kind: {}, can_multiple: {}, node_group: {}}}",
+                kind, self.multiple_edge, self.node_group
+            )),
+            GraphType::MixedGraph => f.write_fmt(format_args!(
+                "{{kind: {}, can_multiple: {}, node_group: {}}}",
+                kind, self.multiple_edge, self.node_group
+            )),
+            GraphType::UndirectedHyperGraph => f.write_fmt(format_args!(
+                "{{kind: {}, can_hyper_multiple: {}}}",
+                kind, self.multiple_hyper_edge
+            )),
+            GraphType::DirectedHyperGraph => f.write_fmt(format_args!(
+                "{{kind: {}, can_hyper_multiple: {}}}",
+                kind, self.multiple_hyper_edge
+            )),
+            GraphType::MixedHyperGraph => f.write_fmt(format_args!(
+                "{{kind: {}, can_hyper_multiple: {}}}",
+                kind, self.multiple_hyper_edge
+            )),
+        }
     }
 }
 
@@ -231,6 +259,11 @@ impl GraphConfig {
     // ---
     // getter
     // ---
+
+    /// get graph kind
+    pub fn get_kind(&self) -> GraphKind {
+        self.kind
+    }
 
     /// get graph type
     #[inline]
