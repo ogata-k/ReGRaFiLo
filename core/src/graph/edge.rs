@@ -193,7 +193,7 @@ impl<Id: Identity> Edge<Id> {
                     target_id: other_target_id,
                     ..
                 },
-            ) => source_id == other_source_id && target_id == other_source_id,
+            ) => source_id == other_source_id && target_id == other_target_id,
             (UndirectedHyper { ids, .. }, UndirectedHyper { ids: other_ids, .. }) => {
                 ids == other_ids
             }
@@ -208,7 +208,7 @@ impl<Id: Identity> Edge<Id> {
                     target_ids: other_target_ids,
                     ..
                 },
-            ) => source_ids == other_source_ids && target_ids == other_source_ids,
+            ) => source_ids == other_source_ids && target_ids == other_target_ids,
             _ => false,
         }
     }
