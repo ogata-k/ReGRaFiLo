@@ -231,7 +231,7 @@ impl<Id: Identity> Graph<Id> {
         // In other words, this software only supports one grouping hierarchy.
         //
         // i.e. Usually use subgraph in subgraph at other soft if the one contains another. But this soft cannot use.
-        if config.can_use_node_group() && self.edges.has_intersect_group_without_same(&edge) {
+        if config.can_use_node_group() && self.edges.has_intersect_group_without_same(&edge_id, &edge) {
             return Err(GraphError::NotSameNodeGroupHaveIntersect(edge_id, edge));
         }
 

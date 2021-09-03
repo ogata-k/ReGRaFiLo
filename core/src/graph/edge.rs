@@ -378,12 +378,18 @@ impl<Id: Identity> EdgeStore<Id> {
     }
 
     /// If edge is undirected hyper edge as node grouping, we cannot use the edge wich has intersect node to other edges.
-    pub fn has_intersect_group_without_same(&self, edge: &Edge<Id>) -> bool {
+    pub fn has_intersect_group_without_same<B: ?Sized>(&self, edge_id: &B, edge: &Edge<Id>) -> bool
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
         if let Edge::UndirectedHyper { ids, .. } = edge {
             for stored_edge in self
                 .inner
                 .iter()
-                .filter(|(_, v)| !(*v).is_equal_to_without_weight(edge))
+                .filter(|(k, v)| {
+                    (*k).borrow() != edge_id.borrow() && !(*v).is_equal_to_without_weight(edge)
+                })
                 .map(|(_, v)| v)
             {
                 if let Edge::UndirectedHyper {
