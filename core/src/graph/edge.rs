@@ -1,7 +1,9 @@
 //! Module for edge and it's store
 use crate::graph::GraphConfig;
+use crate::graph::{Incidence, Node};
 use crate::util::Identity;
 use std::borrow::Borrow;
+use std::collections::btree_map::Entry;
 use std::collections::BTreeMap;
 use std::fmt;
 
@@ -166,6 +168,31 @@ impl<Id: Identity> Edge<Id> {
             | Directed { weight, .. }
             | UndirectedHyper { weight, .. }
             | DirectedHyper { weight, .. } => weight,
+        }
+    }
+
+    /// get node_ids from the edge's incidenes
+    pub fn incidence_into_node_ids(self) -> Vec<Id> {
+        match self {
+            Edge::Undirected {
+                ids: [id1, id2], ..
+            } => vec![id1, id2],
+            Edge::Directed {
+                source_id,
+                target_id,
+                ..
+            } => vec![source_id, target_id],
+            Edge::UndirectedHyper { ids, .. } => ids,
+            Edge::DirectedHyper {
+                source_ids,
+                target_ids,
+                ..
+            } => {
+                let mut result = Vec::new();
+                result.extend(source_ids);
+                result.extend(target_ids);
+                result
+            }
         }
     }
 
@@ -413,6 +440,24 @@ impl<Id: Identity> EdgeStore<Id> {
     // delete
     // ---
 
+    /// remove and get edge at edge_id
+    pub fn pop_edge<B: ?Sized>(&mut self, edge_id: &B) -> Option<Edge<Id>>
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        self.inner.remove(edge_id)
+    }
+
+    /// remove and get edge with edge_id at edge_id
+    pub fn pop_edge_with_get_id<B: ?Sized>(&mut self, edge_id: &B) -> Option<(Id, Edge<Id>)>
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        self.inner.remove_entry(edge_id)
+    }
+
     /// delete edge with same edge and get deleted edge_ids
     pub fn remove_by_same_edge_with_collect_removed(&mut self, edge: &Edge<Id>) -> Vec<Id> {
         /*
@@ -437,5 +482,254 @@ impl<Id: Identity> EdgeStore<Id> {
         }
 
         deleted
+    }
+
+    /// remove node_id and node's incidences from edge store
+    pub(crate) fn remove_node_with_illegal_edge<B: ?Sized>(
+        &mut self,
+        deleted_node_id: &B,
+        deleted_node: Node<Id>,
+    ) -> Vec<(Id, Incidence<Id>)>
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        let Node {
+            incidences: deleted_incidences,
+            ..
+        } = deleted_node;
+        let mut will_delete_incidences = Vec::new();
+        for incidence in deleted_incidences.into_iter() {
+            match incidence {
+                Incidence::Undirected { edge_id } => {
+                    let edge_entry = self.inner.entry(edge_id);
+                    match edge_entry {
+                        Entry::Vacant(_) => {
+                            // If already remove the edge, not exist.
+                            continue;
+                        }
+                        Entry::Occupied(occupied) => {
+                            if let Edge::Undirected { ids, .. } = occupied.get() {
+                                // This edge is illegal because exist edge remove node_id from ids
+                                // remove node id from ids
+                                let remove_first = deleted_node_id == ids[0].borrow();
+                                let remove_second = deleted_node_id == ids[1].borrow();
+
+                                // remove illegal edge
+                                if remove_first || remove_second {
+                                    if let (
+                                        remove_edge_id,
+                                        Edge::Undirected {
+                                            ids: removable_node_ids,
+                                            ..
+                                        },
+                                    ) = occupied.remove_entry()
+                                    {
+                                        let [first_node_id, second_node_id] = removable_node_ids;
+
+                                        // if remove first or second
+                                        match (remove_first, remove_second) {
+                                            (false, true) => {
+                                                // retain first
+                                                will_delete_incidences.push((
+                                                    first_node_id,
+                                                    Incidence::Undirected {
+                                                        edge_id: remove_edge_id,
+                                                    },
+                                                ));
+                                            }
+                                            (true, false) => {
+                                                // retain second
+                                                will_delete_incidences.push((
+                                                    second_node_id,
+                                                    Incidence::Undirected {
+                                                        edge_id: remove_edge_id,
+                                                    },
+                                                ));
+                                            }
+                                            _ => {}
+                                        }
+                                    } else {
+                                        unreachable!();
+                                    }
+                                }
+                            } else {
+                                panic!(
+                                    "Unknown edge {} for incidence {}",
+                                    occupied.get(),
+                                    Incidence::Undirected {
+                                        edge_id: occupied.key()
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+                Incidence::DirectedSource { edge_id } | Incidence::DirectedTarget { edge_id } => {
+                    let edge_entry = self.inner.entry(edge_id);
+                    match edge_entry {
+                        Entry::Vacant(_) => {
+                            // If already remove the edge, not exist.
+                            continue;
+                        }
+                        Entry::Occupied(occupied) => {
+                            if let Edge::Directed {
+                                source_id,
+                                target_id,
+                                ..
+                            } = occupied.get()
+                            {
+                                // This edge is illegal because exist edge remove node_id from ids
+                                // remove node id from ids
+                                let remove_source = deleted_node_id == source_id.borrow();
+                                let remove_target = deleted_node_id == target_id.borrow();
+
+                                // remove illegal edge
+                                if remove_source || remove_target {
+                                    if let (
+                                        remove_edge_id,
+                                        Edge::Directed {
+                                            source_id: source_node_id,
+                                            target_id: target_node_id,
+                                            ..
+                                        },
+                                    ) = occupied.remove_entry()
+                                    {
+                                        // if remove source or target
+                                        match (remove_source, remove_target) {
+                                            (false, true) => {
+                                                // retain source
+                                                will_delete_incidences.push((
+                                                    source_node_id,
+                                                    Incidence::DirectedSource {
+                                                        edge_id: remove_edge_id,
+                                                    },
+                                                ));
+                                            }
+                                            (true, false) => {
+                                                // retain target
+                                                will_delete_incidences.push((
+                                                    target_node_id,
+                                                    Incidence::DirectedTarget {
+                                                        edge_id: remove_edge_id,
+                                                    },
+                                                ));
+                                            }
+                                            _ => {}
+                                        }
+                                    } else {
+                                        unreachable!();
+                                    }
+                                }
+                            } else {
+                                panic!(
+                                    "Unknown edge {} for incidence {}",
+                                    occupied.get(),
+                                    Incidence::Undirected {
+                                        edge_id: occupied.key()
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+                Incidence::UndirectedHyper { edge_id } => {
+                    let edge_entry = self.inner.entry(edge_id);
+                    match edge_entry {
+                        Entry::Vacant(_) => {
+                            // If already remove the edge, not exist.
+                            continue;
+                        }
+                        Entry::Occupied(mut occupied) => {
+                            if let Edge::UndirectedHyper { ids, .. } = occupied.get_mut() {
+                                // This edge is illegal because exist edge remove node_id from ids
+                                // remove node id from ids
+                                ids.retain(|id| deleted_node_id != id.borrow());
+
+                                // remove illegal edge
+                                if ids.is_empty() {
+                                    let _ = occupied.remove_entry();
+                                }
+                            } else {
+                                panic!(
+                                    "Unknown edge {} for incidence {}",
+                                    occupied.get(),
+                                    Incidence::Undirected {
+                                        edge_id: occupied.key()
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+                Incidence::DirectedHyperSource { edge_id }
+                | Incidence::DirectedHyperTarget { edge_id } => {
+                    let edge_entry = self.inner.entry(edge_id);
+                    match edge_entry {
+                        Entry::Vacant(_) => {
+                            // If already remove the edge, not exist.
+                            continue;
+                        }
+                        Entry::Occupied(mut occupied) => {
+                            if let Edge::DirectedHyper {
+                                source_ids,
+                                target_ids,
+                                ..
+                            } = occupied.get_mut()
+                            {
+                                // This edge is illegal because exist edge remove node_id from ids
+                                // remove node id from ids
+                                source_ids.retain(|id| deleted_node_id != id.borrow());
+                                target_ids.retain(|id| deleted_node_id != id.borrow());
+
+                                // remove illegal edge
+                                if source_ids.is_empty() || target_ids.is_empty() {
+                                    if let (
+                                        remove_edge_id,
+                                        Edge::DirectedHyper {
+                                            source_ids: removable_source_node_ids,
+                                            target_ids: removable_target_node_ids,
+                                            ..
+                                        },
+                                    ) = occupied.remove_entry()
+                                    {
+                                        for source_node_id in removable_source_node_ids {
+                                            // retain source
+                                            will_delete_incidences.push((
+                                                source_node_id,
+                                                Incidence::DirectedHyperSource {
+                                                    edge_id: remove_edge_id.clone(),
+                                                },
+                                            ));
+                                        }
+                                        for target_node_id in removable_target_node_ids {
+                                            // retain source
+                                            will_delete_incidences.push((
+                                                target_node_id,
+                                                Incidence::DirectedHyperTarget {
+                                                    edge_id: remove_edge_id.clone(),
+                                                },
+                                            ));
+                                        }
+                                    } else {
+                                        unreachable!();
+                                    }
+                                }
+                            } else {
+                                panic!(
+                                    "Unknown edge {} for incidence {}",
+                                    occupied.get(),
+                                    Incidence::Undirected {
+                                        edge_id: occupied.key()
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        will_delete_incidences
     }
 }

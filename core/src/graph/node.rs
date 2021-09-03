@@ -1,6 +1,5 @@
 //! Module for edge for incidence node and it's store
 
-use crate::graph::GraphConfig;
 use crate::util::Identity;
 use std::borrow::Borrow;
 use std::collections::BTreeMap;
@@ -197,8 +196,8 @@ impl<Id: Identity> Incidence<Id> {
 /// If weight is 1 or no weight, the edge's weight is 1.
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct Node<Id: Identity> {
-    weight: i16,
-    incidences: Vec<Incidence<Id>>,
+    pub weight: i16,
+    pub incidences: Vec<Incidence<Id>>,
 }
 
 impl<Id: Identity> fmt::Display for Node<Id> {
@@ -258,6 +257,21 @@ impl<Id: Identity> Node<Id> {
         &self.weight
     }
 
+    /// get edge_ids from the node's incidenes
+    pub(crate) fn incidences_into_edge_ids(self) -> Vec<Id> {
+        self.incidences
+            .into_iter()
+            .map(|incidence| match incidence {
+                Incidence::Undirected { edge_id }
+                | Incidence::DirectedSource { edge_id }
+                | Incidence::DirectedTarget { edge_id }
+                | Incidence::UndirectedHyper { edge_id }
+                | Incidence::DirectedHyperSource { edge_id }
+                | Incidence::DirectedHyperTarget { edge_id } => edge_id,
+            })
+            .collect()
+    }
+
     // ---
     // setter
     // ---
@@ -301,15 +315,11 @@ impl<Id: Identity> Node<Id> {
     }
 
     /// delete incidence with same edge ids and get deleted count
-    pub fn remove_incidence_by_ids<B: ?Sized>(&mut self, edge_ids: &[B]) -> usize
-    where
-        Id: Borrow<B>,
-        B: Identity,
-    {
+    pub fn remove_incidence_by_ids(&mut self, edge_ids: &[Id]) -> usize {
         let mut deleted = 0;
         self.incidences.retain(|incidence| {
             // check as borrowed because of no clone.
-            if !edge_ids.contains(incidence.get_edge_id().borrow()) {
+            if !edge_ids.contains(incidence.get_edge_id()) {
                 // retain
                 true
             } else {
@@ -398,7 +408,14 @@ impl<Id: Identity> NodeStore<Id> {
     // delete
     // ---
 
-    // TODO remove node(削除時の接続情報をもとに編も削除する必要があるので接続情報は取得できるようにしたい)
+    /// remove and get node at node_id
+    pub fn pop_node<B: ?Sized>(&mut self, node_id: &B) -> Option<Node<Id>>
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        self.inner.remove(node_id)
+    }
 
     /// Remove incidence edge whose edge id is in specified.
     pub fn remove_edges_by_id(&mut self, removed_edge_id: &Id) {
@@ -411,6 +428,21 @@ impl<Id: Identity> NodeStore<Id> {
     pub fn remove_edges_by_ids(&mut self, removed_edge_ids: &[Id]) {
         for (_, node) in self.inner.iter_mut() {
             node.remove_incidence_by_ids(removed_edge_ids);
+        }
+    }
+
+    /// remove node incidences from nodes at node_ids
+    pub fn remove_incidences(&mut self, node_id_incidence_list: Vec<(Id, Incidence<Id>)>) {
+        for (node_id, incidence) in node_id_incidence_list.into_iter() {
+            self.remove_incidence(node_id, incidence);
+        }
+    }
+
+    /// remove node incidence from node at node_id
+    pub fn remove_incidence(&mut self, node_id: Id, incidence: Incidence<Id>) {
+        if let Some(node) = self.inner.get_mut(&node_id) {
+            node.incidences
+                .retain(|node_incidence| node_incidence != &incidence);
         }
     }
 }

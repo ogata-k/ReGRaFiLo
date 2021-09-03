@@ -11,6 +11,7 @@ pub use error::*;
 use node::*;
 
 use crate::util::Identity;
+use std::borrow::Borrow;
 use std::fmt;
 
 /// graph without laypout
@@ -231,7 +232,9 @@ impl<Id: Identity> Graph<Id> {
         // In other words, this software only supports one grouping hierarchy.
         //
         // i.e. Usually use subgraph in subgraph at other soft if the one contains another. But this soft cannot use.
-        if config.can_use_node_group() && self.edges.has_intersect_group_without_same(&edge_id, &edge) {
+        if config.can_use_node_group()
+            && self.edges.has_intersect_group_without_same(&edge_id, &edge)
+        {
             return Err(GraphError::NotSameNodeGroupHaveIntersect(edge_id, edge));
         }
 
@@ -356,4 +359,88 @@ impl<Id: Identity> Graph<Id> {
     // ---
     // delete
     // ---
+    /// delete node at node_id if exist with remove illegal edge.
+    pub fn delete_node<B: ?Sized>(&mut self, node_id: &B)
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        if let Some(pop_node) = self.nodes.pop_node(node_id) {
+            let will_delete_incidences = self.edges.remove_node_with_illegal_edge(node_id, pop_node);
+            self.nodes.remove_incidences(will_delete_incidences);
+        }
+    }
+
+    /// delete nodes at node_id if exist with remove illegal edge.
+    pub fn delete_nodes(&mut self, node_ids: &[Id]) {
+        for node_id in node_ids.iter() {
+            self.delete_node(node_id);
+        }
+    }
+
+    /// delete node at the node_id with incidence edges
+    pub fn delete_node_with_edge<B: ?Sized>(&mut self, node_id: &B)
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        if let Some(pop_node) = self.nodes.pop_node(node_id) {
+            let edge_ids = pop_node.incidences_into_edge_ids();
+            self.delete_edges(&edge_ids);
+        }
+    }
+
+    /// delete node at the node_id with incidence edges
+    pub fn delete_nodes_with_edge(&mut self, node_ids: &[Id]) {
+        for node_id in node_ids {
+            self.delete_node_with_edge(node_id);
+        }
+    }
+
+    /// delete edge without delete node
+    pub fn delete_edge<B: ?Sized>(&mut self, edge_id: &B)
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        if let Some((pop_edge_id, pop_edge)) = self.edges.pop_edge_with_get_id(edge_id) {
+            let will_delete_incidences =
+                self._generate_incidences_without_check(&pop_edge_id, &pop_edge);
+            self.nodes.remove_incidences(will_delete_incidences);
+        }
+    }
+
+    /// delete edges without delete node
+    pub fn delete_edges(&mut self, edge_ids: &[Id]) {
+        for edge_id in edge_ids {
+            self.delete_edge(edge_id);
+        }
+    }
+
+    /// delete edge with incidence node
+    pub fn delete_edge_with_node<B: ?Sized>(&mut self, edge_id: &B)
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        if let Some(pop_edge) = self.edges.pop_edge(edge_id) {
+            let will_delete_incidences = pop_edge.incidence_into_node_ids();
+            self.delete_nodes(&will_delete_incidences);
+        }
+    }
+
+    /// delete edges with incidence node
+    pub fn delete_edges_with_node(&mut self, edge_ids: &[Id]) {
+        let mut will_delete_nodes: Vec<Id> = Vec::new();
+        for edge_id in edge_ids.iter() {
+            if let Some(pop_edge) = self.edges.pop_edge(edge_id) {
+                will_delete_nodes.extend(pop_edge.incidence_into_node_ids());
+            } 
+        }
+        // remove node_ids to unique
+        will_delete_nodes.sort();
+        will_delete_nodes.dedup();
+        
+        self.delete_nodes(&will_delete_nodes);
+    }
 }
