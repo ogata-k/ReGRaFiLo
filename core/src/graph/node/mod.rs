@@ -1,7 +1,9 @@
 //! Module for edge for incidence node and it's store
 
 pub mod iter;
+pub mod model;
 
+use crate::graph::node::iter::*;
 use crate::util::Identity;
 use std::borrow::Borrow;
 use std::collections::BTreeMap;
@@ -195,7 +197,6 @@ impl<Id: Identity> Incidence<Id> {
 }
 
 /// node structure for graph
-/// If weight is 1 or no weight, the edge's weight is 1.
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct Node<Id: Identity> {
     pub weight: i16,
@@ -243,6 +244,11 @@ impl<Id: Identity> Node<Id> {
             weight: weight,
             incidences: vec![],
         }
+    }
+
+    /// create model as node
+    pub fn as_model<'a>(&'a self) -> model::Node<'a, Id> {
+        model::Node::_create(&self)
     }
 
     // ---
@@ -353,6 +359,18 @@ impl<Id: Identity> NodeStore<Id> {
     // ---
     // getter
     // ---
+
+    /// to iterator for node
+    pub fn iter<'a>(
+        &'a self,
+    ) -> NodeIter<'a, Id, impl Iterator<Item = (&'a Id, model::Node<'a, Id>)>> {
+        let iter = self
+            .inner
+            .iter()
+            .map(|(node_id, node)| (node_id, node.as_model()));
+
+        NodeIter::new(iter)
+    }
 
     // ---
     // setter

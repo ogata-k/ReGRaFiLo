@@ -11,11 +11,18 @@ pub mod iter {
     pub use crate::graph::node::iter::*;
 }
 
+pub mod model {
+    //! Module for model of item
+    pub use crate::graph::edge::model::*;
+    pub use crate::graph::node::model::*;
+}
+
 pub use config::*;
 use edge::*;
 use node::*;
 
 use crate::graph::error::GraphError;
+use crate::graph::iter::*;
 use crate::util::Identity;
 use std::borrow::Borrow;
 use std::fmt;
@@ -91,8 +98,75 @@ impl<Id: Identity> Graph<Id> {
     // getter
     // ---
 
+    /// get graph configure
     pub fn get_config(&self) -> &GraphConfig {
         &self.config
+    }
+
+    // ---
+    // node iterator
+    // ---
+
+    /// to iterator for node
+    pub fn node_iter<'a>(
+        &'a self,
+    ) -> NodeIter<'a, Id, impl Iterator<Item = (&'a Id, model::Node<'a, Id>)>> {
+        self.nodes.iter()
+    }
+
+    // ---
+    // edge iterator
+    // ---
+
+    /// to iterator for edge
+    pub fn edge_iter<'a>(
+        &'a self,
+    ) -> EdgeIter<'a, Id, impl Iterator<Item = (&'a Id, model::Edge<'a, Id>)>> {
+        self.edges.edge_iter()
+    }
+
+    /// to iterator for undirected edge
+    pub fn undirected_edge_iter<'a>(
+        &'a self,
+    ) -> UndirectedEdgeIter<'a, Id, impl Iterator<Item = (&'a Id, model::UndirectedEdge<'a, Id>)>> {
+        self.edges.undirected_edge_iter()
+    }
+
+    /// to iterator for directed edge
+    pub fn directed_edge_iter<'a>(
+        &'a self,
+    ) -> DirectedEdgeIter<'a, Id, impl Iterator<Item = (&'a Id, model::DirectedEdge<'a, Id>)>> {
+        self.edges.directed_edge_iter()
+    }
+
+    /// to iterator for undirected of directed edge
+    pub fn mixed_edge_iter<'a>(
+        &'a self,
+    ) -> MixedEdgeIter<'a, Id, impl Iterator<Item = (&'a Id, model::MixedEdge<'a, Id>)>> {
+        self.edges.mixed_edge_iter()
+    }
+
+    /// to iterator for undirected hyper edge
+    pub fn undirected_hyper_edge_iter<'a>(
+        &'a self,
+    ) -> UndirectedHyperEdgeIter<'a, Id, impl Iterator<Item = (&'a Id, model::UndirectedHyperEdge<'a, Id>)>> {
+        self.edges.undirected_hyper_edge_iter()
+    }
+
+    /// to iterator for directed hyper edge
+    pub fn directed_hyper_edge_iter<'a>(
+        &'a self,
+    ) -> DirectedHyperEdgeIter<'a, Id, impl Iterator<Item = (&'a Id, model::DirectedHyperEdge<'a, Id>)>>
+    {
+        self.edges.directed_hyper_edge_iter()
+    }
+
+    /// to iterator for undirected or directed hyper edge
+    pub fn mixed_hyper_edge_iter<'a>(
+        &'a self,
+    ) -> MixedHyperEdgeIter<'a, Id, impl Iterator<Item = (&'a Id, model::MixedHyperEdge<'a, Id>)>>
+    {
+        self.edges.mixed_hyper_edge_iter()
     }
 
     // ---
