@@ -251,6 +251,11 @@ impl<Id: Identity> Edge<Id> {
         }
     }
 
+    /// get node_ids from the edge's incidenes
+    pub fn get_incidence_node_ids(&self) -> Vec<Id> {
+        self.clone().incidence_into_node_ids()
+    }
+
     // ---
     // setter
     // ---
@@ -508,47 +513,40 @@ impl<Id: Identity> EdgeStore<Id> {
         self.inner.remove(edge_id)
     }
 
-    /// remove and get edge with edge_id at edge_id
-    pub fn pop_edge_with_get_id<B: ?Sized>(&mut self, edge_id: &B) -> Option<(Id, Edge<Id>)>
-    where
-        Id: Borrow<B>,
-        B: Identity,
-    {
-        self.inner.remove_entry(edge_id)
-    }
-
     /// delete edge with same edge and get deleted edge_ids
-    pub fn remove_by_same_edge_with_collect_removed(&mut self, edge: &Edge<Id>) -> Vec<Id> {
-        /*
-            let deleted: Vec<Id> = self
-                .inner
-                .drain_filter(|_, stored_edge| stored_edge == edge)
-                .map(|(deleted_edge_id, _)| deleted_edge_id)
-                .collect();
-
-            deleted
-        */
-
-        // @todo この方法だとここから削除する必要があるので上の方法に置き換える
-        let deleted: Vec<Id> = self
+    /// return value is vector of (node_id, edge_id)
+    pub fn remove_by_same_edge_with_collect_removed(&mut self, edge: &Edge<Id>) -> Vec<(Id, Id)> {
+        // @todo drain_filterを使った方法に置き換える
+        let will_delete_node_ids_edge_ids: Vec<(Id, Id)> = self
             .inner
             .iter()
             .filter(|(_, stored_edge)| (*stored_edge).is_equal_to_without_weight(edge))
-            .map(|(stored_edge_id, _)| stored_edge_id.clone())
+            .map(|(stored_edge_id, edge)| {
+                let converted: Vec<(Id, Id)> = edge
+                    .get_incidence_node_ids()
+                    .into_iter()
+                    .map(|node_id| (node_id, stored_edge_id.clone()))
+                    .collect();
+
+                converted
+            })
+            .flatten()
             .collect();
-        for delete_id in deleted.iter() {
-            self.inner.remove_entry(delete_id);
+
+        for (_, delete_edge_id) in will_delete_node_ids_edge_ids.iter() {
+            self.inner.remove_entry(delete_edge_id);
         }
 
-        deleted
+        will_delete_node_ids_edge_ids
     }
 
     /// remove node_id and node's incidences from edge store
+    /// return value is Vec<(node_id, edge_id>
     pub(crate) fn remove_node_with_illegal_edge<B: ?Sized>(
         &mut self,
         deleted_node_id: &B,
         deleted_node: Node<Id>,
-    ) -> Vec<(Id, Incidence<Id>)>
+    ) -> Vec<(Id, Id)>
     where
         Id: Borrow<B>,
         B: Identity,
@@ -557,7 +555,7 @@ impl<Id: Identity> EdgeStore<Id> {
             incidences: deleted_incidences,
             ..
         } = deleted_node;
-        let mut will_delete_incidences = Vec::new();
+        let mut will_delete_node_id_edge_id: Vec<(Id, Id)> = Vec::new();
         for incidence in deleted_incidences.into_iter() {
             match incidence {
                 Incidence::Undirected { edge_id } => {
@@ -590,21 +588,13 @@ impl<Id: Identity> EdgeStore<Id> {
                                         match (remove_first, remove_second) {
                                             (false, true) => {
                                                 // retain first
-                                                will_delete_incidences.push((
-                                                    first_node_id,
-                                                    Incidence::Undirected {
-                                                        edge_id: remove_edge_id,
-                                                    },
-                                                ));
+                                                will_delete_node_id_edge_id
+                                                    .push((first_node_id, remove_edge_id));
                                             }
                                             (true, false) => {
                                                 // retain second
-                                                will_delete_incidences.push((
-                                                    second_node_id,
-                                                    Incidence::Undirected {
-                                                        edge_id: remove_edge_id,
-                                                    },
-                                                ));
+                                                will_delete_node_id_edge_id
+                                                    .push((second_node_id, remove_edge_id));
                                             }
                                             _ => {}
                                         }
@@ -658,21 +648,13 @@ impl<Id: Identity> EdgeStore<Id> {
                                         match (remove_source, remove_target) {
                                             (false, true) => {
                                                 // retain source
-                                                will_delete_incidences.push((
-                                                    source_node_id,
-                                                    Incidence::DirectedSource {
-                                                        edge_id: remove_edge_id,
-                                                    },
-                                                ));
+                                                will_delete_node_id_edge_id
+                                                    .push((source_node_id, remove_edge_id));
                                             }
                                             (true, false) => {
                                                 // retain target
-                                                will_delete_incidences.push((
-                                                    target_node_id,
-                                                    Incidence::DirectedTarget {
-                                                        edge_id: remove_edge_id,
-                                                    },
-                                                ));
+                                                will_delete_node_id_edge_id
+                                                    .push((target_node_id, remove_edge_id));
                                             }
                                             _ => {}
                                         }
@@ -708,6 +690,7 @@ impl<Id: Identity> EdgeStore<Id> {
                                 // remove illegal edge
                                 if ids.is_empty() {
                                     let _ = occupied.remove_entry();
+                                    // none removable incidence edge
                                 }
                             } else {
                                 panic!(
@@ -754,21 +737,13 @@ impl<Id: Identity> EdgeStore<Id> {
                                     {
                                         for source_node_id in removable_source_node_ids {
                                             // retain source
-                                            will_delete_incidences.push((
-                                                source_node_id,
-                                                Incidence::DirectedHyperSource {
-                                                    edge_id: remove_edge_id.clone(),
-                                                },
-                                            ));
+                                            will_delete_node_id_edge_id
+                                                .push((source_node_id, remove_edge_id.clone()));
                                         }
                                         for target_node_id in removable_target_node_ids {
                                             // retain source
-                                            will_delete_incidences.push((
-                                                target_node_id,
-                                                Incidence::DirectedHyperTarget {
-                                                    edge_id: remove_edge_id.clone(),
-                                                },
-                                            ));
+                                            will_delete_node_id_edge_id
+                                                .push((target_node_id, remove_edge_id.clone()));
                                         }
                                     } else {
                                         unreachable!();
@@ -789,6 +764,6 @@ impl<Id: Identity> EdgeStore<Id> {
             }
         }
 
-        will_delete_incidences
+        will_delete_node_id_edge_id
     }
 }

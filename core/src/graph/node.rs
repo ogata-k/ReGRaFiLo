@@ -306,20 +306,6 @@ impl<Id: Identity> Node<Id> {
             }
         });
     }
-
-    /// delete incidence with same edge ids and get deleted count
-    pub fn remove_incidence_by_ids(&mut self, edge_ids: &[Id]) {
-        self.incidences.retain(|incidence| {
-            // check as borrowed because of no clone.
-            if !edge_ids.contains(incidence.get_edge_id()) {
-                // retain
-                true
-            } else {
-                // to delete
-                false
-            }
-        });
-    }
 }
 
 /// Store structure for node.
@@ -418,31 +404,20 @@ impl<Id: Identity> NodeStore<Id> {
     }
 
     /// Remove incidence edge whose edge id is in specified.
-    pub fn remove_edges_by_id(&mut self, removed_edge_id: &Id) {
-        for (_, node) in self.inner.iter_mut() {
-            node.remove_incidence_by_id(removed_edge_id);
+    pub fn remove_edges_by_id<B: ?Sized>(&mut self, node_id: &B, edge_id: &B)
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        if let Some(node) = self.inner.get_mut(node_id) {
+            node.remove_incidence_by_id(edge_id);
         }
     }
 
     /// Remove incidence edge whose edge ids is in specified.
-    pub fn remove_edges_by_ids(&mut self, removed_edge_ids: &[Id]) {
-        for (_, node) in self.inner.iter_mut() {
-            node.remove_incidence_by_ids(removed_edge_ids);
-        }
-    }
-
-    /// remove node incidences from nodes at node_ids
-    pub fn remove_incidences(&mut self, node_id_incidence_list: Vec<(Id, Incidence<Id>)>) {
-        for (node_id, incidence) in node_id_incidence_list.into_iter() {
-            self.remove_incidence(node_id, incidence);
-        }
-    }
-
-    /// remove node incidence from node at node_id
-    pub fn remove_incidence(&mut self, node_id: Id, incidence: Incidence<Id>) {
-        if let Some(node) = self.inner.get_mut(&node_id) {
-            node.incidences
-                .retain(|node_incidence| node_incidence != &incidence);
+    pub fn remove_edges_by_ids(&mut self, removed_node_id_edge_id: &[(Id, Id)]) {
+        for (node_id, edge_id) in removed_node_id_edge_id.iter() {
+            self.remove_edges_by_id(node_id, edge_id);
         }
     }
 }

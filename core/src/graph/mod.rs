@@ -254,36 +254,44 @@ impl<Id: Identity> Graph<Id> {
             return Err(GraphError::ExistSameEdge(edge_id, edge));
         }
 
-        let exist_edge_id = self.edges.has_edge_id(&edge_id);
         if can_replace {
             // get same edge to remove
-            let mut removed_edge_ids: Vec<Id> = if can_multiple {
+            // Vec<(node_id, edge_id)>
+            let mut will_remove_node_id_and_edge_id: Vec<(Id, Id)> = if can_multiple {
                 Vec::new()
             } else {
                 self.edges.remove_by_same_edge_with_collect_removed(&edge)
             };
-            if exist_edge_id {
+            if let Some(old_edge) = self.edges.pop_edge(&edge_id) {
+                let edge_node_id_and_edge_id: Vec<(Id, Id)> = old_edge
+                    .get_incidence_node_ids()
+                    .into_iter()
+                    .map(|node_id| (node_id, edge_id.clone()))
+                    .collect();
+
                 // replace true or not true, if exist_old_edge removed it when insert new edge.
-                removed_edge_ids.push(edge_id.clone());
+                will_remove_node_id_and_edge_id.extend(edge_node_id_and_edge_id);
             }
             // remove mutable
-            let removed_edge_ids = removed_edge_ids;
+            let will_remove_node_id_edge_id = will_remove_node_id_and_edge_id;
 
             // remove old incidence data for node
-            if !removed_edge_ids.is_empty() {
-                self.nodes.remove_edges_by_ids(&removed_edge_ids);
+            if !will_remove_node_id_edge_id.is_empty() {
+                self.nodes.remove_edges_by_ids(&will_remove_node_id_edge_id);
             }
         } else {
             // remove old incidence data at the id for node before add new edge
-            if exist_edge_id {
-                self.nodes.remove_edges_by_id(&edge_id);
+            if let Some(old_edge) = self.edges.pop_edge(&edge_id) {
+                for node_id in old_edge.get_incidence_node_ids().iter() {
+                    self.nodes.remove_edges_by_id(node_id, &edge_id);
+                }
             }
         }
 
         //create incidence data from edge
         let incidences = edge.generate_incidences_without_check(&edge_id);
 
-        // add edge (and old edge delete)
+        // add edge (old edge deleted)
         let _ = self.edges.add_edge_with_pop_old(edge_id, edge);
 
         // add incidence data for node
@@ -325,7 +333,7 @@ impl<Id: Identity> Graph<Id> {
         if let Some(pop_node) = self.nodes.pop_node(node_id) {
             let will_delete_incidences =
                 self.edges.remove_node_with_illegal_edge(node_id, pop_node);
-            self.nodes.remove_incidences(will_delete_incidences);
+            self.nodes.remove_edges_by_ids(&will_delete_incidences);
         }
     }
 
@@ -361,9 +369,12 @@ impl<Id: Identity> Graph<Id> {
         Id: Borrow<B>,
         B: Identity,
     {
-        if let Some((pop_edge_id, pop_edge)) = self.edges.pop_edge_with_get_id(edge_id) {
-            let will_delete_incidences = pop_edge.generate_incidences_without_check(&pop_edge_id);
-            self.nodes.remove_incidences(will_delete_incidences);
+        if let Some(pop_edge) = self.edges.pop_edge(edge_id) {
+            let will_delete_node_id = pop_edge.incidence_into_node_ids();
+            for delete_node_id in will_delete_node_id {
+                self.nodes
+                    .remove_edges_by_id(delete_node_id.borrow(), &edge_id);
+            }
         }
     }
 
