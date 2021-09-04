@@ -285,20 +285,16 @@ impl<Id: Identity> Node<Id> {
     // ---
 
     /// delete all incidence
-    pub fn clear_incidences(&mut self) -> usize {
-        let deleted = self.incidences.len();
+    pub fn clear_incidences(&mut self) {
         self.incidences.clear();
-
-        deleted
     }
 
     /// delete incidence with same edge id and get deleted count
-    pub fn remove_incidence_by_id<B: ?Sized>(&mut self, edge_id: &B) -> usize
+    pub fn remove_incidence_by_id<B: ?Sized>(&mut self, edge_id: &B)
     where
         Id: Borrow<B>,
         B: Identity,
     {
-        let mut deleted = 0;
         self.incidences.retain(|incidence| {
             // check as borrowed because of no clone.
             if incidence.get_edge_id().borrow() != edge_id {
@@ -306,17 +302,13 @@ impl<Id: Identity> Node<Id> {
                 true
             } else {
                 // to delete
-                deleted += 1;
                 false
             }
         });
-
-        deleted
     }
 
     /// delete incidence with same edge ids and get deleted count
-    pub fn remove_incidence_by_ids(&mut self, edge_ids: &[Id]) -> usize {
-        let mut deleted = 0;
+    pub fn remove_incidence_by_ids(&mut self, edge_ids: &[Id]) {
         self.incidences.retain(|incidence| {
             // check as borrowed because of no clone.
             if !edge_ids.contains(incidence.get_edge_id()) {
@@ -324,12 +316,9 @@ impl<Id: Identity> Node<Id> {
                 true
             } else {
                 // to delete
-                deleted += 1;
                 false
             }
         });
-
-        deleted
     }
 }
 
@@ -380,6 +369,17 @@ impl<Id: Identity> NodeStore<Id> {
     // ---
     // setter
     // ---
+    /// clear all nodes
+    pub fn clear(&mut self) {
+        self.inner.clear();
+    }
+
+    /// clear all nodes
+    pub fn clear_all_incidence(&mut self) {
+        for node in self.inner.values_mut() {
+            node.clear_incidences();
+        }
+    }
 
     /// Add node if not exist. If exist, not replace.
     pub fn set_as_node(&mut self, node_id: Id) {

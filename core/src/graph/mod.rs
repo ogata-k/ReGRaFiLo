@@ -359,6 +359,23 @@ impl<Id: Identity> Graph<Id> {
     // ---
     // delete
     // ---
+    /// clear nodes and edges
+    pub fn clear(&mut self) {
+        self.nodes.clear();
+        self.edges.clear();
+    }
+
+    /// clear all nodes
+    pub fn clear_node(&mut self) {
+        self.clear();
+    }
+
+    /// clear all edges
+    pub fn clear_edge(&mut self) {
+        self.nodes.clear_all_incidence();
+        self.edges.clear();
+    }
+
     /// delete node at node_id if exist with remove illegal edge.
     pub fn delete_node<B: ?Sized>(&mut self, node_id: &B)
     where
@@ -366,7 +383,8 @@ impl<Id: Identity> Graph<Id> {
         B: Identity,
     {
         if let Some(pop_node) = self.nodes.pop_node(node_id) {
-            let will_delete_incidences = self.edges.remove_node_with_illegal_edge(node_id, pop_node);
+            let will_delete_incidences =
+                self.edges.remove_node_with_illegal_edge(node_id, pop_node);
             self.nodes.remove_incidences(will_delete_incidences);
         }
     }
@@ -435,12 +453,12 @@ impl<Id: Identity> Graph<Id> {
         for edge_id in edge_ids.iter() {
             if let Some(pop_edge) = self.edges.pop_edge(edge_id) {
                 will_delete_nodes.extend(pop_edge.incidence_into_node_ids());
-            } 
+            }
         }
         // remove node_ids to unique
         will_delete_nodes.sort();
         will_delete_nodes.dedup();
-        
+
         self.delete_nodes(&will_delete_nodes);
     }
 }

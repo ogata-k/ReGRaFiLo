@@ -439,6 +439,10 @@ impl<Id: Identity> EdgeStore<Id> {
     // ---
     // delete
     // ---
+    /// clear all edges
+    pub fn clear(&mut self) {
+        self.inner.clear();
+    }
 
     /// remove and get edge at edge_id
     pub fn pop_edge<B: ?Sized>(&mut self, edge_id: &B) -> Option<Edge<Id>>
