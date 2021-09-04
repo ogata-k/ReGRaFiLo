@@ -1,4 +1,6 @@
 //! Module for edge and it's store
+pub mod iter;
+
 use crate::graph::{GraphConfig, Incidence, Node};
 use crate::util::Identity;
 use std::borrow::Borrow;

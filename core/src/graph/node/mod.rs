@@ -1,5 +1,7 @@
 //! Module for edge for incidence node and it's store
 
+pub mod iter;
+
 use crate::util::Identity;
 use std::borrow::Borrow;
 use std::collections::BTreeMap;

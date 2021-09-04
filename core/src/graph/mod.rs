@@ -2,14 +2,20 @@
 
 mod config;
 mod edge;
-mod error;
+pub mod error;
 mod node;
+
+pub mod iter {
+    //! Module for iterator for graph items
+    pub use crate::graph::edge::iter::*;
+    pub use crate::graph::node::iter::*;
+}
 
 pub use config::*;
 use edge::*;
-pub use error::*;
 use node::*;
 
+use crate::graph::error::GraphError;
 use crate::util::Identity;
 use std::borrow::Borrow;
 use std::fmt;
@@ -220,12 +226,12 @@ impl<Id: Identity> Graph<Id> {
 
         // check illegal edge
         if edge.has_illegal() {
-            return Err(GraphError::IllegalEdge(edge_id, edge));
+            return Err(GraphError::IllegalEdge(edge_id, edge.into()));
         }
 
         // check or get flag
         if !edge.is_support(config) {
-            return Err(GraphError::EdgeNotSupported(edge_id, edge));
+            return Err(GraphError::EdgeNotSupported(edge_id, edge.into()));
         }
 
         // If use node grouping, check intersect node on nodes of edge and nodes of other edges.
@@ -235,7 +241,10 @@ impl<Id: Identity> Graph<Id> {
         if config.can_use_node_group()
             && self.edges.has_intersect_group_without_same(&edge_id, &edge)
         {
-            return Err(GraphError::NotSameNodeGroupHaveIntersect(edge_id, edge));
+            return Err(GraphError::NotSameNodeGroupHaveIntersect(
+                edge_id,
+                edge.into(),
+            ));
         }
 
         // check same edge
@@ -251,7 +260,7 @@ impl<Id: Identity> Graph<Id> {
             self.edges.exist_same_edge(&edge)
         };
         if !can_multiple && exist_same_edge {
-            return Err(GraphError::ExistSameEdge(edge_id, edge));
+            return Err(GraphError::ExistSameEdge(edge_id, edge.into()));
         }
 
         if can_replace {
