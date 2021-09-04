@@ -1,6 +1,5 @@
 //! Module for edge and it's store
-use crate::graph::GraphConfig;
-use crate::graph::{Incidence, Node};
+use crate::graph::{GraphConfig, Incidence, Node};
 use crate::util::Identity;
 use std::borrow::Borrow;
 use std::collections::btree_map::Entry;
@@ -95,12 +94,12 @@ impl<Id: Identity> Edge<Id> {
     }
 
     /// constructor for undirected hyper edge
-    pub fn undirected_hyper(mut ids: Vec<Id>) -> Self {
+    pub fn undirected_hyper(ids: Vec<Id>) -> Self {
         Self::undirected_hyper_with_weight(ids, 1_i16)
     }
 
     /// constructor for directed hyper edge
-    pub fn directed_hyper(mut source_ids: Vec<Id>, mut target_ids: Vec<Id>) -> Self {
+    pub fn directed_hyper(source_ids: Vec<Id>, target_ids: Vec<Id>) -> Self {
         Self::directed_hyper_with_weight(source_ids, target_ids, 1_i16)
     }
 
