@@ -258,7 +258,7 @@ impl<Id: Identity> Node<Id> {
     }
 
     /// get edge_ids from the node's incidenes
-    pub(crate) fn incidences_into_edge_ids(self) -> Vec<Id> {
+    pub fn incidences_into_edge_ids(self) -> Vec<Id> {
         self.incidences
             .into_iter()
             .map(|incidence| match incidence {
@@ -401,6 +401,15 @@ impl<Id: Identity> NodeStore<Id> {
         B: Identity,
     {
         self.inner.remove(node_id)
+    }
+
+    /// remove and get node at node_id
+    pub fn pop_node_with_get_id<B: ?Sized>(&mut self, node_id: &B) -> Option<(Id, Node<Id>)>
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        self.inner.remove_entry(node_id)
     }
 
     /// Remove incidence edge whose edge id is in specified.

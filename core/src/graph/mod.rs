@@ -330,9 +330,10 @@ impl<Id: Identity> Graph<Id> {
         Id: Borrow<B>,
         B: Identity,
     {
-        if let Some(pop_node) = self.nodes.pop_node(node_id) {
-            let will_delete_incidences =
-                self.edges.remove_node_with_illegal_edge(node_id, pop_node);
+        if let Some((pop_node_id, pop_node)) = self.nodes.pop_node_with_get_id(node_id) {
+            let will_delete_incidences = self
+                .edges
+                ._remove_node_id_and_illegal_edge_with_collect(pop_node_id, pop_node);
             self.nodes.remove_edges_by_ids(&will_delete_incidences);
         }
     }

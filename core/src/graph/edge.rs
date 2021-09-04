@@ -542,15 +542,11 @@ impl<Id: Identity> EdgeStore<Id> {
 
     /// remove node_id and node's incidences from edge store
     /// return value is Vec<(node_id, edge_id>
-    pub(crate) fn remove_node_with_illegal_edge<B: ?Sized>(
+    pub(crate) fn _remove_node_id_and_illegal_edge_with_collect(
         &mut self,
-        deleted_node_id: &B,
+        deleted_node_id: Id,
         deleted_node: Node<Id>,
-    ) -> Vec<(Id, Id)>
-    where
-        Id: Borrow<B>,
-        B: Identity,
-    {
+    ) -> Vec<(Id, Id)> {
         let Node {
             incidences: deleted_incidences,
             ..
@@ -569,8 +565,8 @@ impl<Id: Identity> EdgeStore<Id> {
                             if let Edge::Undirected { ids, .. } = occupied.get() {
                                 // This edge is illegal because exist edge remove node_id from ids
                                 // remove node id from ids
-                                let remove_first = deleted_node_id == ids[0].borrow();
-                                let remove_second = deleted_node_id == ids[1].borrow();
+                                let remove_first = &deleted_node_id == &ids[0];
+                                let remove_second = &deleted_node_id == &ids[1];
 
                                 // remove illegal edge
                                 if remove_first || remove_second {
@@ -630,8 +626,8 @@ impl<Id: Identity> EdgeStore<Id> {
                             {
                                 // This edge is illegal because exist edge remove node_id from ids
                                 // remove node id from ids
-                                let remove_source = deleted_node_id == source_id.borrow();
-                                let remove_target = deleted_node_id == target_id.borrow();
+                                let remove_source = &deleted_node_id == source_id;
+                                let remove_target = &deleted_node_id == target_id;
 
                                 // remove illegal edge
                                 if remove_source || remove_target {
@@ -685,7 +681,7 @@ impl<Id: Identity> EdgeStore<Id> {
                             if let Edge::UndirectedHyper { ids, .. } = occupied.get_mut() {
                                 // This edge is illegal because exist edge remove node_id from ids
                                 // remove node id from ids
-                                ids.retain(|id| deleted_node_id != id.borrow());
+                                ids.retain(|id| &deleted_node_id != id);
 
                                 // remove illegal edge
                                 if ids.is_empty() {
@@ -721,8 +717,8 @@ impl<Id: Identity> EdgeStore<Id> {
                             {
                                 // This edge is illegal because exist edge remove node_id from ids
                                 // remove node id from ids
-                                source_ids.retain(|id| deleted_node_id != id.borrow());
-                                target_ids.retain(|id| deleted_node_id != id.borrow());
+                                source_ids.retain(|id| &deleted_node_id != id);
+                                target_ids.retain(|id| &deleted_node_id != id);
 
                                 // remove illegal edge
                                 if source_ids.is_empty() || target_ids.is_empty() {
