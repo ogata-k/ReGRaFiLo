@@ -171,6 +171,62 @@ impl<Id: Identity> Edge<Id> {
         }
     }
 
+    /// Generate incidences data from the edge with assume that we already check support edge.
+    pub fn generate_incidences_without_check(&self, edge_id: &Id) -> Vec<(Id, Incidence<Id>)> {
+        let mut result = Vec::new();
+        // No check support incidence with config
+        match &self {
+            Edge::Undirected { ids, .. } => {
+                for node_id in ids {
+                    result.push((node_id.clone(), Incidence::undirected(edge_id.clone())));
+                }
+            }
+            Edge::Directed {
+                source_id,
+                target_id,
+                ..
+            } => {
+                result.push((
+                    source_id.clone(),
+                    Incidence::directed_source(edge_id.clone()),
+                ));
+                result.push((
+                    target_id.clone(),
+                    Incidence::directed_target(edge_id.clone()),
+                ));
+            }
+            Edge::UndirectedHyper { ids, .. } => {
+                for node_id in ids {
+                    result.push((
+                        node_id.clone(),
+                        Incidence::undirected_hyper(edge_id.clone()),
+                    ));
+                }
+            }
+            Edge::DirectedHyper {
+                source_ids,
+                target_ids,
+                ..
+            } => {
+                for source_id in source_ids {
+                    result.push((
+                        source_id.clone(),
+                        Incidence::directed_hyper_source(edge_id.clone()),
+                    ));
+                }
+
+                for target_id in target_ids {
+                    result.push((
+                        target_id.clone(),
+                        Incidence::directed_hyper_target(edge_id.clone()),
+                    ));
+                }
+            }
+        }
+
+        result
+    }
+
     /// get node_ids from the edge's incidenes
     pub fn incidence_into_node_ids(self) -> Vec<Id> {
         match self {

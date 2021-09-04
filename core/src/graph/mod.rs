@@ -281,7 +281,7 @@ impl<Id: Identity> Graph<Id> {
         }
 
         //create incidence data from edge
-        let incidences = self._generate_incidences_without_check(&edge_id, &edge);
+        let incidences = edge.generate_incidences_without_check(&edge_id);
 
         // add edge (and old edge delete)
         let _ = self.edges.add_edge_with_pop_old(edge_id, edge);
@@ -290,66 +290,6 @@ impl<Id: Identity> Graph<Id> {
         self.nodes.add_incidences_each_node(incidences);
 
         Ok(())
-    }
-
-    /// Generate incidences data from the edge with assume that we already check support edge.
-    fn _generate_incidences_without_check(
-        &self,
-        edge_id: &Id,
-        edge: &Edge<Id>,
-    ) -> Vec<(Id, Incidence<Id>)> {
-        let mut result = Vec::new();
-        // No check support incidence with config
-        match &edge {
-            Edge::Undirected { ids, .. } => {
-                for node_id in ids {
-                    result.push((node_id.clone(), Incidence::undirected(edge_id.clone())));
-                }
-            }
-            Edge::Directed {
-                source_id,
-                target_id,
-                ..
-            } => {
-                result.push((
-                    source_id.clone(),
-                    Incidence::directed_source(edge_id.clone()),
-                ));
-                result.push((
-                    target_id.clone(),
-                    Incidence::directed_target(edge_id.clone()),
-                ));
-            }
-            Edge::UndirectedHyper { ids, .. } => {
-                for node_id in ids {
-                    result.push((
-                        node_id.clone(),
-                        Incidence::undirected_hyper(edge_id.clone()),
-                    ));
-                }
-            }
-            Edge::DirectedHyper {
-                source_ids,
-                target_ids,
-                ..
-            } => {
-                for source_id in source_ids {
-                    result.push((
-                        source_id.clone(),
-                        Incidence::directed_hyper_source(edge_id.clone()),
-                    ));
-                }
-
-                for target_id in target_ids {
-                    result.push((
-                        target_id.clone(),
-                        Incidence::directed_hyper_target(edge_id.clone()),
-                    ));
-                }
-            }
-        }
-
-        result
     }
 
     // ---
@@ -422,8 +362,7 @@ impl<Id: Identity> Graph<Id> {
         B: Identity,
     {
         if let Some((pop_edge_id, pop_edge)) = self.edges.pop_edge_with_get_id(edge_id) {
-            let will_delete_incidences =
-                self._generate_incidences_without_check(&pop_edge_id, &pop_edge);
+            let will_delete_incidences = pop_edge.generate_incidences_without_check(&pop_edge_id);
             self.nodes.remove_incidences(will_delete_incidences);
         }
     }
