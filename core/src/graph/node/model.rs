@@ -6,9 +6,15 @@ use crate::util::Identity;
 use std::fmt;
 
 /// Model for Node
-#[derive(Debug, Eq, PartialEq, Clone)]
+#[derive(Eq, PartialEq, Clone)]
 pub struct Node<'a, Id: Identity> {
     inner: &'a node::Node<Id>,
+}
+
+impl<'a, Id: Identity> fmt::Debug for Node<'a, Id> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(self.inner, f)
+    }
 }
 
 impl<'a, Id: Identity> fmt::Display for Node<'a, Id> {
