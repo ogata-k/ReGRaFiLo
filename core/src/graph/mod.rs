@@ -104,8 +104,17 @@ impl<Id: Identity> Graph<Id> {
     }
 
     // ---
-    // node iterator
+    // node
     // ---
+
+    /// get node at node_id
+    pub fn get_node<'a, B: ?Sized>(&'a self, node_id: &B) -> Option<model::Node<'a, Id>>
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        self.nodes.get_node(node_id).map(|node| node.as_model())
+    }
 
     /// to iterator for node
     pub fn node_iter<'a>(
@@ -115,8 +124,116 @@ impl<Id: Identity> Graph<Id> {
     }
 
     // ---
-    // edge iterator
+    // edge
     // ---
+
+    /// get edge at edge_id
+    pub fn get_edge<'a, B: ?Sized>(&'a self, edge_id: &B) -> Option<model::Edge<'a, Id>>
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        self.edges.get_edge(edge_id).map(|edge| edge.as_model())
+    }
+
+    /// get undirected edge at edge_id
+    pub fn get_undirected_edge<'a, B: ?Sized>(
+        &'a self,
+        edge_id: &B,
+    ) -> Option<model::UndirectedEdge<'a, Id>>
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        self.edges
+            .get_edge(edge_id)
+            .map(|edge| edge.as_undirected_model())
+            .flatten()
+    }
+
+    /// get directed edge at edge_id
+    pub fn get_directed_edge<'a, B: ?Sized>(
+        &'a self,
+        edge_id: &B,
+    ) -> Option<model::DirectedEdge<'a, Id>>
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        self.edges
+            .get_edge(edge_id)
+            .map(|edge| edge.as_directed_model())
+            .flatten()
+    }
+
+    /// get mixed edge at edge_id
+    pub fn get_mixed_edge<'a, B: ?Sized>(&'a self, edge_id: &B) -> Option<model::MixedEdge<'a, Id>>
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        self.edges
+            .get_edge(edge_id)
+            .map(|edge| edge.as_mixed_model())
+            .flatten()
+    }
+
+    /// get node grouping at edge_id as alias to getter undirected hyper edge at edge_id
+    pub fn get_node_grouping<'a, B: ?Sized>(
+        &'a self,
+        edge_id: &B,
+    ) -> Option<model::UndirectedHyperEdge<'a, Id>>
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        self.get_undirected_hyper_edge(edge_id)
+    }
+
+    /// get undirected hyper edge at edge_id
+    pub fn get_undirected_hyper_edge<'a, B: ?Sized>(
+        &'a self,
+        edge_id: &B,
+    ) -> Option<model::UndirectedHyperEdge<'a, Id>>
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        self.edges
+            .get_edge(edge_id)
+            .map(|edge| edge.as_undirected_hyper_model())
+            .flatten()
+    }
+
+    /// get directed hyper edge at edge_id
+    pub fn get_directed_hyper_edge<'a, B: ?Sized>(
+        &'a self,
+        edge_id: &B,
+    ) -> Option<model::DirectedHyperEdge<'a, Id>>
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        self.edges
+            .get_edge(edge_id)
+            .map(|edge| edge.as_directed_hyper_model())
+            .flatten()
+    }
+
+    /// get mixed hyper edge at edge_id
+    pub fn get_mixed_hyper_edge<'a, B: ?Sized>(
+        &'a self,
+        edge_id: &B,
+    ) -> Option<model::MixedHyperEdge<'a, Id>>
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        self.edges
+            .get_edge(edge_id)
+            .map(|edge| edge.as_mixed_hyper_model())
+            .flatten()
+    }
 
     /// to iterator for edge
     pub fn edge_iter<'a>(

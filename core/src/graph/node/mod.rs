@@ -361,6 +361,15 @@ impl<Id: Identity> NodeStore<Id> {
     // getter
     // ---
 
+    /// get node at node_id
+    pub fn get_node<B: ?Sized>(&self, node_id: &B) -> Option<&Node<Id>>
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        self.inner.get(node_id)
+    }
+
     /// to iterator for node
     pub fn iter<'a>(
         &'a self,

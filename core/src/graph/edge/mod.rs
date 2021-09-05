@@ -426,6 +426,15 @@ impl<Id: Identity> EdgeStore<Id> {
     // getter
     // ---
 
+    /// get edge at edge_id
+    pub fn get_edge<B: ?Sized>(&self, edge_id: &B) -> Option<&Edge<Id>>
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        self.inner.get(edge_id)
+    }
+
     /// to iterator for edge
     pub fn edge_iter<'a>(
         &'a self,
