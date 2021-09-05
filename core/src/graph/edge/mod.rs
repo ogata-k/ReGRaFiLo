@@ -130,16 +130,69 @@ impl<Id: Identity> Edge<Id> {
     }
 
     /// create model as edge
+    #[inline]
     pub fn as_model<'a>(&'a self) -> model::Edge<'a, Id> {
         model::Edge::_create(&self)
     }
 
-    /// create model as mixed_edge
+    /// create model as undirected edge
+    #[inline]
+    pub fn as_undirected_model<'a>(&'a self) -> Option<model::UndirectedEdge<'a, Id>> {
+        match self {
+            Edge::Undirected { weight, ids } => Some(model::UndirectedEdge::_create(weight, ids)),
+            _ => None,
+        }
+    }
+
+    /// create model as directed edge
+    #[inline]
+    pub fn as_directed_model<'a>(&'a self) -> Option<model::DirectedEdge<'a, Id>> {
+        match self {
+            Edge::Directed {
+                weight,
+                source_id,
+                target_id,
+            } => Some(model::DirectedEdge::_create(weight, source_id, target_id)),
+            _ => None,
+        }
+    }
+
+    /// create model as mixed edge
+    #[inline]
     pub fn as_mixed_model<'a>(&'a self) -> Option<model::MixedEdge<'a, Id>> {
         model::MixedEdge::_create(&self)
     }
 
+    /// create model as undirected hyper edge
+    #[inline]
+    pub fn as_undirected_hyper_model<'a>(&'a self) -> Option<model::UndirectedHyperEdge<'a, Id>> {
+        match self {
+            Edge::UndirectedHyper { weight, ids } => {
+                Some(model::UndirectedHyperEdge::_create(weight, ids.as_slice()))
+            }
+            _ => None,
+        }
+    }
+
     /// create model as mixed hyper edge
+    #[inline]
+    pub fn as_directed_hyper_model<'a>(&'a self) -> Option<model::DirectedHyperEdge<'a, Id>> {
+        match self {
+            Edge::DirectedHyper {
+                weight,
+                source_ids,
+                target_ids,
+            } => Some(model::DirectedHyperEdge::_create(
+                weight,
+                source_ids.as_slice(),
+                target_ids.as_slice(),
+            )),
+            _ => None,
+        }
+    }
+
+    /// create model as mixed hyper edge
+    #[inline]
     pub fn as_mixed_hyper_model<'a>(&'a self) -> Option<model::MixedHyperEdge<'a, Id>> {
         model::MixedHyperEdge::_create(&self)
     }
@@ -389,12 +442,13 @@ impl<Id: Identity> EdgeStore<Id> {
         &'a self,
     ) -> UndirectedEdgeIter<'a, Id, impl Iterator<Item = (&'a Id, model::UndirectedEdge<'a, Id>)>>
     {
-        let iter = self.inner.iter().filter_map(|(edge_id, edge)| match edge {
-            Edge::Undirected { weight, ids } => {
-                Some((edge_id, model::UndirectedEdge::_create(weight, ids)))
-            }
-            _ => None,
-        });
+        let iter =
+            self.inner
+                .iter()
+                .filter_map(|(edge_id, edge)| match edge.as_undirected_model() {
+                    Some(e) => Some((edge_id, e)),
+                    None => None,
+                });
         UndirectedEdgeIter::new(iter)
     }
 
@@ -402,17 +456,13 @@ impl<Id: Identity> EdgeStore<Id> {
     pub fn directed_edge_iter<'a>(
         &'a self,
     ) -> DirectedEdgeIter<'a, Id, impl Iterator<Item = (&'a Id, model::DirectedEdge<'a, Id>)>> {
-        let iter = self.inner.iter().filter_map(|(edge_id, edge)| match edge {
-            Edge::Directed {
-                weight,
-                source_id,
-                target_id,
-            } => Some((
-                edge_id,
-                model::DirectedEdge::_create(weight, source_id, target_id),
-            )),
-            _ => None,
-        });
+        let iter = self
+            .inner
+            .iter()
+            .filter_map(|(edge_id, edge)| match edge.as_directed_model() {
+                Some(e) => Some((edge_id, e)),
+                None => None,
+            });
         DirectedEdgeIter::new(iter)
     }
 
@@ -438,12 +488,11 @@ impl<Id: Identity> EdgeStore<Id> {
         Id,
         impl Iterator<Item = (&'a Id, model::UndirectedHyperEdge<'a, Id>)>,
     > {
-        let iter = self.inner.iter().filter_map(|(edge_id, edge)| match edge {
-            Edge::UndirectedHyper { weight, ids } => Some((
-                edge_id,
-                model::UndirectedHyperEdge::_create(weight, ids.as_slice()),
-            )),
-            _ => None,
+        let iter = self.inner.iter().filter_map(|(edge_id, edge)| {
+            match edge.as_undirected_hyper_model() {
+                Some(e) => Some((edge_id, e)),
+                None => None,
+            }
         });
         UndirectedHyperEdgeIter::new(iter)
     }
@@ -456,21 +505,13 @@ impl<Id: Identity> EdgeStore<Id> {
         Id,
         impl Iterator<Item = (&'a Id, model::DirectedHyperEdge<'a, Id>)>,
     > {
-        let iter = self.inner.iter().filter_map(|(edge_id, edge)| match edge {
-            Edge::DirectedHyper {
-                weight,
-                source_ids,
-                target_ids,
-            } => Some((
-                edge_id,
-                model::DirectedHyperEdge::_create(
-                    weight,
-                    source_ids.as_slice(),
-                    target_ids.as_slice(),
-                ),
-            )),
-            _ => None,
-        });
+        let iter =
+            self.inner
+                .iter()
+                .filter_map(|(edge_id, edge)| match edge.as_directed_hyper_model() {
+                    Some(e) => Some((edge_id, e)),
+                    None => None,
+                });
         DirectedHyperEdgeIter::new(iter)
     }
 

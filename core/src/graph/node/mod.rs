@@ -247,6 +247,7 @@ impl<Id: Identity> Node<Id> {
     }
 
     /// create model as node
+    #[inline]
     pub fn as_model<'a>(&'a self) -> model::Node<'a, Id> {
         model::Node::_create(&self)
     }
