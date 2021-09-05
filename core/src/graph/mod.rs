@@ -128,7 +128,8 @@ impl<Id: Identity> Graph<Id> {
     /// to iterator for undirected edge
     pub fn undirected_edge_iter<'a>(
         &'a self,
-    ) -> UndirectedEdgeIter<'a, Id, impl Iterator<Item = (&'a Id, model::UndirectedEdge<'a, Id>)>> {
+    ) -> UndirectedEdgeIter<'a, Id, impl Iterator<Item = (&'a Id, model::UndirectedEdge<'a, Id>)>>
+    {
         self.edges.undirected_edge_iter()
     }
 
@@ -146,18 +147,37 @@ impl<Id: Identity> Graph<Id> {
         self.edges.mixed_edge_iter()
     }
 
+    /// to iterator for node grouping.
+    /// alias iterator for undirected hyper edge
+    pub fn node_gruoping_iter<'a>(
+        &'a self,
+    ) -> UndirectedHyperEdgeIter<
+        'a,
+        Id,
+        impl Iterator<Item = (&'a Id, model::UndirectedHyperEdge<'a, Id>)>,
+    > {
+        self.undirected_hyper_edge_iter()
+    }
+
     /// to iterator for undirected hyper edge
     pub fn undirected_hyper_edge_iter<'a>(
         &'a self,
-    ) -> UndirectedHyperEdgeIter<'a, Id, impl Iterator<Item = (&'a Id, model::UndirectedHyperEdge<'a, Id>)>> {
+    ) -> UndirectedHyperEdgeIter<
+        'a,
+        Id,
+        impl Iterator<Item = (&'a Id, model::UndirectedHyperEdge<'a, Id>)>,
+    > {
         self.edges.undirected_hyper_edge_iter()
     }
 
     /// to iterator for directed hyper edge
     pub fn directed_hyper_edge_iter<'a>(
         &'a self,
-    ) -> DirectedHyperEdgeIter<'a, Id, impl Iterator<Item = (&'a Id, model::DirectedHyperEdge<'a, Id>)>>
-    {
+    ) -> DirectedHyperEdgeIter<
+        'a,
+        Id,
+        impl Iterator<Item = (&'a Id, model::DirectedHyperEdge<'a, Id>)>,
+    > {
         self.edges.directed_hyper_edge_iter()
     }
 
