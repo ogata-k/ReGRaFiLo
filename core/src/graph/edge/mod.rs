@@ -653,10 +653,7 @@ impl<Id: Identity> EdgeStore<Id> {
         deleted_node_id: Id,
         deleted_node: Node<Id>,
     ) -> Vec<(Id, Id)> {
-        let Node {
-            incidences: deleted_incidences,
-            ..
-        } = deleted_node;
+        let deleted_incidences = deleted_node.into_incidences();
         let mut will_delete_node_id_edge_id: Vec<(Id, Id)> = Vec::new();
         for incidence in deleted_incidences.into_iter() {
             match incidence {

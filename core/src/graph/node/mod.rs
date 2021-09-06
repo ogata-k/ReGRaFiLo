@@ -14,8 +14,8 @@ use std::fmt;
 /// node structure for graph
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct Node<Id: Identity> {
-    pub weight: i16,
-    pub incidences: Vec<Incidence<Id>>,
+    weight: i16,
+    incidences: Vec<Incidence<Id>>,
 }
 
 impl<Id: Identity> fmt::Display for Node<Id> {
@@ -85,6 +85,11 @@ impl<Id: Identity> Node<Id> {
                 | Incidence::DirectedHyperTarget { edge_id } => edge_id,
             })
             .collect()
+    }
+
+    /// into incidence list
+    pub fn into_incidences(self) -> Vec<Incidence<Id>> {
+        self.incidences
     }
 
     // ---
