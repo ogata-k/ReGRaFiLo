@@ -1,6 +1,6 @@
 //! Module of node model
 
-use crate::graph::node::Incidence;
+use crate::graph::node::incidence::*;
 use crate::util::Identity;
 
 use std::fmt;
