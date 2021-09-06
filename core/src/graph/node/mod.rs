@@ -205,17 +205,8 @@ pub struct Node<Id: Identity> {
 
 impl<Id: Identity> fmt::Display for Node<Id> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_fmt(format_args!("{{weight: {}, incidences: {{", self.weight))?;
-        let mut is_first = true;
-        for incidence in self.incidences.iter() {
-            if is_first {
-                f.write_fmt(format_args!("{}", incidence))?;
-            } else {
-                f.write_fmt(format_args!(", {}", incidence))?;
-            }
-            is_first = false;
-        }
-        f.write_str("}}")
+        let model = self.as_model();
+        fmt::Display::fmt(&model, f)
     }
 }
 
@@ -249,21 +240,21 @@ impl<Id: Identity> Node<Id> {
     /// create model as node
     #[inline]
     pub fn as_model<'a>(&'a self) -> model::Node<'a, Id> {
-        model::Node::_create(&self)
+        model::Node::_create(&self.weight, &self.incidences)
     }
 
     // ---
     // getter
     // ---
 
-    /// get incidences list for the node
-    pub fn get_incidences(&self) -> &[Incidence<Id>] {
-        &self.incidences
-    }
-
     /// get weight for the node
     pub fn get_weight(&self) -> &i16 {
         &self.weight
+    }
+
+    /// get incidences list for the node
+    pub fn get_incidences(&self) -> &[Incidence<Id>] {
+        &self.incidences
     }
 
     /// get edge_ids from the node's incidenes
