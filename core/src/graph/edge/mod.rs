@@ -300,6 +300,31 @@ impl<Id: Identity> Edge<Id> {
         self.clone().incidence_into_node_ids()
     }
 
+    /// get node_ids from the edge's incidenes
+    pub fn get_incidence_node_ids_as_ref(&self) -> Vec<&Id> {
+        match self {
+            Edge::Undirected {
+                ids: [id1, id2], ..
+            } => vec![id1, id2],
+            Edge::Directed {
+                source_id,
+                target_id,
+                ..
+            } => vec![source_id, target_id],
+            Edge::UndirectedHyper { ids, .. } => ids.iter().collect(),
+            Edge::DirectedHyper {
+                source_ids,
+                target_ids,
+                ..
+            } => {
+                let mut result = Vec::new();
+                result.extend(source_ids);
+                result.extend(target_ids);
+                result
+            }
+        }
+    }
+
     // ---
     // setter
     // ---
@@ -352,9 +377,7 @@ impl<Id: Identity> Edge<Id> {
         match self {
             Undirected { .. } => config.can_use_undirected_edge(),
             Directed { .. } => config.can_use_directed_edge(),
-            UndirectedHyper { .. } => {
-                config.can_use_node_group() || config.can_use_undirected_hyper_edge()
-            }
+            UndirectedHyper { .. } => config.can_use_undirected_hyper_edge(),
             DirectedHyper { .. } => config.can_use_directed_hyper_edge(),
         }
     }
@@ -433,6 +456,23 @@ impl<Id: Identity> EdgeStore<Id> {
         B: Identity,
     {
         self.inner.get(edge_id)
+    }
+
+    /// get incidence node ids searched by edge_ids.
+    pub fn get_incidence_node_ids_by_ids(&self, edge_ids: &[&Id]) -> Vec<&Id> {
+        let mut result = Vec::new();
+        for edge_id in edge_ids.iter() {
+            match self.inner.get(edge_id) {
+                None => {
+                    continue;
+                }
+                Some(edge) => {
+                    result.extend(edge.get_incidence_node_ids_as_ref());
+                }
+            }
+        }
+
+        result
     }
 
     /// to iterator for edge
@@ -568,38 +608,6 @@ impl<Id: Identity> EdgeStore<Id> {
             .filter(|(_, stored_edge)| (*stored_edge).is_equal_to_without_weight(edge))
             .next()
             .is_some()
-    }
-
-    /// If edge is undirected hyper edge as node grouping, we cannot use the edge wich has intersect node to other edges.
-    pub fn has_intersect_group_without_same<B: ?Sized>(&self, edge_id: &B, edge: &Edge<Id>) -> bool
-    where
-        Id: Borrow<B>,
-        B: Identity,
-    {
-        if let Edge::UndirectedHyper { ids, .. } = edge {
-            for stored_edge in self
-                .inner
-                .iter()
-                .filter(|(k, v)| {
-                    (*k).borrow() != edge_id.borrow() && !(*v).is_equal_to_without_weight(edge)
-                })
-                .map(|(_, v)| v)
-            {
-                if let Edge::UndirectedHyper {
-                    ids: stored_ids, ..
-                } = stored_edge
-                {
-                    for id in ids.iter() {
-                        if stored_ids.contains(id) {
-                            return true;
-                        }
-                    }
-                }
-            }
-            false
-        } else {
-            false
-        }
     }
 
     // ---

@@ -9,9 +9,9 @@ fn main() {
     let config =
         GraphConfig::directed_graph(can_multiple, use_node_group).to_replace_same_edge_mode();
     let mut graph: Graph<u8> = Graph::create_by_config(config);
-    graph.add_node(1);
-    graph.add_node(2);
-    graph.add_node(3);
+    graph.add_vertex_node(1);
+    graph.add_vertex_node(2);
+    graph.add_vertex_node(3);
 
     // when not inserted node at the id, automatic insert node at the id
     graph.add_directed_edge(1, 1, 100).unwrap();

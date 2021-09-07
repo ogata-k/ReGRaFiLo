@@ -1,21 +1,37 @@
 //! Module for edge for incidence node and it's store
 
+mod flatten;
 mod incidence;
 pub mod iter;
 pub mod model;
 
+use crate::graph::node::model::NodeModel;
 use crate::util::Identity;
+pub use flatten::*;
 pub use incidence::*;
 use iter::*;
 use std::borrow::Borrow;
+use std::collections::btree_map::Entry;
 use std::collections::BTreeMap;
 use std::fmt;
+use std::mem;
 
 /// node structure for graph
 #[derive(Debug, Eq, PartialEq, Clone)]
-pub struct Node<Id: Identity> {
-    weight: i16,
-    incidences: Vec<Incidence<Id>>,
+pub enum Node<Id: Identity> {
+    /// Node point
+    Vertex {
+        weight: i16,
+        parent: Option<Id>,
+        incidences: Vec<Incidence<Id>>,
+    },
+    /// Node group
+    Group {
+        weight: i16,
+        parent: Option<Id>,
+        children: Vec<Id>,
+        incidences: Vec<Incidence<Id>>,
+    },
 }
 
 impl<Id: Identity> fmt::Display for Node<Id> {
@@ -25,29 +41,36 @@ impl<Id: Identity> fmt::Display for Node<Id> {
     }
 }
 
-impl<Id: Identity> Default for Node<Id> {
-    fn default() -> Self {
-        Self {
-            weight: 1,
-            incidences: vec![],
-        }
-    }
-}
-
 impl<Id: Identity> Node<Id> {
     // ---
     // constructor
     // ---
 
-    /// create node structure
-    pub fn create() -> Self {
-        Self::create_with_weight(1)
+    /// create node point structure
+    pub fn vertex() -> Self {
+        Self::vertex_with_weight(1)
     }
 
-    /// create node structure with weight
-    pub fn create_with_weight(weight: i16) -> Self {
-        Self {
+    /// create node point structure with weight
+    pub fn vertex_with_weight(weight: i16) -> Self {
+        Node::Vertex {
             weight: weight,
+            parent: None,
+            incidences: vec![],
+        }
+    }
+
+    /// create node group structure
+    pub fn group(children: Vec<Id>) -> Self {
+        Self::group_with_weight(1, children)
+    }
+
+    /// create node group structure with weight
+    pub fn group_with_weight(weight: i16, children: Vec<Id>) -> Self {
+        Node::Group {
+            weight: weight,
+            parent: None,
+            children: children,
             incidences: vec![],
         }
     }
@@ -55,7 +78,36 @@ impl<Id: Identity> Node<Id> {
     /// create model as node
     #[inline]
     pub fn as_model<'a>(&'a self) -> model::Node<'a, Id> {
-        model::Node::_create(&self.weight, &self.incidences)
+        model::Node::_create(&self)
+    }
+
+    /// create model as node point
+    #[inline]
+    pub fn as_vertex_model<'a>(&'a self) -> Option<model::VertexNode<'a, Id>> {
+        match self {
+            Node::Vertex {
+                weight,
+                parent,
+                incidences,
+            } => Some(model::VertexNode::_create(weight, parent, incidences)),
+            _ => None,
+        }
+    }
+
+    /// create model as node group
+    #[inline]
+    pub fn as_group_model<'a>(&'a self) -> Option<model::GroupNode<'a, Id>> {
+        match self {
+            Node::Group {
+                weight,
+                parent,
+                children,
+                incidences,
+            } => Some(model::GroupNode::_create(
+                weight, parent, children, incidences,
+            )),
+            _ => None,
+        }
     }
 
     // ---
@@ -64,17 +116,59 @@ impl<Id: Identity> Node<Id> {
 
     /// get weight for the node
     pub fn get_weight(&self) -> &i16 {
-        &self.weight
+        match &self {
+            Node::Vertex { weight, .. } => weight,
+            Node::Group { weight, .. } => weight,
+        }
+    }
+
+    /// get parent node_id for the node
+    pub fn get_parent(&self) -> &Option<Id> {
+        match &self {
+            Node::Vertex { parent, .. } => parent,
+            Node::Group { parent, .. } => parent,
+        }
+    }
+
+    /// get count of children
+    pub fn get_child_count(&self) -> usize {
+        match &self {
+            Node::Vertex { .. } => 0,
+            Node::Group { children, .. } => children.iter().count(),
+        }
+    }
+
+    /// get children. If this node is vertex node, return empty list.
+    pub fn get_children_as_ref(&self) -> Vec<&Id> {
+        match &self {
+            Node::Vertex { .. } => Vec::new(),
+            Node::Group { children, .. } => children.iter().collect(),
+        }
     }
 
     /// get incidences list for the node
     pub fn get_incidences(&self) -> &[Incidence<Id>] {
-        &self.incidences
+        match &self {
+            Node::Vertex { incidences, .. } => incidences,
+            Node::Group { incidences, .. } => incidences,
+        }
+    }
+
+    /// get incidences list for the node
+    fn get_incidences_as_mut(&mut self) -> &mut Vec<Incidence<Id>> {
+        match self {
+            Node::Vertex { incidences, .. } => incidences,
+            Node::Group { incidences, .. } => incidences,
+        }
     }
 
     /// get edge_ids from the node's incidenes
     pub fn incidences_into_edge_ids(self) -> Vec<Id> {
-        self.incidences
+        let incidences = match self {
+            Node::Vertex { incidences, .. } => incidences,
+            Node::Group { incidences, .. } => incidences,
+        };
+        incidences
             .into_iter()
             .map(|incidence| match incidence {
                 Incidence::Undirected { edge_id }
@@ -89,24 +183,116 @@ impl<Id: Identity> Node<Id> {
 
     /// into incidence list
     pub fn into_incidences(self) -> Vec<Incidence<Id>> {
-        self.incidences
+        match self {
+            Node::Vertex { incidences, .. } => incidences,
+            Node::Group { incidences, .. } => incidences,
+        }
+    }
+
+    /// into pair of parent id and incidence list
+    pub fn into_parent_and_incidences(self) -> (Option<Id>, Vec<Incidence<Id>>) {
+        match self {
+            Node::Vertex {
+                parent, incidences, ..
+            } => (parent, incidences),
+            Node::Group {
+                parent, incidences, ..
+            } => (parent, incidences),
+        }
     }
 
     // ---
     // setter
     // ---
+    /// replace parent node_id
+    pub fn set_parent(&mut self, parent_id: Id) -> Option<Id> {
+        match self {
+            Node::Vertex { parent, .. } => parent.replace(parent_id),
+            Node::Group { parent, .. } => parent.replace(parent_id),
+        }
+    }
+
+    /// replace parent node_id
+    pub fn set_parent_optional(&mut self, parent_id: Option<Id>) -> Option<Id> {
+        match self {
+            Node::Vertex { parent, .. } => mem::replace(parent, parent_id),
+            Node::Group { parent, .. } => mem::replace(parent, parent_id),
+        }
+    }
+
+    /// replace incidences
+    pub fn replace_incidences(&mut self, new_incidences: Vec<Incidence<Id>>) -> Vec<Incidence<Id>> {
+        match self {
+            Node::Vertex { incidences, .. } => mem::replace(incidences, new_incidences),
+            Node::Group { incidences, .. } => mem::replace(incidences, new_incidences),
+        }
+    }
+
+    /// add child if this node is group
+    pub fn add_child(&mut self, new_id: Id) {
+        match self {
+            Node::Group {
+                children: _children,
+                ..
+            } => {
+                _children.push(new_id);
+                _children.sort();
+                _children.dedup();
+            }
+            _ => {}
+        }
+    }
 
     // ---
     // checker
     // ---
+    /// check exist group which is contains me
+    pub fn has_parent(&self) -> bool {
+        self.get_parent().is_some()
+    }
+
+    /// check is node point
+    pub fn is_vertex(&self) -> bool {
+        self.as_model().is_vertex()
+    }
+
+    /// check is node group
+    pub fn is_group(&self) -> bool {
+        self.as_model().is_group()
+    }
 
     // ---
     // delete
     // ---
 
+    /// remove parent id
+    pub fn remove_parent(&mut self) {
+        match self {
+            Node::Vertex { parent, .. } => {
+                let _ = mem::replace(parent, None);
+            }
+            Node::Group { parent, .. } => {
+                let _ = mem::replace(parent, None);
+            }
+        }
+    }
+
+    /// remove specified children
+    pub(crate) fn _remove_children(&mut self, children: &[Id]) {
+        match self {
+            Node::Group {
+                children: _children,
+                ..
+            } => {
+                _children.retain(|child| !children.contains(child));
+            }
+            _ => {}
+        }
+    }
+
     /// delete all incidence
     pub fn clear_incidences(&mut self) {
-        self.incidences.clear();
+        self.get_incidences_as_mut().clear()
     }
 
     /// delete incidence with same edge id and get deleted count
@@ -115,7 +301,7 @@ impl<Id: Identity> Node<Id> {
         Id: Borrow<B>,
         B: Identity,
     {
-        self.incidences.retain(|incidence| {
+        self.get_incidences_as_mut().retain(|incidence| {
             // check as borrowed because of no clone.
             if incidence.get_edge_id().borrow() != edge_id {
                 // retain
@@ -181,8 +367,306 @@ impl<Id: Identity> NodeStore<Id> {
         self.inner.get(node_id)
     }
 
+    /// get node as mutable at node_id
+    pub(crate) fn _get_node_as_mut<B: ?Sized>(&mut self, node_id: &B) -> Option<&mut Node<Id>>
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        self.inner.get_mut(node_id)
+    }
+
+    /// get node entry
+    pub(crate) fn _get_node_entry<'a>(&'a mut self, node_id: Id) -> Entry<'a, Id, Node<Id>> {
+        self.inner.entry(node_id)
+    }
+
+    /// get incidence edge ids for node at node_id
+    pub fn get_incidence_edge_ids<B: ?Sized>(&self, node_id: &B) -> Vec<&Id>
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        match self.inner.get(node_id) {
+            None => vec![],
+            Some(node) => node
+                .get_incidences()
+                .iter()
+                .map(|incidence| incidence.get_edge_id())
+                .collect(),
+        }
+    }
+
+    /// get incidence edge ids from the node to top parent and get parent node ids
+    pub(crate) fn _get_incidence_edge_ids_from_the_node_id_and_parent_ids(
+        &self,
+        node_id: &Id,
+    ) -> (Vec<&Id>, Vec<&Id>)
+    {
+        let mut parent_node_ids = Vec::new();
+        let mut incidence_edge_ids = Vec::new();
+        let mut checker = vec![node_id];
+
+        loop {
+            match checker.pop() {
+                None => {
+                    break;
+                }
+                Some(_node_id) => {
+                    match self.inner.get(_node_id) {
+                        None => {
+                            continue;
+                        }
+                        Some(node) => {
+                            if let Some(parent_id) = node.get_parent() {
+                                parent_node_ids.push(parent_id);
+                                checker.push(parent_id);
+                            }
+
+                            incidence_edge_ids.extend(
+                                node.get_incidences()
+                                    .iter()
+                                    .map(|incidence| incidence.get_edge_id()),
+                            );
+                        }
+                    };
+                }
+            }
+        }
+
+        (incidence_edge_ids, parent_node_ids)
+    }
+
+    /// get incidence edge ids for node and node's parent and grandes and it's grand and ...
+    pub fn get_incidence_edge_ids_until_limit_parent_from_node<'a>(
+        &'a self,
+        node: &'a Node<Id>,
+    ) -> Vec<&'a Id> {
+        let mut result = Vec::new();
+        let mut checker = vec![];
+
+        if let Some(parent_id) = node.get_parent() {
+            checker.push(parent_id);
+        }
+        let incidence_edge_ids: Vec<&Id> = node
+            .get_incidences()
+            .iter()
+            .map(|incidence| incidence.get_edge_id())
+            .collect();
+        result.extend(incidence_edge_ids);
+
+        loop {
+            match checker.pop() {
+                None => {
+                    break;
+                }
+                Some(node_id) => {
+                    match self.inner.get_key_value(node_id) {
+                        None => {
+                            continue;
+                        }
+                        Some((_, node)) => {
+                            if let Some(parent_id) = node.get_parent() {
+                                checker.push(parent_id);
+                            }
+                            let incidence_edge_ids: Vec<&Id> = node
+                                .get_incidences()
+                                .iter()
+                                .map(|incidence| incidence.get_edge_id())
+                                .collect();
+
+                            result.extend(incidence_edge_ids);
+                        }
+                    };
+                }
+            }
+        }
+
+        result
+    }
+
+    /// get common parent or fail
+    /// if return Err(None) then node_ids is empty or node at node_id is not exist.
+    pub fn get_common_parent_id_or_fail(&self, node_ids: &[Id]) -> Result<Option<&Id>, Option<Id>> {
+        if node_ids.is_empty() {
+            return Err(None);
+        }
+
+        let mut ids_iter = node_ids.iter();
+        let first_id = ids_iter.next();
+
+        if let Some(node) = self.inner.get(first_id.unwrap()) {
+            // parent checker with first child
+            let common_parent: Option<&Id> = node.get_parent().as_ref();
+
+            for node_id in ids_iter {
+                match self.inner.get(node_id) {
+                    Some(node) => {
+                        if common_parent != node.get_parent().as_ref() {
+                            // need set poped old node, but old node is not exist.
+                            return Err(Some(node_id.clone()));
+                        }
+
+                        // no check incidence edges to old node, because old node not exist.
+                    }
+                    None => {
+                        return Err(None);
+                    }
+                }
+            }
+
+            return Ok(common_parent);
+        } else {
+            return Err(None);
+        }
+    }
+
+    /// Flatten children node ids of the node at specified node_id.
+    /// If not exist, return None.
+    pub fn flatten_children_id<'a, B: ?Sized>(
+        &'a self,
+        node_id: &'a B,
+    ) -> Option<FlattenIds<'a, Id>>
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        if let Some((node_id, node)) = self.inner.get_key_value(node_id) {
+            let mut acc: Vec<&'a Id> = Vec::new();
+            match node {
+                Node::Vertex { .. } => Some(FlattenIds::_create_as_point(node_id)),
+                Node::Group { children, .. } => {
+                    for child_node_id in children.iter() {
+                        acc.extend(self._flatten_children_id(child_node_id));
+                    }
+
+                    Some(FlattenIds::_create_as_group(node_id, acc))
+                }
+            }
+        } else {
+            None
+        }
+    }
+
+    /// helper for flatten_children_id function.
+    /// if not exist at node_id, get Node as Vertex
+    fn _flatten_children_id<'a>(&'a self, node_id: &'a Id) -> Vec<&'a Id> {
+        if let Some((child_node_id, child_node)) = self.inner.get_key_value(node_id) {
+            match child_node {
+                Node::Vertex { .. } => {
+                    vec![child_node_id]
+                }
+                Node::Group { children, .. } => {
+                    let mut result: Vec<&'a Id> = vec![child_node_id];
+                    for child_id in children.iter() {
+                        result.extend(self._flatten_children_id(child_id));
+                    }
+                    result
+                }
+            }
+        } else {
+            vec![node_id]
+        }
+    }
+
+    /// Flatten children node ids of the node with illegal check.
+    /// If not exist, do flatten with replace children. But, if faiol flatten children id then return Err.
+    pub fn flatten_children_id_with_check<'a>(
+        &'a self,
+        parent_id: &'a Option<Id>,
+        node_id: &'a Id,
+        illegal_ids: &[&'a Id],
+        use_root_check: bool,
+    ) -> Result<Option<FlattenIds<'a, Id>>, ()> {
+        if use_root_check {
+            if let Some(_parent_id) = parent_id {
+                if _parent_id == node_id {
+                    return Err(());
+                }
+            }
+            if illegal_ids.contains(&node_id) {
+                return Err(());
+            }
+        }
+
+        if let Some((node_id, node)) = self.inner.get_key_value(node_id) {
+            match node {
+                Node::Vertex {
+                    parent: node_parent_id,
+                    ..
+                } => {
+                    if node_parent_id != &None && node_parent_id != parent_id {
+                        return Err(());
+                    }
+
+                    Ok(Some(FlattenIds::_create_as_point(node_id)))
+                }
+                Node::Group {
+                    parent: node_parent_id,
+                    children,
+                    ..
+                } => {
+                    if node_parent_id != &None && node_parent_id != parent_id {
+                        return Err(());
+                    }
+
+                    let mut acc: Vec<&'a Id> = Vec::new();
+                    for child_node_id in children.iter() {
+                        acc.extend(self._flatten_children_id_with_check(
+                            parent_id,
+                            child_node_id,
+                            &illegal_ids,
+                        )?);
+                    }
+
+                    Ok(Some(FlattenIds::_create_as_group(node_id, acc)))
+                }
+            }
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// helper for flatten_children_id function with replace at the id.
+    /// if not exist at node_id, get Node as Vertex
+    fn _flatten_children_id_with_check<'a>(
+        &'a self,
+        parent_id: &'a Option<Id>,
+        node_id: &'a Id,
+        illegal_ids: &[&'a Id],
+    ) -> Result<Vec<&'a Id>, ()> {
+        if let Some(_parent_id) = parent_id {
+            if _parent_id == node_id {
+                return Err(());
+            }
+        }
+
+        if illegal_ids.contains(&node_id) {
+            return Err(());
+        }
+
+        if let Some((node_id, node)) = self.inner.get_key_value(node_id.borrow()) {
+            match node {
+                Node::Vertex { .. } => Ok(vec![node_id]),
+                Node::Group { children, .. } => {
+                    let mut result: Vec<&'a Id> = vec![node_id];
+                    for child_id in children.iter() {
+                        result.extend(self._flatten_children_id_with_check(
+                            parent_id,
+                            child_id,
+                            illegal_ids,
+                        )?);
+                    }
+                    Ok(result)
+                }
+            }
+        } else {
+            Ok(vec![node_id])
+        }
+    }
+
     /// to iterator for node
-    pub fn iter<'a>(
+    pub fn node_iter<'a>(
         &'a self,
     ) -> NodeIter<'a, Id, impl Iterator<Item = (&'a Id, model::Node<'a, Id>)>> {
         let iter = self
@@ -193,31 +677,139 @@ impl<Id: Identity> NodeStore<Id> {
         NodeIter::new(iter)
     }
 
+    /// to iterator for node point
+    pub fn vertex_node_iter<'a>(
+        &'a self,
+    ) -> VertexNodeIter<'a, Id, impl Iterator<Item = (&'a Id, model::VertexNode<'a, Id>)>> {
+        let iter = self
+            .inner
+            .iter()
+            .filter_map(|(node_id, node)| match node.as_vertex_model() {
+                Some(e) => Some((node_id, e)),
+                None => None,
+            });
+
+        VertexNodeIter::new(iter)
+    }
+
+    /// to iterator for node group
+    pub fn group_node_iter<'a>(
+        &'a self,
+    ) -> GroupNodeIter<'a, Id, impl Iterator<Item = (&'a Id, model::GroupNode<'a, Id>)>> {
+        let iter = self
+            .inner
+            .iter()
+            .filter_map(|(node_id, node)| match node.as_group_model() {
+                Some(e) => Some((node_id, e)),
+                None => None,
+            });
+
+        GroupNodeIter::new(iter)
+    }
+
     // ---
     // setter
     // ---
-    /// clear all nodes
-    pub fn clear(&mut self) {
-        self.inner.clear();
+
+    /// insert node and get old node
+    pub fn insert_node(&mut self, node_id: Id, node: Node<Id>) -> Option<Node<Id>> {
+        self.inner.insert(node_id, node)
     }
 
-    /// clear all nodes
-    pub fn clear_all_incidence(&mut self) {
-        for node in self.inner.values_mut() {
-            node.clear_incidences();
+    /// set node as vertex at node_id, if not exist
+    pub(crate) fn _set_vertex_if_not_exist(&mut self, node_id: Id) {
+        self._set_vertex_with_weight_if_not_exist(node_id, 1)
+    }
+
+    /// set node as vertex at node_id with weight, if not exist
+    pub(crate) fn _set_vertex_with_weight_if_not_exist(&mut self, node_id: Id, weight: i16) {
+        let entry_node = self.inner.entry(node_id);
+        entry_node.or_insert_with(|| Node::vertex_with_weight(weight));
+    }
+
+    /// override to vertex node at node_id
+    pub fn override_as_vertex(&mut self, node_id: Id) {
+        self.override_as_vertex_with_weight(node_id, 1)
+    }
+
+    /// override to vertex node at node_id with weight
+    pub fn override_as_vertex_with_weight(&mut self, node_id: Id, weight: i16) {
+        let entry_node = self.inner.entry(node_id);
+        match entry_node {
+            Entry::Occupied(mut occupied) => {
+                let old = occupied.insert(Node::vertex_with_weight(weight));
+                match old {
+                    Node::Vertex {
+                        parent: parent,
+                        incidences,
+                        ..
+                    } => {
+                        let inserted_node = occupied.get_mut();
+                        if let Some(_parent) = parent {
+                            inserted_node.set_parent(_parent);
+                        }
+                        inserted_node.replace_incidences(incidences);
+                    }
+                    Node::Group {
+                        parent: parent,
+                        children,
+                        incidences,
+                        ..
+                    } => {
+                        let inserted_node = occupied.get_mut();
+                        if let Some(_parent) = parent {
+                            inserted_node.set_parent(_parent);
+                        }
+                        inserted_node.replace_incidences(incidences);
+
+                        for child_id in children.iter() {
+                            if let Some(child) = self.inner.get_mut(child_id) {
+                                child.remove_parent();
+                            }
+                        }
+                    }
+                }
+            }
+            Entry::Vacant(vacant) => {
+                vacant.insert(Node::vertex_with_weight(weight));
+            }
         }
     }
 
-    /// Add node if not exist. If exist, not replace.
-    pub fn set_as_node(&mut self, node_id: Id) {
-        let entry = self.inner.entry(node_id);
-        entry.or_insert_with(|| Node::create());
+    /// replace nodes's parent id for node_ids
+    pub fn replace_parent_at_ids(&mut self, parent_id: Id, node_ids: &[Id]) {
+        for node_id in node_ids.iter() {
+            if let Some(node) = self.inner.get_mut(node_id) {
+                node.set_parent(parent_id.clone());
+            }
+        }
+    }
+
+    /// replace node's childre ids to new id with return replaced node
+    pub fn replace_children_id_to_id<B: ?Sized>(
+        &mut self,
+        target_id: &B,
+        from_ids: &[Id],
+        to_id: Id,
+    ) -> Option<&Node<Id>>
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        self.inner.get_mut(target_id).map(|parent| {
+            parent._remove_children(from_ids);
+            parent.add_child(to_id);
+
+            // remove mutable
+            let parent: &Node<Id> = parent;
+            parent
+        })
     }
 
     /// add incidence for the node
     pub fn add_incidence(&mut self, node_id: Id, incidence: Incidence<Id>) {
-        let entry_node = self.inner.entry(node_id).or_insert_with(|| Node::create());
-        entry_node.incidences.push(incidence);
+        let node = self.inner.entry(node_id).or_insert_with(|| Node::vertex());
+        node.get_incidences_as_mut().push(incidence);
     }
 
     /// add incidence for each node
@@ -235,6 +827,18 @@ impl<Id: Identity> NodeStore<Id> {
     // delete
     // ---
 
+    /// clear all nodes
+    pub fn clear(&mut self) {
+        self.inner.clear();
+    }
+
+    /// clear all nodes
+    pub fn clear_all_incidence(&mut self) {
+        for node in self.inner.values_mut() {
+            node.clear_incidences();
+        }
+    }
+
     /// remove and get node at node_id
     pub fn pop_node<B: ?Sized>(&mut self, node_id: &B) -> Option<Node<Id>>
     where
@@ -251,6 +855,25 @@ impl<Id: Identity> NodeStore<Id> {
         B: Identity,
     {
         self.inner.remove_entry(node_id)
+    }
+
+    /// remove node's childre ids
+    pub fn remove_children_id_to_id<B: ?Sized>(
+        &mut self,
+        target_id: &B,
+        from_ids: &[Id],
+    ) -> Option<&Node<Id>>
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        self.inner.get_mut(target_id).map(|parent| {
+            parent._remove_children(from_ids);
+
+            // remove mutable
+            let parent: &Node<Id> = parent;
+            parent
+        })
     }
 
     /// Remove incidence edge whose edge id is in specified.

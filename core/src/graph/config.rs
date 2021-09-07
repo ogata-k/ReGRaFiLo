@@ -113,6 +113,9 @@ pub struct GraphConfig {
     /// If set the mode and cannot use multiple edge, replace same edge.
     can_replace: bool,
 
+    /// the optional option is a flag to do or not to do create edge's incidence node or child node for a group as vertex node if not exist
+    create_not_exist_vertex_node: bool,
+
     // ---
     // Kind: Graph
     // usually use in graph or directed graph.
@@ -124,7 +127,7 @@ pub struct GraphConfig {
     /// this option is a flag which we can use check to make multiple edge
     multiple_edge: bool,
     /// this option is a flag which we can group node
-    node_group: bool,
+    use_group_node: bool,
 
     // ---
     // Kind: HyperGraph
@@ -146,15 +149,15 @@ impl fmt::Display for GraphConfig {
         match &graph_type {
             GraphType::UndirectedGraph => f.write_fmt(format_args!(
                 "{{kind: {}, can_multiple: {}, node_group: {}}}",
-                kind, self.multiple_edge, self.node_group
+                kind, self.multiple_edge, self.use_group_node
             )),
             GraphType::DirectedGraph => f.write_fmt(format_args!(
                 "{{kind: {}, can_multiple: {}, node_group: {}}}",
-                kind, self.multiple_edge, self.node_group
+                kind, self.multiple_edge, self.use_group_node
             )),
             GraphType::MixedGraph => f.write_fmt(format_args!(
                 "{{kind: {}, can_multiple: {}, node_group: {}}}",
-                kind, self.multiple_edge, self.node_group
+                kind, self.multiple_edge, self.use_group_node
             )),
             GraphType::UndirectedHyperGraph => f.write_fmt(format_args!(
                 "{{kind: {}, can_hyper_multiple: {}}}",
@@ -178,45 +181,48 @@ impl GraphConfig {
     // ---
 
     /// construtor for Graph
-    pub fn undirected_graph(can_multiple_edge: bool, node_grouping: bool) -> Self {
+    pub fn undirected_graph(can_multiple_edge: bool, use_gruoup_node: bool) -> Self {
         Self {
             kind: GraphKind::Graph,
+            create_not_exist_vertex_node: false,
             can_replace: false,
             undirected_edge: true,
             directed_edge: false,
             multiple_edge: can_multiple_edge,
-            node_group: node_grouping,
-            undirected_hyper_edge: node_grouping,
+            use_group_node: use_gruoup_node,
+            undirected_hyper_edge: false,
             directed_hyper_edge: false,
             multiple_hyper_edge: false,
         }
     }
 
     /// construtor for Directed Graph
-    pub fn directed_graph(can_multiple_edge: bool, node_grouping: bool) -> Self {
+    pub fn directed_graph(can_multiple_edge: bool, use_group_node: bool) -> Self {
         Self {
             kind: GraphKind::Graph,
+            create_not_exist_vertex_node: false,
             can_replace: false,
             undirected_edge: false,
             directed_edge: true,
             multiple_edge: can_multiple_edge,
-            node_group: node_grouping,
-            undirected_hyper_edge: node_grouping,
+            use_group_node: use_group_node,
+            undirected_hyper_edge: false,
             directed_hyper_edge: false,
             multiple_hyper_edge: false,
         }
     }
 
     /// construtor for Mixed Graph
-    pub fn mixed_graph(can_multiple_edge: bool, node_grouping: bool) -> Self {
+    pub fn mixed_graph(can_multiple_edge: bool, use_group_node: bool) -> Self {
         Self {
             kind: GraphKind::Graph,
+            create_not_exist_vertex_node: false,
             can_replace: false,
             undirected_edge: true,
             directed_edge: true,
             multiple_edge: can_multiple_edge,
-            node_group: node_grouping,
-            undirected_hyper_edge: node_grouping,
+            use_group_node: use_group_node,
+            undirected_hyper_edge: false,
             directed_hyper_edge: false,
             multiple_hyper_edge: false,
         }
@@ -226,11 +232,12 @@ impl GraphConfig {
     pub fn undirected_hyper_graph(can_multiple_hyper_edge: bool) -> Self {
         Self {
             kind: GraphKind::HyperGraph,
+            create_not_exist_vertex_node: false,
             can_replace: false,
             undirected_edge: false,
             directed_edge: false,
             multiple_edge: false,
-            node_group: false,
+            use_group_node: false,
             undirected_hyper_edge: true,
             directed_hyper_edge: false,
             multiple_hyper_edge: can_multiple_hyper_edge,
@@ -241,11 +248,12 @@ impl GraphConfig {
     pub fn directed_hyper_graph(can_multiple_hyper_edge: bool) -> Self {
         Self {
             kind: GraphKind::HyperGraph,
+            create_not_exist_vertex_node: false,
             can_replace: false,
             undirected_edge: false,
             directed_edge: false,
             multiple_edge: false,
-            node_group: false,
+            use_group_node: false,
             undirected_hyper_edge: false,
             directed_hyper_edge: true,
             multiple_hyper_edge: can_multiple_hyper_edge,
@@ -256,11 +264,12 @@ impl GraphConfig {
     pub fn mixed_hyper_graph(can_multiple_hyper_edge: bool) -> Self {
         Self {
             kind: GraphKind::HyperGraph,
+            create_not_exist_vertex_node: false,
             can_replace: false,
             undirected_edge: false,
             directed_edge: false,
             multiple_edge: false,
-            node_group: false,
+            use_group_node: false,
             undirected_hyper_edge: true,
             directed_hyper_edge: true,
             multiple_hyper_edge: can_multiple_hyper_edge,
@@ -282,12 +291,13 @@ impl GraphConfig {
         match self {
             Self {
                 kind: GraphKind::Graph,
+                create_not_exist_vertex_node: _,
                 can_replace: _,
                 undirected_edge: is_undirected,
                 directed_edge: is_directed,
                 multiple_edge: _,
-                node_group: _,
-                undirected_hyper_edge: _,
+                use_group_node: _,
+                undirected_hyper_edge: false,
                 directed_hyper_edge: false,
                 multiple_hyper_edge: false,
             } => match (is_undirected, is_directed) {
@@ -298,11 +308,12 @@ impl GraphConfig {
             },
             Self {
                 kind: GraphKind::HyperGraph,
+                create_not_exist_vertex_node: _,
                 can_replace: _,
                 undirected_edge: false,
                 directed_edge: false,
                 multiple_edge: false,
-                node_group: false,
+                use_group_node: false,
                 undirected_hyper_edge: is_undirected_hyper,
                 directed_hyper_edge: is_directed_hyper,
                 multiple_hyper_edge: _,
@@ -326,6 +337,12 @@ impl GraphConfig {
         self
     }
 
+    /// set to the mode to do create edge's incidence node or child node for a group as vertex node if not exist
+    pub fn to_create_not_exist_vertex_node(mut self) -> Self {
+        self.create_not_exist_vertex_node = true;
+        self
+    }
+
     // ---
     // checker
     // ---
@@ -333,6 +350,11 @@ impl GraphConfig {
     /// If set the mode and cannot use multiple edge, replace same edge.
     pub fn can_replace_same_edge(&self) -> bool {
         self.can_replace
+    }
+
+    /// check the mode to do create edge's incidence node or child node for a group as vertex node if not exist
+    pub fn can_create_not_exist_vertex_node(&self) -> bool {
+        self.create_not_exist_vertex_node
     }
 
     /// check configure is for Graph
@@ -409,12 +431,12 @@ impl GraphConfig {
 
     /// check graph can create node grouping
     #[inline]
-    pub fn can_use_node_group(&self) -> bool {
+    pub fn can_use_group_node(&self) -> bool {
         let graph_type = self.get_type();
 
-        (graph_type.is_undirected_graph() && self.undirected_hyper_edge && self.node_group)
-            || (graph_type.is_directed_graph() && self.undirected_hyper_edge && self.node_group)
-            || (graph_type.is_mixed_graph() && self.undirected_hyper_edge && self.node_group)
+        (graph_type.is_undirected_graph() && self.use_group_node)
+            || (graph_type.is_directed_graph() && self.use_group_node)
+            || (graph_type.is_mixed_graph() && self.use_group_node)
     }
 
     /// check graph can use undirected hyper edge

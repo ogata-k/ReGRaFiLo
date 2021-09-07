@@ -7,9 +7,9 @@ fn main() {
     let can_multiple = true;
     let config = GraphConfig::mixed_hyper_graph(can_multiple);
     let mut graph: Graph<u8> = Graph::create_by_config(config);
-    graph.add_node(1);
-    graph.add_node(2);
-    graph.add_node(3);
+    graph.add_vertex_node(1);
+    graph.add_vertex_node(2);
+    graph.add_vertex_node(3);
 
     // fail insert edge
     // graph.add_undirected_edge(1, 1, 2).unwrap();
