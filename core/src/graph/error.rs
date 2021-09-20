@@ -118,7 +118,7 @@ pub enum GraphError<Id: Identity> {
     /// specified children as children for the group is not exist when not use the mode to create not exist vertex node.
     ///
     /// arg: group_node_id, child_node_ids
-    NotExistChildren(Id, Vec<Id>),
+    NotExistChildrenCannotMakeEdge(Id, Vec<Id>),
 
     // Edge
     /// already edge exist at the id.
@@ -126,15 +126,21 @@ pub enum GraphError<Id: Identity> {
     /// arg: edge_id
     AlreadyExistEdgeAtId(Id),
     /// not support edge error
+    ///
     /// arg: edge_id, edge
     EdgeNotSupported(Id, ErrorEdge<Id>),
     /// not available edge error
+    ///
     /// arg: edge_id, edge
     IllegalEdge(Id, ErrorEdge<Id>),
     /// exist same edge error
-    /// arg: edge_id, edge
-    ExistSameEdge(Id, ErrorEdge<Id>),
-    NotSameNodeGroupHaveIntersect(Id, ErrorEdge<Id>),
+    ///
+    /// arg: edge_id, edge, same_edge_ids
+    ExistSameEdge(Id, ErrorEdge<Id>, Vec<Id>),
+    /// specified node ids as incidence node for the edge has illegal status.
+    ///
+    /// arg: edge_id, node_ids
+    SpecifiedIllegalIncidenceNodeIds(Id, ErrorEdge<Id>, Vec<Id>),
 }
 
 impl<Id: Identity> fmt::Display for GraphError<Id> {
@@ -201,7 +207,7 @@ impl<Id: Identity> fmt::Display for GraphError<Id> {
                 }
                 write!(f, "}} have illegal children for the group {:?}.", group_node_id)
             },
-            NotExistChildren(group_node_id, child_node_ids) => {
+            NotExistChildrenCannotMakeEdge(group_node_id, child_node_ids) => {
                 write!(f, "Specified children {{")?;
                 for (index, child_node_id) in child_node_ids.iter().enumerate() {
                     if index == 0 {
@@ -227,16 +233,38 @@ impl<Id: Identity> fmt::Display for GraphError<Id> {
             IllegalEdge(edge_id, edge) => {
                 write!(f, "An edge {} has illegal parameter at the id {:?}.",edge,  edge_id)
             }
-            ExistSameEdge(edge_id, edge) =>write!(
-                f,
-                "Cannot insert the edge {} at the id {:?} because of exist same edge.",
-                edge, edge_id
-            ),
-            NotSameNodeGroupHaveIntersect(edge_id, edge) => write!(
-                f,
-                "Already node group has intersection to the edge {} at the id {:?} as node grouping.",
-                edge, edge_id
-            ),
+            ExistSameEdge(edge_id, edge, same_edge_ids) =>{
+                write!(
+                    f,
+                   "Cannot insert the edge {} at the id {:?} because exist same edges at the ids {{",
+                   edge,
+                   edge_id
+                )?;
+                for (index, same_edge_id) in same_edge_ids.iter().enumerate() {
+                    if index == 0 {
+                        write!(f, "{:?}", same_edge_id)?;
+                    } else {
+                        write!(f, ", {:?}", same_edge_id)?;
+                    }
+                }
+                write!(f, "}}.")
+            },
+            SpecifiedIllegalIncidenceNodeIds(edge_id, edge, incidence_node_ids) => {
+                write!(
+                    f,
+                    "Cannot create the edge {} at the id {:?} because fail resolve node ids {{",
+                    edge,
+                    edge_id
+                )?;
+                for (index, node_id) in incidence_node_ids.iter().enumerate() {
+                    if index == 0 {
+                        write!(f, "{:?}", node_id)?;
+                    } else {
+                        write!(f, ", {:?}", node_id)?;
+                    }
+                }
+                write!(f, "}}.")
+            },
         }
     }
 }

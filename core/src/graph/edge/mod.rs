@@ -296,11 +296,6 @@ impl<Id: Identity> Edge<Id> {
     }
 
     /// get node_ids from the edge's incidenes
-    pub fn get_incidence_node_ids(&self) -> Vec<Id> {
-        self.clone().incidence_into_node_ids()
-    }
-
-    /// get node_ids from the edge's incidenes
     pub fn get_incidence_node_ids_as_ref(&self) -> Vec<&Id> {
         match self {
             Edge::Undirected {
@@ -322,6 +317,45 @@ impl<Id: Identity> Edge<Id> {
                 result.extend(target_ids);
                 result
             }
+        }
+    }
+
+    /// get source node ids
+    ///
+    /// If undirected edge, then return empty vector.
+    pub fn get_source_ids(&self) -> Vec<&Id> {
+        use Edge::*;
+
+        match self {
+            Undirected { .. } | UndirectedHyper { .. } => Vec::new(),
+            Directed { source_id,  .. } => vec![source_id],
+            DirectedHyper { source_ids, .. } => source_ids.iter().collect(),
+        }
+    }
+
+    /// get target node ids
+    ///
+    /// If undirected edge, then return empty vector.
+    pub fn get_target_ids(&self) -> Vec<&Id> {
+        use Edge::*;
+
+        match self {
+            Undirected { .. } | UndirectedHyper { .. } => Vec::new(),
+            Directed { target_id,  .. } => vec![target_id],
+            DirectedHyper { target_ids, .. } => target_ids.iter().collect(),
+        }
+    }
+
+    /// get source and target node ids.
+    ///
+    /// If directed edge, then return empty vector.
+    pub fn get_source_target_ids(&self) -> Vec<&Id> {
+        use Edge::*;
+
+        match self {
+            Undirected { ids, .. } => ids.iter().collect(),
+            UndirectedHyper { ids, .. } => ids.iter().collect(),
+            Directed { .. } | DirectedHyper { .. } => Vec::new(),
         }
     }
 
@@ -583,8 +617,8 @@ impl<Id: Identity> EdgeStore<Id> {
     // setter
     // ---
 
-    /// add edge with pop old edge
-    pub fn add_edge_with_pop_old(&mut self, edge_id: Id, edge: Edge<Id>) -> Option<Edge<Id>> {
+    /// insert edge
+    pub fn insert_edge(&mut self, edge_id: Id, edge: Edge<Id>) -> Option<Edge<Id>> {
         self.inner.insert(edge_id, edge)
     }
 
@@ -625,33 +659,6 @@ impl<Id: Identity> EdgeStore<Id> {
         B: Identity,
     {
         self.inner.remove(edge_id)
-    }
-
-    /// delete edge with same edge and get deleted edge_ids
-    /// return value is vector of (node_id, edge_id)
-    pub fn remove_by_same_edge_with_collect_removed(&mut self, edge: &Edge<Id>) -> Vec<(Id, Id)> {
-        // @todo drain_filterを使った方法に置き換える
-        let will_delete_node_ids_edge_ids: Vec<(Id, Id)> = self
-            .inner
-            .iter()
-            .filter(|(_, stored_edge)| (*stored_edge).is_equal_to_without_weight(edge))
-            .map(|(stored_edge_id, edge)| {
-                let converted: Vec<(Id, Id)> = edge
-                    .get_incidence_node_ids()
-                    .into_iter()
-                    .map(|node_id| (node_id, stored_edge_id.clone()))
-                    .collect();
-
-                converted
-            })
-            .flatten()
-            .collect();
-
-        for (_, delete_edge_id) in will_delete_node_ids_edge_ids.iter() {
-            self.inner.remove_entry(delete_edge_id);
-        }
-
-        will_delete_node_ids_edge_ids
     }
 
     /// remove node_id and node's incidences from edge store

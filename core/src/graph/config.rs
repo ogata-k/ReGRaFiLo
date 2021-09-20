@@ -111,7 +111,7 @@ pub struct GraphConfig {
 
     /// this optional option is a flag remove same edge when insert.
     /// If set the mode and cannot use multiple edge, replace same edge.
-    can_replace: bool,
+    replace_same_edge: bool,
 
     /// the optional option is a flag to do or not to do create edge's incidence node or child node for a group as vertex node if not exist
     create_not_exist_vertex_node: bool,
@@ -185,7 +185,7 @@ impl GraphConfig {
         Self {
             kind: GraphKind::Graph,
             create_not_exist_vertex_node: false,
-            can_replace: false,
+            replace_same_edge: false,
             undirected_edge: true,
             directed_edge: false,
             multiple_edge: can_multiple_edge,
@@ -201,7 +201,7 @@ impl GraphConfig {
         Self {
             kind: GraphKind::Graph,
             create_not_exist_vertex_node: false,
-            can_replace: false,
+            replace_same_edge: false,
             undirected_edge: false,
             directed_edge: true,
             multiple_edge: can_multiple_edge,
@@ -217,7 +217,7 @@ impl GraphConfig {
         Self {
             kind: GraphKind::Graph,
             create_not_exist_vertex_node: false,
-            can_replace: false,
+            replace_same_edge: false,
             undirected_edge: true,
             directed_edge: true,
             multiple_edge: can_multiple_edge,
@@ -233,7 +233,7 @@ impl GraphConfig {
         Self {
             kind: GraphKind::HyperGraph,
             create_not_exist_vertex_node: false,
-            can_replace: false,
+            replace_same_edge: false,
             undirected_edge: false,
             directed_edge: false,
             multiple_edge: false,
@@ -249,7 +249,7 @@ impl GraphConfig {
         Self {
             kind: GraphKind::HyperGraph,
             create_not_exist_vertex_node: false,
-            can_replace: false,
+            replace_same_edge: false,
             undirected_edge: false,
             directed_edge: false,
             multiple_edge: false,
@@ -265,7 +265,7 @@ impl GraphConfig {
         Self {
             kind: GraphKind::HyperGraph,
             create_not_exist_vertex_node: false,
-            can_replace: false,
+            replace_same_edge: false,
             undirected_edge: false,
             directed_edge: false,
             multiple_edge: false,
@@ -292,7 +292,7 @@ impl GraphConfig {
             Self {
                 kind: GraphKind::Graph,
                 create_not_exist_vertex_node: _,
-                can_replace: _,
+                replace_same_edge: _,
                 undirected_edge: is_undirected,
                 directed_edge: is_directed,
                 multiple_edge: _,
@@ -309,7 +309,7 @@ impl GraphConfig {
             Self {
                 kind: GraphKind::HyperGraph,
                 create_not_exist_vertex_node: _,
-                can_replace: _,
+                replace_same_edge: _,
                 undirected_edge: false,
                 directed_edge: false,
                 multiple_edge: false,
@@ -333,7 +333,7 @@ impl GraphConfig {
     /// to replace same edge mode when insert edge
     /// If set the mode and cannot use multiple edge, replace same edge.
     pub fn to_replace_same_edge_mode(mut self) -> Self {
-        self.can_replace = true;
+        self.replace_same_edge = true;
         self
     }
 
@@ -349,7 +349,7 @@ impl GraphConfig {
     /// check can replace same edge when insert edge.
     /// If set the mode and cannot use multiple edge, replace same edge.
     pub fn can_replace_same_edge(&self) -> bool {
-        self.can_replace
+        self.replace_same_edge
     }
 
     /// check the mode to do create edge's incidence node or child node for a group as vertex node if not exist

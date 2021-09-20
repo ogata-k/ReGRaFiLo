@@ -354,6 +354,36 @@ impl<Id: Identity> Graph<Id> {
     // edge
     // ---
 
+    /// get edge ids which have same incidence nodes
+    pub fn get_same_edge_ids(&self, edge: &Edge<Id>) -> Vec<Id> {
+        match edge.get_incidence_node_ids_as_ref().first() {
+            None => vec![],
+            Some(node_id) => {
+                return match self.nodes.get_node(node_id) {
+                    None => Vec::new(),
+                    Some(node) => {
+                        let will_check_edge_ids: Vec<&Id> = node
+                            .get_incidences()
+                            .iter()
+                            .map(|incidence| incidence.get_edge_id())
+                            .collect();
+                        let mut result = Vec::new();
+
+                        for edge_id in will_check_edge_ids.iter() {
+                            if let Some(other_edge) = self.edges.get_edge(*edge_id) {
+                                if edge.is_equal_to_without_weight(other_edge) {
+                                    result.push((*edge_id).clone());
+                                }
+                            }
+                        }
+
+                        result
+                    }
+                };
+            }
+        }
+    }
+
     /// get edge at edge_id
     pub fn get_edge<'a, B: ?Sized>(&'a self, edge_id: &B) -> Option<model::Edge<'a, Id>>
     where
@@ -531,12 +561,12 @@ impl<Id: Identity> Graph<Id> {
         node_id: Id,
         weight: i16,
     ) -> GraphItemExistedResult<Id> {
-        self._add_vertex_node_with_weight_or_get_node_id_if_old_exist(parent_id, node_id, weight)
+        self._add_vertex_node_with_weight_if_old_not_exist(parent_id, node_id, weight)
     }
 
     /// add vertex node with weight.
     /// If already exist at the id, then will not vertex node and return the node_id.
-    fn _add_vertex_node_with_weight_or_get_node_id_if_old_exist(
+    fn _add_vertex_node_with_weight_if_old_not_exist(
         &mut self,
         parent_id: Option<Id>,
         node_id: Id,
@@ -602,15 +632,13 @@ impl<Id: Identity> Graph<Id> {
         weight: i16,
         children: Vec<Id>,
     ) -> GraphItemExistedResult<Id> {
-        self._add_group_node_with_weight_or_get_node_id_if_old_exist(
-            parent_id, node_id, weight, children,
-        )
+        self._add_group_node_with_weight_if_old_not_exist(parent_id, node_id, weight, children)
     }
 
     /// add group node with weight.
     /// If already exist at the id, then will not create group node and return the node id.
     /// If use the mode to create not exist vertex node and children is available, create not exist child as vertex node.
-    fn _add_group_node_with_weight_or_get_node_id_if_old_exist(
+    fn _add_group_node_with_weight_if_old_not_exist(
         &mut self,
         parent_id: Option<Id>,
         node_id: Id,
@@ -649,9 +677,12 @@ impl<Id: Identity> Graph<Id> {
 
         // check illegal children
         let not_exist_child_ids =
-            self._check_children_can_be_grouping(&parent_id, &node_id, &child_node_ids)?;
+            self._check_children_can_be_made_group(&parent_id, &node_id, &child_node_ids)?;
         if !not_exist_child_ids.is_empty() && !config.can_create_not_exist_vertex_node() {
-            return Err(GraphError::NotExistChildren(node_id, not_exist_child_ids));
+            return Err(GraphError::NotExistChildrenCannotMakeEdge(
+                node_id,
+                not_exist_child_ids,
+            ));
         }
 
         // check and modify parent
@@ -704,106 +735,111 @@ impl<Id: Identity> Graph<Id> {
         Ok(None)
     }
 
-    /// Add undirected edge without weight. If exist at the edge_id, not replace when replace is false.
-    /// If inserted at the edge_id, replace insert at the edge_id
+    /// add undirected edge.
+    /// If already exist at the id, then will not create undirected edge and return the edge id.
+    /// If use the mode to create not exist vertex node and children is available, create not exist incidence nodes as vertex node.
     pub fn add_undirected_edge(
         &mut self,
         edge_id: Id,
         node_id1: Id,
         node_id2: Id,
-    ) -> Result<(), GraphError<Id>> {
-        self.add_edge(edge_id, Edge::undirected(node_id1, node_id2))
+    ) -> GraphItemExistedResult<Id> {
+        self.add_undirected_edge_with_weight(edge_id, node_id1, node_id2, 1)
     }
 
-    /// Add undirected edge with weight. If exist at the edge_id, not replace when replace is false.
-    /// If inserted at the edge_id, replace insert at the edge_id
+    /// add undirected edge with weight.
+    /// If already exist at the id, then will not create undirected edge and return the edge id.
+    /// If use the mode to create not exist vertex node and children is available, create not exist incidence nodes as vertex node.
     pub fn add_undirected_edge_with_weight(
         &mut self,
         edge_id: Id,
         node_id1: Id,
         node_id2: Id,
         weight: i16,
-    ) -> Result<(), GraphError<Id>> {
-        self.add_edge(
+    ) -> GraphItemExistedResult<Id> {
+        self._add_edge_with_weight_if_old_not_exist(
             edge_id,
             Edge::undirected_with_weight(node_id1, node_id2, weight),
         )
     }
 
-    /// Add directed edge without weight. If exist at the edge_id, not replace when replace is false.
-    /// If inserted at the edge_id, replace insert at the edge_id
+    /// add directed edge.
+    /// If already exist at the id, then will not create directed edge and return the edge id.
+    /// If use the mode to create not exist vertex node and children is available, create not exist incidence nodes as vertex node.
     pub fn add_directed_edge(
         &mut self,
         edge_id: Id,
         source_node_id: Id,
         target_node_id: Id,
-    ) -> Result<(), GraphError<Id>> {
-        self.add_edge(edge_id, Edge::directed(source_node_id, target_node_id))
+    ) -> GraphItemExistedResult<Id> {
+        self.add_directed_edge_with_weight(edge_id, source_node_id, target_node_id, 1)
     }
 
-    /// Add directed edge with weight. If exist at the edge_id, not replace when replace is false.
-    /// If inserted at the edge_id, replace insert at the edge_id
+    /// add directed edge with weight.
+    /// If already exist at the id, then will not create directed edge and return the edge id.
+    /// If use the mode to create not exist vertex node and children is available, create not exist incidence nodes as vertex node.
     pub fn add_directed_edge_with_weight(
         &mut self,
         edge_id: Id,
         source_node_id: Id,
         target_node_id: Id,
         weight: i16,
-    ) -> Result<(), GraphError<Id>> {
-        self.add_edge(
+    ) -> GraphItemExistedResult<Id> {
+        self._add_edge_with_weight_if_old_not_exist(
             edge_id,
             Edge::directed_with_weight(source_node_id, target_node_id, weight),
         )
     }
 
-    /// Add undirected hyper edge without weight. If exist at the edge_id, not replace when replace is false.
-    /// If inserted at the edge_id, replace insert at the edge_id
+    /// add undirected hyper edge.
+    /// If already exist at the id, then will not create undirected hyper edge and return the edge id.
+    /// If use the mode to create not exist vertex node and children is available, create not exist incidence nodes as vertex node.
     pub fn add_undirected_hyper_edge(
         &mut self,
         edge_id: Id,
         node_ids: Vec<Id>,
-    ) -> Result<(), GraphError<Id>> {
-        self.add_edge(edge_id, Edge::undirected_hyper(node_ids))
+    ) -> GraphItemExistedResult<Id> {
+        self.add_undirected_hyper_edge_with_weight(edge_id, node_ids, 1)
     }
 
-    /// Add undirected hyper edge with weight. If exist at the edge_id, not replace when replace is false.
-    /// If inserted at the edge_id, replace insert at the edge_id
+    /// add undirected hyper edge with weight.
+    /// If already exist at the id, then will not create undirected hyper edge and return the edge id.
+    /// If use the mode to create not exist vertex node and children is available, create not exist incidence nodes as vertex node.
     pub fn add_undirected_hyper_edge_with_weight(
         &mut self,
         edge_id: Id,
         node_ids: Vec<Id>,
         weight: i16,
-    ) -> Result<(), GraphError<Id>> {
-        self.add_edge(
+    ) -> GraphItemExistedResult<Id> {
+        self._add_edge_with_weight_if_old_not_exist(
             edge_id,
             Edge::undirected_hyper_with_weight(node_ids, weight),
         )
     }
 
-    /// Add directed hyper edge without weight. If exist at the edge_id, not replace when replace is false.
-    /// If inserted at the edge_id, replace insert at the edge_id
+    /// add directed hyper edge.
+    /// If already exist at the id, then will not create directed hyper edge and return the edge id.
+    /// If use the mode to create not exist vertex node and children is available, create not exist incidence nodes as vertex node.
     pub fn add_directed_hyper_edge(
         &mut self,
         edge_id: Id,
         source_node_ids: Vec<Id>,
         target_node_ids: Vec<Id>,
-    ) -> Result<(), GraphError<Id>> {
-        self.add_edge(
-            edge_id,
-            Edge::directed_hyper(source_node_ids, target_node_ids),
-        )
+    ) -> GraphItemExistedResult<Id> {
+        self.add_directed_hyper_edge_with_weight(edge_id, source_node_ids, target_node_ids, 1)
     }
 
-    /// Add directed hyper edge with weight. If exist at the edge_id, not replace when replace is false.
-    /// If inserted at the edge_id, replace insert at the edge_id
+    /// add directed hyper edge with weight.
+    /// If already exist at the id, then will not create directed hyper edge and return the edge id.
+    /// If use the mode to create not exist vertex node and children is available, create not exist incidence nodes as vertex node.
     pub fn add_directed_hyper_edge_with_weight(
         &mut self,
         edge_id: Id,
         source_node_ids: Vec<Id>,
         target_node_ids: Vec<Id>,
         weight: i16,
-    ) -> Result<(), GraphError<Id>> {
-        self.add_edge(
+    ) -> GraphItemExistedResult<Id> {
+        self._add_edge_with_weight_if_old_not_exist(
             edge_id,
             Edge::directed_hyper_with_weight(source_node_ids, target_node_ids, weight),
         )
@@ -811,17 +847,36 @@ impl<Id: Identity> Graph<Id> {
 
     /// Add edge. If exist at the edge_id, not replace when replace is false.
     /// If inserted at the edge_id, replace insert at the edge_id
-    fn add_edge(&mut self, edge_id: Id, edge: Edge<Id>) -> Result<(), GraphError<Id>> {
+    fn _add_edge_with_weight_if_old_not_exist(
+        &mut self,
+        edge_id: Id,
+        edge: Edge<Id>,
+    ) -> GraphItemExistedResult<Id> {
+        // check old exist
+        if self.edges.get_edge(&edge_id).is_some() {
+            // old edge exist
+            return Ok(Some(edge_id));
+        }
+
         let config: &GraphConfig = self.get_config();
+
+        // check support edge
+        if !edge.is_support(config) {
+            return Err(GraphError::EdgeNotSupported(edge_id, edge.into()));
+        }
 
         // check illegal edge
         if edge.has_illegal() {
             return Err(GraphError::IllegalEdge(edge_id, edge.into()));
         }
 
-        // check or get flag
-        if !edge.is_support(config) {
-            return Err(GraphError::EdgeNotSupported(edge_id, edge.into()));
+        // check can construct the edge
+        let not_exist_child_ids = self._check_incidence_nodes_can_make_edge(&edge_id, &edge)?;
+        if !not_exist_child_ids.is_empty() && !config.can_create_not_exist_vertex_node() {
+            return Err(GraphError::NotExistChildrenCannotMakeEdge(
+                edge_id,
+                not_exist_child_ids,
+            ));
         }
 
         // check same edge
@@ -830,68 +885,68 @@ impl<Id: Identity> Graph<Id> {
         } else {
             config.can_multiple_hyper_edge()
         };
-        let can_replace = config.can_replace_same_edge();
-        let exist_same_edge: bool = if can_multiple || can_replace {
-            false
-        } else {
-            self.edges.exist_same_edge(&edge)
-        };
-        if !can_multiple && exist_same_edge {
-            return Err(GraphError::ExistSameEdge(edge_id, edge.into()));
+        let can_replace_mode = config.can_replace_same_edge();
+        let same_edge_ids = self.get_same_edge_ids(&edge);
+
+        if !(can_replace_mode || can_multiple) && !same_edge_ids.is_empty() {
+            return Err(GraphError::ExistSameEdge(
+                edge_id,
+                edge.into(),
+                same_edge_ids,
+            ));
         }
 
-        if can_replace {
-            // get same edge to remove
-            // Vec<(node_id, edge_id)>
-            let mut will_remove_node_id_and_edge_id: Vec<(Id, Id)> = if can_multiple {
-                Vec::new()
-            } else {
-                self.edges.remove_by_same_edge_with_collect_removed(&edge)
-            };
-            if let Some(old_edge) = self.edges.pop_edge(&edge_id) {
-                let edge_node_id_and_edge_id: Vec<(Id, Id)> = old_edge
-                    .get_incidence_node_ids()
-                    .into_iter()
-                    .map(|node_id| (node_id, edge_id.clone()))
-                    .collect();
+        // can create edge
 
-                // replace true or not true, if exist_old_edge removed it when insert new edge.
-                will_remove_node_id_and_edge_id.extend(edge_node_id_and_edge_id);
-            }
-            // remove mutable
-            let will_remove_node_id_edge_id = will_remove_node_id_and_edge_id;
+        if can_replace_mode {
+            // do replace
 
-            // remove old incidence data for node
-            if !will_remove_node_id_edge_id.is_empty() {
-                self.nodes.remove_edges_by_ids(&will_remove_node_id_edge_id);
+            // already check can create. create under this graph root
+            for not_exist_child_id in not_exist_child_ids.into_iter() {
+                let child_node = Node::vertex_with_weight(1);
+                self.nodes.insert_node(not_exist_child_id, child_node);
             }
+
+            //create incidence data from edge
+            let incidences = edge.generate_incidences_without_check(&edge_id);
+
+            // add edge (old edge not exist)
+            self.edges.insert_edge(edge_id, edge);
+
+            // add incidence data for node
+            self.nodes
+                .replace_incidences_each_node(incidences, &same_edge_ids);
+
+            Ok(None)
         } else {
-            // remove old incidence data at the id for node before add new edge
-            if let Some(old_edge) = self.edges.pop_edge(&edge_id) {
-                for node_id in old_edge.get_incidence_node_ids().iter() {
-                    self.nodes.remove_edges_by_id(node_id, &edge_id);
-                }
+            // do not replace
+
+            // already check can create. create under this graph root
+            for not_exist_child_id in not_exist_child_ids.into_iter() {
+                let child_node = Node::vertex_with_weight(1);
+                self.nodes.insert_node(not_exist_child_id, child_node);
             }
+
+            //create incidence data from edge
+            let incidences = edge.generate_incidences_without_check(&edge_id);
+
+            // add edge (old edge not exist)
+            self.edges.insert_edge(edge_id, edge);
+
+            // add incidence data for node
+            self.nodes
+                .add_incidences_each_already_exist_node(incidences);
+
+            Ok(None)
         }
-
-        //create incidence data from edge
-        let incidences = edge.generate_incidences_without_check(&edge_id);
-
-        // add edge (old edge deleted)
-        let _ = self.edges.add_edge_with_pop_old(edge_id, edge);
-
-        // add incidence data for node
-        self.nodes.add_incidences_each_node(incidences);
-
-        Ok(())
     }
 
     // ---
     // checker
     // ---
 
-    /// check children to be able to made group at node id in the parent
-    fn _check_children_can_be_grouping(
+    /// check children to be able to make group at node id in the parent
+    fn _check_children_can_be_made_group(
         &self,
         parent_id: &Option<Id>,
         node_id: &Id,
@@ -980,6 +1035,70 @@ impl<Id: Identity> Graph<Id> {
         if !exist_error_children_id.is_empty() {
             return Err(GraphError::SpecifiedIllegalChildren(
                 node_id.clone(),
+                exist_error_children_id,
+            ));
+        }
+
+        Ok(not_exist_children_id)
+    }
+
+    /// check incidence nodes to be able to make group at edge id
+    fn _check_incidence_nodes_can_make_edge(
+        &self,
+        edge_id: &Id,
+        edge: &Edge<Id>,
+    ) -> Result<Vec<Id>, GraphError<Id>> {
+        let mut not_exist_children_id = Vec::new();
+        let mut exist_error_children_id = Vec::new();
+        let mut checkers = Vec::new();
+        // prepare checkers
+        if edge.is_directed_hyper() {
+            for source_id in edge.get_source_ids().iter() {
+                match self.nodes.flatten_parent_ids(*source_id) {
+                    Ok(Some(flatten)) => {
+                        checkers.push(flatten);
+                    }
+                    Ok(None) => {
+                        not_exist_children_id.push((*source_id).clone());
+                    }
+                    Err(()) => {
+                        exist_error_children_id.push((*source_id).clone());
+                    }
+                }
+            }
+        };
+
+        let wait_checks = if edge.is_directed_hyper() {
+            edge.get_target_ids()
+        } else {
+           edge.get_incidence_node_ids_as_ref()
+        };
+
+        // run check
+      'check:  for wait_check in wait_checks.into_iter() {
+            match self.nodes.flatten_parent_ids(wait_check) {
+                Ok(Some(flatten)) => {
+                    for checker in checkers.iter(){
+                        if checker.children_contains_other(&flatten) || flatten.children_contains_other(checker) {
+                            exist_error_children_id.push(flatten.get_root().clone());
+                            continue 'check;
+                        }
+                    }
+                    checkers.push(flatten);
+                }
+                Ok(None) => {
+                    not_exist_children_id.push((*wait_check).clone());
+                }
+                Err(()) => {
+                    exist_error_children_id.push((*wait_check).clone());
+                }
+            }
+        }
+
+        if !exist_error_children_id.is_empty() {
+            return Err(GraphError::SpecifiedIllegalIncidenceNodeIds(
+                edge_id.clone(),
+                edge.clone().into(),
                 exist_error_children_id,
             ));
         }

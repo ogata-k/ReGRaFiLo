@@ -11,8 +11,23 @@ pub trait EdgeModel<Id: Identity> {
     // getter
     // ---
 
-    /// get weight for the edge
+    /// get weight for the edge.
     fn get_weight(&self) -> &i16;
+
+    /// get source node ids
+    ///
+    /// If undirected edge, then return empty vector.
+    fn get_source_ids(&self) -> Vec<&Id>;
+
+    /// get target node ids
+    ///
+    /// If undirected edge, then return empty vector.
+    fn get_target_ids(&self) -> Vec<&Id>;
+
+    /// get source and target node ids.
+    ///
+    /// If directed edge, then return empty vector.
+    fn get_source_target_ids(&self) -> Vec<&Id>;
 
     // ---
     // checker
@@ -65,6 +80,27 @@ impl<'a, Id: Identity> EdgeModel<Id> for UndirectedEdge<'a, Id> {
     /// get weight for the edge
     fn get_weight(&self) -> &i16 {
         &self.weight
+    }
+
+    /// get source node ids
+    ///
+    /// If undirected edge, then return empty vector.
+    fn get_source_ids(&self) -> Vec<&Id> {
+        Vec::new()
+    }
+
+    /// get target node ids
+    ///
+    /// If undirected edge, then return empty vector.
+    fn get_target_ids(&self) -> Vec<&Id> {
+        Vec::new()
+    }
+
+    /// get source and target node ids.
+    ///
+    /// If directed edge, then return empty vector.
+    fn get_source_target_ids(&self) -> Vec<&Id> {
+        self.incidence.iter().collect()
     }
 
     /// check edge is same to other edge without weight
@@ -134,6 +170,27 @@ impl<'a, Id: Identity> EdgeModel<Id> for DirectedEdge<'a, Id> {
     /// get weight for the edge
     fn get_weight(&self) -> &i16 {
         &self.weight
+    }
+
+    /// get source node ids
+    ///
+    /// If undirected edge, then return empty vector.
+    fn get_source_ids(&self) -> Vec<&Id> {
+        vec![self.incidence.0]
+    }
+
+    /// get target node ids
+    ///
+    /// If undirected edge, then return empty vector.
+    fn get_target_ids(&self) -> Vec<&Id> {
+        vec![self.incidence.1]
+    }
+
+    /// get source and target node ids.
+    ///
+    /// If directed edge, then return empty vector.
+    fn get_source_target_ids(&self) -> Vec<&Id> {
+        Vec::new()
     }
 
     /// check edge is same to other edge without weight
@@ -212,6 +269,42 @@ impl<'a, Id: Identity> EdgeModel<Id> for MixedEdge<'a, Id> {
         match self {
             Undirected(e) => e.get_weight(),
             Directed(e) => e.get_weight(),
+        }
+    }
+
+    /// get source node ids
+    ///
+    /// If undirected edge, then return empty vector.
+    fn get_source_ids(&self) -> Vec<&Id> {
+        use MixedEdge::*;
+
+        match self {
+            Undirected(e) => e.get_source_ids(),
+            Directed(e) => e.get_source_ids(),
+        }
+    }
+
+    /// get target node ids
+    ///
+    /// If undirected edge, then return empty vector.
+    fn get_target_ids(&self) -> Vec<&Id> {
+        use MixedEdge::*;
+
+        match self {
+            Undirected(e) => e.get_target_ids(),
+            Directed(e) => e.get_target_ids(),
+        }
+    }
+
+    /// get source and target node ids.
+    ///
+    /// If directed edge, then return empty vector.
+    fn get_source_target_ids(&self) -> Vec<&Id> {
+        use MixedEdge::*;
+
+        match self {
+            Undirected(e) => e.get_source_target_ids(),
+            Directed(e) => e.get_source_target_ids(),
         }
     }
 
@@ -313,6 +406,27 @@ impl<'a, Id: Identity> EdgeModel<Id> for UndirectedHyperEdge<'a, Id> {
         &self.weight
     }
 
+    /// get source node ids
+    ///
+    /// If undirected edge, then return empty vector.
+    fn get_source_ids(&self) -> Vec<&Id> {
+        Vec::new()
+    }
+
+    /// get target node ids
+    ///
+    /// If undirected edge, then return empty vector.
+    fn get_target_ids(&self) -> Vec<&Id> {
+        Vec::new()
+    }
+
+    /// get source and target node ids.
+    ///
+    /// If directed edge, then return empty vector.
+    fn get_source_target_ids(&self) -> Vec<&Id> {
+        self.incidence.iter().collect()
+    }
+
     /// check edge is same to other edge without weight
     fn is_equal_to_without_weight(&self, other: &Self) -> bool {
         self.incidence == other.incidence
@@ -381,6 +495,27 @@ impl<'a, Id: Identity> EdgeModel<Id> for DirectedHyperEdge<'a, Id> {
     /// get weight for the edge
     fn get_weight(&self) -> &i16 {
         &self.weight
+    }
+
+    /// get source node ids
+    ///
+    /// If undirected edge, then return empty vector.
+    fn get_source_ids(&self) -> Vec<&Id> {
+        self.incidence.0.iter().collect()
+    }
+
+    /// get target node ids
+    ///
+    /// If undirected edge, then return empty vector.
+    fn get_target_ids(&self) -> Vec<&Id> {
+        self.incidence.1.iter().collect()
+    }
+
+    /// get source and target node ids.
+    ///
+    /// If directed edge, then return empty vector.
+    fn get_source_target_ids(&self) -> Vec<&Id> {
+        Vec::new()
     }
 
     /// check edge is same to other edge without weight
@@ -459,6 +594,42 @@ impl<'a, Id: Identity> EdgeModel<Id> for MixedHyperEdge<'a, Id> {
         match self {
             Undirected(e) => e.get_weight(),
             Directed(e) => e.get_weight(),
+        }
+    }
+
+    /// get source node ids
+    ///
+    /// If undirected edge, then return empty vector.
+    fn get_source_ids(&self) -> Vec<&Id> {
+        use MixedHyperEdge::*;
+
+        match self {
+            Undirected(e) => e.get_source_ids(),
+            Directed(e) => e.get_source_ids(),
+        }
+    }
+
+    /// get target node ids
+    ///
+    /// If undirected edge, then return empty vector.
+    fn get_target_ids(&self) -> Vec<&Id> {
+        use MixedHyperEdge::*;
+
+        match self {
+            Undirected(e) => e.get_target_ids(),
+            Directed(e) => e.get_target_ids(),
+        }
+    }
+
+    /// get source and target node ids.
+    ///
+    /// If directed edge, then return empty vector.
+    fn get_source_target_ids(&self) -> Vec<&Id> {
+        use MixedHyperEdge::*;
+
+        match self {
+            Undirected(e) => e.get_source_target_ids(),
+            Directed(e) => e.get_source_target_ids(),
         }
     }
 
@@ -571,6 +742,48 @@ impl<'a, Id: Identity> EdgeModel<Id> for Edge<'a, Id> {
             Directed(e) => e.get_weight(),
             UndirectedHyper(e) => e.get_weight(),
             DirectedHyper(e) => e.get_weight(),
+        }
+    }
+
+    /// get source node ids
+    ///
+    /// If undirected edge, then return empty vector.
+    fn get_source_ids(&self) -> Vec<&Id> {
+        use Edge::*;
+
+        match self {
+            Undirected(e) => e.get_source_ids(),
+            Directed(e) => e.get_source_ids(),
+            UndirectedHyper(e) => e.get_source_ids(),
+            DirectedHyper(e) => e.get_source_ids(),
+        }
+    }
+
+    /// get target node ids
+    ///
+    /// If undirected edge, then return empty vector.
+    fn get_target_ids(&self) -> Vec<&Id> {
+        use Edge::*;
+
+        match self {
+            Undirected(e) => e.get_target_ids(),
+            Directed(e) => e.get_target_ids(),
+            UndirectedHyper(e) => e.get_target_ids(),
+            DirectedHyper(e) => e.get_target_ids(),
+        }
+    }
+
+    /// get source and target node ids.
+    ///
+    /// If directed edge, then return empty vector.
+    fn get_source_target_ids(&self) -> Vec<&Id> {
+        use Edge::*;
+
+        match self {
+            Undirected(e) => e.get_source_target_ids(),
+            Directed(e) => e.get_source_target_ids(),
+            UndirectedHyper(e) => e.get_source_target_ids(),
+            DirectedHyper(e) => e.get_source_target_ids(),
         }
     }
 
