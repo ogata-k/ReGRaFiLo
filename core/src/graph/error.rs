@@ -1,6 +1,6 @@
-//! Module for error of graph witout layout
+//! Module for error of graph without layout
 
-use crate::graph::edge::Edge;
+use crate::graph::edge::{Edge, model};
 use crate::util::Identity;
 use std::error::Error;
 use std::fmt;
@@ -31,7 +31,7 @@ impl<Id: Identity> ErrorEdge<Id> {
 
     /// constructor
     fn create(edge: Edge<Id>) -> Self {
-        ErrorEdge { edge: edge }
+        ErrorEdge { edge }
     }
 
     // ---
@@ -44,46 +44,47 @@ impl<Id: Identity> ErrorEdge<Id> {
         self.edge.get_weight()
     }
 
+    /// create model as edge
+    pub fn as_model<'a>(&'a self) -> model::Edge<'a, Id> {
+        self.edge.as_model()
+    }
+
+    /// create model as undirected edge
+    pub fn as_undirected_model<'a>(&'a self) -> Option<model::UndirectedEdge<'a, Id>> {
+        self.edge.as_undirected_model()
+    }
+
+    /// create model as directed edge
+    pub fn as_directed_model<'a>(&'a self) -> Option<model::DirectedEdge<'a, Id>> {
+        self.edge.as_directed_model()
+    }
+
+    /// create model as mixed edge
+    pub fn as_mixed_model<'a>(&'a self) -> Option<model::MixedEdge<'a, Id>> {
+        self.edge.as_mixed_model()
+    }
+
+    /// create model as undirected hyper edge
+    pub fn as_undirected_hyper_model<'a>(&'a self) -> Option<model::UndirectedHyperEdge<'a, Id>> {
+        self.edge.as_undirected_hyper_model()
+    }
+
+    /// create model as mixed hyper edge
+    pub fn as_directed_hyper_model<'a>(&'a self) -> Option<model::DirectedHyperEdge<'a, Id>> {
+        self.edge.as_directed_hyper_model()
+    }
+
+    /// create model as mixed hyper edge
+    pub fn as_mixed_hyper_model<'a>(&'a self) -> Option<model::MixedHyperEdge<'a, Id>> {
+        self.edge.as_mixed_hyper_model()
+    }
+
     // ---
     // setter
     // ---
 
     // ---
     // checker
-    // ---
-
-    /// check edge is undirected edge
-    pub fn is_undirected(&self) -> bool {
-        self.edge.is_undirected()
-    }
-
-    /// check edge is directed edge
-    pub fn is_directed(&self) -> bool {
-        self.edge.is_directed()
-    }
-
-    /// check edge is undirected or directed edge
-    pub fn is_edge(&self) -> bool {
-        self.edge.is_edge()
-    }
-
-    /// check edge is undirected hyper edge
-    pub fn is_undirected_hyper(&self) -> bool {
-        self.edge.is_undirected_hyper()
-    }
-
-    /// check edge is directed hyper edge
-    pub fn is_directed_hyper(&self) -> bool {
-        self.edge.is_directed_hyper()
-    }
-
-    /// check edge is undirected or directed hyper edge
-    pub fn is_hyper_edge(&self) -> bool {
-        self.edge.is_hyper_edge()
-    }
-
-    // ---
-    // delete
     // ---
 }
 
@@ -228,16 +229,16 @@ impl<Id: Identity> fmt::Display for GraphError<Id> {
             EdgeNotSupported(edge_id, edge) => write!(
                 f,
                 "Not support edge which is the edge {} at the id {:?}.",
-                edge, edge_id
+                edge.as_model(), edge_id
             ),
             IllegalEdge(edge_id, edge) => {
-                write!(f, "An edge {} has illegal parameter at the id {:?}.",edge,  edge_id)
+                write!(f, "An edge {} has illegal parameter at the id {:?}.",edge.as_model(), edge_id)
             }
             ExistSameEdge(edge_id, edge, same_edge_ids) =>{
                 write!(
                     f,
                    "Cannot insert the edge {} at the id {:?} because exist same edges at the ids {{",
-                   edge,
+                   edge.as_model(),
                    edge_id
                 )?;
                 for (index, same_edge_id) in same_edge_ids.iter().enumerate() {
@@ -253,7 +254,7 @@ impl<Id: Identity> fmt::Display for GraphError<Id> {
                 write!(
                     f,
                     "Cannot create the edge {} at the id {:?} because fail resolve node ids {{",
-                    edge,
+                    edge.as_model(),
                     edge_id
                 )?;
                 for (index, node_id) in incidence_node_ids.iter().enumerate() {
