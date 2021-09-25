@@ -1,223 +1,272 @@
 //! Module for iterator of edge
 
-use crate::graph::edge::model;
+use crate::graph::edge::{model, Edge, EdgeStore};
 use crate::util::Identity;
 
 use std::iter::Iterator;
+use std::collections::btree_map::Iter;
 
 /// Iterator for edge
-pub struct EdgeIter<'a, Id: 'a + Identity, I>
-where
-    I: Iterator<Item = (&'a Id, model::Edge<'a, Id>)>,
+pub struct EdgeIter<'a, Id:  Identity>
 {
-    inner: I,
+    store_iter: Iter<'a, Id, Edge<Id>>,
 }
 
-impl<'a, Id: 'a + Identity, I> EdgeIter<'a, Id, I>
-where
-    I: Iterator<Item = (&'a Id, model::Edge<'a, Id>)>,
+impl<'a, Id:  Identity> EdgeIter<'a, Id>
 {
     /// create this iterator
-    pub fn new(iter: I) -> Self
-    where
-        I: Iterator<Item = (&'a Id, model::Edge<'a, Id>)>,
+    pub fn new(store: &'a EdgeStore<Id>) -> Self
     {
-        EdgeIter { inner: iter }
+        EdgeIter { store_iter: store._iter() }
     }
 }
 
-impl<'a, Id: 'a + Identity, I> Iterator for EdgeIter<'a, Id, I>
-where
-    I: Iterator<Item = (&'a Id, model::Edge<'a, Id>)>,
+impl<'a, Id:  Identity> Iterator for EdgeIter<'a, Id>
 {
     type Item = (&'a Id, model::Edge<'a, Id>);
     fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next()
+        self.store_iter
+            .next()
+            .map(|(edge_id, edge)| (edge_id, edge.as_model()))
     }
 }
 
 /// Iterator for undirected edge
-pub struct UndirectedEdgeIter<'a, Id: 'a + Identity, I>
-where
-    I: Iterator<Item = (&'a Id, model::UndirectedEdge<'a, Id>)>,
+pub struct UndirectedEdgeIter<'a, Id:  Identity>
 {
-    inner: I,
+    store_iter: Iter<'a, Id, Edge<Id>>,
 }
 
-impl<'a, Id: 'a + Identity, I> UndirectedEdgeIter<'a, Id, I>
-where
-    I: Iterator<Item = (&'a Id, model::UndirectedEdge<'a, Id>)>,
+impl<'a, Id:  Identity> UndirectedEdgeIter<'a, Id>
 {
     /// create this iterator
-    pub fn new(iter: I) -> Self
-    where
-        I: Iterator<Item = (&'a Id, model::UndirectedEdge<'a, Id>)>,
+    pub fn new(store: &'a EdgeStore<Id>) -> Self
     {
-        UndirectedEdgeIter { inner: iter }
+        UndirectedEdgeIter { store_iter: store._iter() }
     }
 }
 
-impl<'a, Id: 'a + Identity, I> Iterator for UndirectedEdgeIter<'a, Id, I>
-where
-    I: Iterator<Item = (&'a Id, model::UndirectedEdge<'a, Id>)>,
+impl<'a, Id:  Identity> Iterator for UndirectedEdgeIter<'a, Id>
 {
     type Item = (&'a Id, model::UndirectedEdge<'a, Id>);
     fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next()
+        loop {
+            match self.store_iter.next() {
+                None => {
+                    return None;
+                }
+                Some((edge_id, edge)) => {
+                    let undirected_edge = edge.as_undirected_model();
+                    match undirected_edge {
+                        None => {
+                            continue;
+                        }
+                        Some(_undirected_edge) => {
+                            return Some((edge_id, _undirected_edge));
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
 /// Iterator for directed edge
-pub struct DirectedEdgeIter<'a, Id: 'a + Identity, I>
-where
-    I: Iterator<Item = (&'a Id, model::DirectedEdge<'a, Id>)>,
+pub struct DirectedEdgeIter<'a, Id:  Identity>
 {
-    inner: I,
+    store_iter: Iter<'a, Id, Edge<Id>>,
 }
 
-impl<'a, Id: 'a + Identity, I> DirectedEdgeIter<'a, Id, I>
-where
-    I: Iterator<Item = (&'a Id, model::DirectedEdge<'a, Id>)>,
+impl<'a, Id:  Identity> DirectedEdgeIter<'a, Id>
 {
     /// create this iterator
-    pub fn new(iter: I) -> Self
-    where
-        I: Iterator<Item = (&'a Id, model::DirectedEdge<'a, Id>)>,
+    pub fn new(store: &'a EdgeStore<Id>) -> Self
     {
-        DirectedEdgeIter { inner: iter }
+        DirectedEdgeIter { store_iter: store._iter() }
     }
 }
 
-impl<'a, Id: 'a + Identity, I> Iterator for DirectedEdgeIter<'a, Id, I>
-where
-    I: Iterator<Item = (&'a Id, model::DirectedEdge<'a, Id>)>,
+impl<'a, Id:  Identity> Iterator for DirectedEdgeIter<'a, Id>
 {
     type Item = (&'a Id, model::DirectedEdge<'a, Id>);
     fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next()
+        loop {
+            match self.store_iter.next() {
+                None => {
+                    return None;
+                }
+                Some((edge_id, edge)) => {
+                    let directed_edge = edge.as_directed_model();
+                    match directed_edge {
+                        None => {
+                            continue;
+                        }
+                        Some(_directed_edge) => {
+                            return Some((edge_id, _directed_edge));
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
 /// Iterator for undirected or directed edge
-pub struct MixedEdgeIter<'a, Id: 'a + Identity, I>
-where
-    I: Iterator<Item = (&'a Id, model::MixedEdge<'a, Id>)>,
+pub struct MixedEdgeIter<'a, Id:  Identity>
 {
-    inner: I,
+    store_iter: Iter<'a, Id, Edge<Id>>,
 }
 
-impl<'a, Id: 'a + Identity, I> MixedEdgeIter<'a, Id, I>
-where
-    I: Iterator<Item = (&'a Id, model::MixedEdge<'a, Id>)>,
+impl<'a, Id:  Identity> MixedEdgeIter<'a, Id>
 {
     /// create this iterator
-    pub fn new(iter: I) -> Self
-    where
-        I: Iterator<Item = (&'a Id, model::MixedEdge<'a, Id>)>,
+    pub fn new(store: &'a EdgeStore<Id>) -> Self
     {
-        MixedEdgeIter { inner: iter }
+        MixedEdgeIter { store_iter: store._iter() }
     }
 }
 
-impl<'a, Id: 'a + Identity, I> Iterator for MixedEdgeIter<'a, Id, I>
-where
-    I: Iterator<Item = (&'a Id, model::MixedEdge<'a, Id>)>,
+impl<'a, Id:  Identity> Iterator for MixedEdgeIter<'a, Id>
 {
     type Item = (&'a Id, model::MixedEdge<'a, Id>);
     fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next()
+        loop {
+            match self.store_iter.next() {
+                None => {
+                    return None;
+                }
+                Some((edge_id, edge)) => {
+                    let mixed_edge = edge.as_mixed_model();
+                    match mixed_edge {
+                        None => {
+                            continue;
+                        }
+                        Some(_mixed_edge) => {
+                            return Some((edge_id, _mixed_edge));
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
 /// Iterator for undirected hyper edge
-pub struct UndirectedHyperEdgeIter<'a, Id: 'a + Identity, I>
-where
-    I: Iterator<Item = (&'a Id, model::UndirectedHyperEdge<'a, Id>)>,
+pub struct UndirectedHyperEdgeIter<'a, Id:  Identity>
 {
-    inner: I,
+    store_iter: Iter<'a, Id, Edge<Id>>,
 }
 
-impl<'a, Id: 'a + Identity, I> UndirectedHyperEdgeIter<'a, Id, I>
-where
-    I: Iterator<Item = (&'a Id, model::UndirectedHyperEdge<'a, Id>)>,
+impl<'a, Id:  Identity> UndirectedHyperEdgeIter<'a, Id>
 {
     /// create this iterator
-    pub fn new(iter: I) -> Self
-    where
-        I: Iterator<Item = (&'a Id, model::UndirectedHyperEdge<'a, Id>)>,
+    pub fn new(store: &'a EdgeStore<Id>) -> Self
     {
-        UndirectedHyperEdgeIter { inner: iter }
+        UndirectedHyperEdgeIter { store_iter: store._iter() }
     }
 }
 
-impl<'a, Id: 'a + Identity, I> Iterator for UndirectedHyperEdgeIter<'a, Id, I>
-where
-    I: Iterator<Item = (&'a Id, model::UndirectedHyperEdge<'a, Id>)>,
+impl<'a, Id:  Identity> Iterator for UndirectedHyperEdgeIter<'a, Id>
 {
     type Item = (&'a Id, model::UndirectedHyperEdge<'a, Id>);
     fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next()
+        loop {
+            match self.store_iter.next() {
+                None => {
+                    return None;
+                }
+                Some((edge_id, edge)) => {
+                    let undirected_hyper_edge = edge.as_undirected_hyper_model();
+                    match undirected_hyper_edge {
+                        None => {
+                            continue;
+                        }
+                        Some(_undirected_hyper_edge) => {
+                            return Some((edge_id, _undirected_hyper_edge));
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
 /// Iterator for directed hyper edge
-pub struct DirectedHyperEdgeIter<'a, Id: 'a + Identity, I>
-where
-    I: Iterator<Item = (&'a Id, model::DirectedHyperEdge<'a, Id>)>,
+pub struct DirectedHyperEdgeIter<'a, Id:  Identity>
 {
-    inner: I,
+    store_iter: Iter<'a, Id, Edge<Id>>,
 }
 
-impl<'a, Id: 'a + Identity, I> DirectedHyperEdgeIter<'a, Id, I>
-where
-    I: Iterator<Item = (&'a Id, model::DirectedHyperEdge<'a, Id>)>,
+impl<'a, Id:  Identity> DirectedHyperEdgeIter<'a, Id>
 {
     /// create this iterator
-    pub fn new(iter: I) -> Self
-    where
-        I: Iterator<Item = (&'a Id, model::DirectedHyperEdge<'a, Id>)>,
+    pub fn new(store: &'a EdgeStore<Id>) -> Self
     {
-        DirectedHyperEdgeIter { inner: iter }
+        DirectedHyperEdgeIter { store_iter: store._iter() }
     }
 }
 
-impl<'a, Id: 'a + Identity, I> Iterator for DirectedHyperEdgeIter<'a, Id, I>
-where
-    I: Iterator<Item = (&'a Id, model::DirectedHyperEdge<'a, Id>)>,
+impl<'a, Id:  Identity> Iterator for DirectedHyperEdgeIter<'a, Id>
 {
     type Item = (&'a Id, model::DirectedHyperEdge<'a, Id>);
     fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next()
+        loop {
+            match self.store_iter.next() {
+                None => {
+                    return None;
+                }
+                Some((edge_id, edge)) => {
+                    let directed_hyper_edge = edge.as_directed_hyper_model();
+                    match directed_hyper_edge {
+                        None => {
+                            continue;
+                        }
+                        Some(_directed_hyper_edge) => {
+                            return Some((edge_id, _directed_hyper_edge));
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
 /// Iterator for undirected or directed hyper edge
-pub struct MixedHyperEdgeIter<'a, Id: 'a + Identity, I>
-where
-    I: Iterator<Item = (&'a Id, model::MixedHyperEdge<'a, Id>)>,
+pub struct MixedHyperEdgeIter<'a, Id:  Identity>
 {
-    inner: I,
+    store_iter: Iter<'a, Id, Edge<Id>>,
 }
 
-impl<'a, Id: 'a + Identity, I> MixedHyperEdgeIter<'a, Id, I>
-where
-    I: Iterator<Item = (&'a Id, model::MixedHyperEdge<'a, Id>)>,
+impl<'a, Id:  Identity> MixedHyperEdgeIter<'a, Id>
 {
     /// create this iterator
-    pub fn new(iter: I) -> Self
-    where
-        I: Iterator<Item = (&'a Id, model::MixedHyperEdge<'a, Id>)>,
+    pub fn new(store: &'a EdgeStore<Id>) -> Self
     {
-        MixedHyperEdgeIter { inner: iter }
+        MixedHyperEdgeIter { store_iter: store._iter() }
     }
 }
 
-impl<'a, Id: 'a + Identity, I> Iterator for MixedHyperEdgeIter<'a, Id, I>
-where
-    I: Iterator<Item = (&'a Id, model::MixedHyperEdge<'a, Id>)>,
+impl<'a, Id:  Identity> Iterator for MixedHyperEdgeIter<'a, Id>
 {
     type Item = (&'a Id, model::MixedHyperEdge<'a, Id>);
     fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next()
+        loop {
+            match self.store_iter.next() {
+                None => {
+                    return None;
+                }
+                Some((edge_id, edge)) => {
+                    let mixed_hyper_edge = edge.as_mixed_hyper_model();
+                    match mixed_hyper_edge {
+                        None => {
+                            continue;
+                        }
+                        Some(_mixed_hyper_edge) => {
+                            return Some((edge_id, _mixed_hyper_edge));
+                        }
+                    }
+                }
+            }
+        }
     }
 }

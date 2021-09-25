@@ -11,7 +11,7 @@ pub use flatten::*;
 pub use incidence::*;
 use iter::*;
 use std::borrow::Borrow;
-use std::collections::btree_map::Entry;
+use std::collections::btree_map::{Entry, Iter};
 use std::collections::BTreeMap;
 use std::fmt;
 use std::mem;
@@ -367,6 +367,15 @@ impl<Id: Identity> NodeStore<Id> {
         self.inner.get(node_id)
     }
 
+    /// get node at node_id with key
+    pub fn get_node_with_key<B: ?Sized>(&self, node_id: &B) -> Option<(&Id, &Node<Id>)>
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        self.inner.get_key_value(node_id)
+    }
+
     /// get node as mutable at node_id
     pub(crate) fn _get_node_as_mut<B: ?Sized>(&mut self, node_id: &B) -> Option<&mut Node<Id>>
     where
@@ -565,7 +574,7 @@ impl<Id: Identity> NodeStore<Id> {
     }
 
     /// Flatten children node ids of the node with illegal check.
-    /// If not exist, do flatten with replace children. But, if faiol flatten children id then return Err.
+    /// If not exist, do flatten with replace children. But, if fail flatten children id then return Err.
     pub fn flatten_children_id_with_check<'a>(
         &'a self,
         parent_id: &'a Option<Id>,
@@ -660,46 +669,42 @@ impl<Id: Identity> NodeStore<Id> {
         }
     }
 
+    /// inner store iter
+    pub(crate) fn _iter<'a>(&'a self) -> Iter<'a, Id, Node<Id>> {
+        self.inner.iter()
+    }
+
     /// to iterator for node
     pub fn node_iter<'a>(
         &'a self,
-    ) -> NodeIter<'a, Id, impl Iterator<Item = (&'a Id, model::Node<'a, Id>)>> {
-        let iter = self
-            .inner
-            .iter()
-            .map(|(node_id, node)| (node_id, node.as_model()));
-
-        NodeIter::new(iter)
+    ) -> NodeIter<'a, Id> {
+        NodeIter::new(self)
     }
 
     /// to iterator for node point
     pub fn vertex_node_iter<'a>(
         &'a self,
-    ) -> VertexNodeIter<'a, Id, impl Iterator<Item = (&'a Id, model::VertexNode<'a, Id>)>> {
-        let iter = self
-            .inner
-            .iter()
-            .filter_map(|(node_id, node)| match node.as_vertex_model() {
-                Some(e) => Some((node_id, e)),
-                None => None,
-            });
-
-        VertexNodeIter::new(iter)
+    ) -> VertexNodeIter<'a, Id> {
+        VertexNodeIter::new(self)
     }
 
     /// to iterator for node group
     pub fn group_node_iter<'a>(
         &'a self,
-    ) -> GroupNodeIter<'a, Id, impl Iterator<Item = (&'a Id, model::GroupNode<'a, Id>)>> {
-        let iter = self
-            .inner
-            .iter()
-            .filter_map(|(node_id, node)| match node.as_group_model() {
-                Some(e) => Some((node_id, e)),
-                None => None,
-            });
+    ) -> GroupNodeIter<'a, Id> {
+        GroupNodeIter::new(self)
+    }
 
-        GroupNodeIter::new(iter)
+    /// to iterator for grouping child nodes
+    pub fn group_child_node_iter<'a, B: ?Sized>(
+        &'a self,
+        group_id: Option<&'a B>,
+    ) -> GroupChildNodeIter<'a, Id>
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        GroupChildNodeIter::new(group_id, &self)
     }
 
     // ---

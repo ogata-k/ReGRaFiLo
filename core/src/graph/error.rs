@@ -1,6 +1,6 @@
 //! Module for error of graph without layout
 
-use crate::graph::edge::{Edge, model};
+use crate::graph::edge::{model, Edge};
 use crate::util::Identity;
 use std::error::Error;
 use std::fmt;
@@ -150,28 +150,28 @@ impl<Id: Identity> fmt::Display for GraphError<Id> {
 
         match self {
             // Node
-            AlreadyExistNodeAtId(node_id)=>write!(
-                f,
-                "Already node exist at the id {:?}.",
-                node_id
-            ),
-            NotSupportGroupNode(group_node_id) => write!(
-                f,
-                "Not support group node at the id {:?}.",
-                group_node_id
-            ),
-            CannotCreateVertex(Some(parent_node_id), vertex_node_id)=>write!(
+            AlreadyExistNodeAtId(node_id) => {
+                write!(f, "Already node exist at the id {:?}.", node_id)
+            }
+            NotSupportGroupNode(group_node_id) => {
+                write!(f, "Not support group node at the id {:?}.", group_node_id)
+            }
+            CannotCreateVertex(Some(parent_node_id), vertex_node_id) => write!(
                 f,
                 "Cannot create vertex node at the id {:?} in the parent {:?}.",
                 vertex_node_id, parent_node_id
             ),
-            CannotCreateVertex(None, vertex_node_id)=>write!(
+            CannotCreateVertex(None, vertex_node_id) => write!(
                 f,
                 "Cannot create vertex node at the id {:?}.",
                 vertex_node_id
             ),
             CannotCreateGroup(Some(parent_node_id), group_node_id, child_node_ids) => {
-                write!(f, "Cannot create group node at the id {:?} with child {{", group_node_id)?;
+                write!(
+                    f,
+                    "Cannot create group node at the id {:?} with child {{",
+                    group_node_id
+                )?;
                 for (index, child_node_id) in child_node_ids.iter().enumerate() {
                     if index == 0 {
                         write!(f, "{:?}", child_node_id)?;
@@ -180,9 +180,13 @@ impl<Id: Identity> fmt::Display for GraphError<Id> {
                     }
                 }
                 write!(f, "}} in the parent {:?}.", parent_node_id)
-            },
+            }
             CannotCreateGroup(None, group_node_id, child_node_ids) => {
-                write!(f, "Cannot create group node at the id {:?} with child {{", group_node_id)?;
+                write!(
+                    f,
+                    "Cannot create group node at the id {:?} with child {{",
+                    group_node_id
+                )?;
                 for (index, child_node_id) in child_node_ids.iter().enumerate() {
                     if index == 0 {
                         write!(f, "{:?}", child_node_id)?;
@@ -191,8 +195,8 @@ impl<Id: Identity> fmt::Display for GraphError<Id> {
                     }
                 }
                 write!(f, "}}.")
-            },
-            NotExistGroup(group_node_id)=>write!(
+            }
+            NotExistGroup(group_node_id) => write!(
                 f,
                 "Group node is not exist or vertex node exist at the id {:?}.",
                 group_node_id
@@ -206,8 +210,12 @@ impl<Id: Identity> fmt::Display for GraphError<Id> {
                         write!(f, ", {:?}", child_node_id)?;
                     }
                 }
-                write!(f, "}} have illegal children for the group {:?}.", group_node_id)
-            },
+                write!(
+                    f,
+                    "}} have illegal children for the group {:?}.",
+                    group_node_id
+                )
+            }
             NotExistChildrenCannotMakeEdge(group_node_id, child_node_ids) => {
                 write!(f, "Specified children {{")?;
                 for (index, child_node_id) in child_node_ids.iter().enumerate() {
@@ -218,23 +226,27 @@ impl<Id: Identity> fmt::Display for GraphError<Id> {
                     }
                 }
                 write!(f, "}} are not exist for the group {:?}.", group_node_id)
-            },
+            }
 
             // Edge
-            AlreadyExistEdgeAtId(edge_id)=>write!(
-                f,
-                "Already edge exist at the id {:?}.",
-                edge_id
-            ),
+            AlreadyExistEdgeAtId(edge_id) => {
+                write!(f, "Already edge exist at the id {:?}.", edge_id)
+            }
             EdgeNotSupported(edge_id, edge) => write!(
                 f,
                 "Not support edge which is the edge {} at the id {:?}.",
-                edge.as_model(), edge_id
+                edge.as_model(),
+                edge_id
             ),
             IllegalEdge(edge_id, edge) => {
-                write!(f, "An edge {} has illegal parameter at the id {:?}.",edge.as_model(), edge_id)
+                write!(
+                    f,
+                    "An edge {} has illegal parameter at the id {:?}.",
+                    edge.as_model(),
+                    edge_id
+                )
             }
-            ExistSameEdge(edge_id, edge, same_edge_ids) =>{
+            ExistSameEdge(edge_id, edge, same_edge_ids) => {
                 write!(
                     f,
                    "Cannot insert the edge {} at the id {:?} because exist same edges at the ids {{",
@@ -249,7 +261,7 @@ impl<Id: Identity> fmt::Display for GraphError<Id> {
                     }
                 }
                 write!(f, "}}.")
-            },
+            }
             SpecifiedIllegalIncidenceNodeIds(edge_id, edge, incidence_node_ids) => {
                 write!(
                     f,
@@ -265,7 +277,7 @@ impl<Id: Identity> fmt::Display for GraphError<Id> {
                     }
                 }
                 write!(f, "}}.")
-            },
+            }
         }
     }
 }

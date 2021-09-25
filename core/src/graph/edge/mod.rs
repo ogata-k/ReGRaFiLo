@@ -8,7 +8,7 @@ use crate::graph::edge::model::EdgeModel;
 use crate::graph::{GraphConfig, Incidence, Node};
 use crate::util::Identity;
 use std::borrow::Borrow;
-use std::collections::btree_map::Entry;
+use std::collections::btree_map::{Entry, Iter};
 use std::collections::BTreeMap;
 use std::fmt;
 
@@ -328,7 +328,7 @@ impl<Id: Identity> Edge<Id> {
 
         match self {
             Undirected { .. } | UndirectedHyper { .. } => Vec::new(),
-            Directed { source_id,  .. } => vec![source_id],
+            Directed { source_id, .. } => vec![source_id],
             DirectedHyper { source_ids, .. } => source_ids.iter().collect(),
         }
     }
@@ -341,7 +341,7 @@ impl<Id: Identity> Edge<Id> {
 
         match self {
             Undirected { .. } | UndirectedHyper { .. } => Vec::new(),
-            Directed { target_id,  .. } => vec![target_id],
+            Directed { target_id, .. } => vec![target_id],
             DirectedHyper { target_ids, .. } => target_ids.iter().collect(),
         }
     }
@@ -509,58 +509,38 @@ impl<Id: Identity> EdgeStore<Id> {
         result
     }
 
+    /// inner store iter
+    pub(crate) fn _iter<'a>(&'a self) -> Iter<'a, Id, Edge<Id>> {
+        self.inner.iter()
+    }
+
     /// to iterator for edge
     pub fn edge_iter<'a>(
         &'a self,
-    ) -> EdgeIter<'a, Id, impl Iterator<Item = (&'a Id, model::Edge<'a, Id>)>> {
-        let iter = self
-            .inner
-            .iter()
-            .map(|(edge_id, edge)| (edge_id, edge.as_model()));
-        EdgeIter::new(iter)
+    ) -> EdgeIter<'a, Id> {
+        EdgeIter::new(self)
     }
 
     /// to iterator for undirected edge
     pub fn undirected_edge_iter<'a>(
         &'a self,
-    ) -> UndirectedEdgeIter<'a, Id, impl Iterator<Item = (&'a Id, model::UndirectedEdge<'a, Id>)>>
+    ) -> UndirectedEdgeIter<'a, Id>
     {
-        let iter =
-            self.inner
-                .iter()
-                .filter_map(|(edge_id, edge)| match edge.as_undirected_model() {
-                    Some(e) => Some((edge_id, e)),
-                    None => None,
-                });
-        UndirectedEdgeIter::new(iter)
+        UndirectedEdgeIter::new(self)
     }
 
     /// to iterator for directed edge
     pub fn directed_edge_iter<'a>(
         &'a self,
-    ) -> DirectedEdgeIter<'a, Id, impl Iterator<Item = (&'a Id, model::DirectedEdge<'a, Id>)>> {
-        let iter = self
-            .inner
-            .iter()
-            .filter_map(|(edge_id, edge)| match edge.as_directed_model() {
-                Some(e) => Some((edge_id, e)),
-                None => None,
-            });
-        DirectedEdgeIter::new(iter)
+    ) -> DirectedEdgeIter<'a, Id> {
+        DirectedEdgeIter::new(self)
     }
 
     /// to iterator for undirected or directed edge
     pub fn mixed_edge_iter<'a>(
         &'a self,
-    ) -> MixedEdgeIter<'a, Id, impl Iterator<Item = (&'a Id, model::MixedEdge<'a, Id>)>> {
-        let iter = self
-            .inner
-            .iter()
-            .filter_map(|(edge_id, edge)| match edge.as_mixed_model() {
-                Some(e) => Some((edge_id, e)),
-                None => None,
-            });
-        MixedEdgeIter::new(iter)
+    ) -> MixedEdgeIter<'a, Id> {
+        MixedEdgeIter::new(self)
     }
 
     /// to iterator for undirected hyper edge
@@ -569,15 +549,8 @@ impl<Id: Identity> EdgeStore<Id> {
     ) -> UndirectedHyperEdgeIter<
         'a,
         Id,
-        impl Iterator<Item = (&'a Id, model::UndirectedHyperEdge<'a, Id>)>,
     > {
-        let iter = self.inner.iter().filter_map(|(edge_id, edge)| {
-            match edge.as_undirected_hyper_model() {
-                Some(e) => Some((edge_id, e)),
-                None => None,
-            }
-        });
-        UndirectedHyperEdgeIter::new(iter)
+        UndirectedHyperEdgeIter::new(self)
     }
 
     /// to iterator for directed hyper edge
@@ -586,31 +559,16 @@ impl<Id: Identity> EdgeStore<Id> {
     ) -> DirectedHyperEdgeIter<
         'a,
         Id,
-        impl Iterator<Item = (&'a Id, model::DirectedHyperEdge<'a, Id>)>,
     > {
-        let iter =
-            self.inner
-                .iter()
-                .filter_map(|(edge_id, edge)| match edge.as_directed_hyper_model() {
-                    Some(e) => Some((edge_id, e)),
-                    None => None,
-                });
-        DirectedHyperEdgeIter::new(iter)
+        DirectedHyperEdgeIter::new(self)
     }
 
     /// to iterator for undirected or directed hyper edge
     pub fn mixed_hyper_edge_iter<'a>(
         &'a self,
-    ) -> MixedHyperEdgeIter<'a, Id, impl Iterator<Item = (&'a Id, model::MixedHyperEdge<'a, Id>)>>
+    ) -> MixedHyperEdgeIter<'a, Id>
     {
-        let iter =
-            self.inner
-                .iter()
-                .filter_map(|(edge_id, edge)| match edge.as_mixed_hyper_model() {
-                    Some(e) => Some((edge_id, e)),
-                    None => None,
-                });
-        MixedHyperEdgeIter::new(iter)
+        MixedHyperEdgeIter::new(self)
     }
 
     // ---

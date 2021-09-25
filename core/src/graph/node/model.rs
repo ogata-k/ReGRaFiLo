@@ -195,6 +195,11 @@ impl<'a, Id: Identity> GroupNode<'a, Id> {
     // getter
     // ---
 
+    /// get child nodes
+    pub fn get_children(&self) -> &[Id] {
+        self.children
+    }
+
     // ---
     // checker
     // ---

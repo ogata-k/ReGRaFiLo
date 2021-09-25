@@ -330,24 +330,30 @@ impl<Id: Identity> Graph<Id> {
     }
 
     /// to iterator for node
-    pub fn node_iter<'a>(
-        &'a self,
-    ) -> NodeIter<'a, Id, impl Iterator<Item = (&'a Id, model::Node<'a, Id>)>> {
+    pub fn node_iter<'a>(&'a self) -> NodeIter<'a, Id> {
         self.nodes.node_iter()
     }
 
     /// to iterator for node point
-    pub fn vertex_node_iter<'a>(
-        &'a self,
-    ) -> VertexNodeIter<'a, Id, impl Iterator<Item = (&'a Id, model::VertexNode<'a, Id>)>> {
+    pub fn vertex_node_iter<'a>(&'a self) -> VertexNodeIter<'a, Id> {
         self.nodes.vertex_node_iter()
     }
 
     /// to iterator for node group
-    pub fn group_node_iter<'a>(
-        &'a self,
-    ) -> GroupNodeIter<'a, Id, impl Iterator<Item = (&'a Id, model::GroupNode<'a, Id>)>> {
+    pub fn group_node_iter<'a>(&'a self) -> GroupNodeIter<'a, Id> {
         self.nodes.group_node_iter()
+    }
+
+    /// to iterator for grouping child nodes
+    pub fn group_child_node_iter<'a, B: ?Sized>(
+        &'a self,
+        group_id: Option<&'a B>,
+    ) -> GroupChildNodeIter<'a, Id>
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        self.nodes.group_child_node_iter(group_id)
     }
 
     // ---
@@ -481,61 +487,37 @@ impl<Id: Identity> Graph<Id> {
     }
 
     /// to iterator for edge
-    pub fn edge_iter<'a>(
-        &'a self,
-    ) -> EdgeIter<'a, Id, impl Iterator<Item = (&'a Id, model::Edge<'a, Id>)>> {
+    pub fn edge_iter<'a>(&'a self) -> EdgeIter<'a, Id> {
         self.edges.edge_iter()
     }
 
     /// to iterator for undirected edge
-    pub fn undirected_edge_iter<'a>(
-        &'a self,
-    ) -> UndirectedEdgeIter<'a, Id, impl Iterator<Item = (&'a Id, model::UndirectedEdge<'a, Id>)>>
-    {
+    pub fn undirected_edge_iter<'a>(&'a self) -> UndirectedEdgeIter<'a, Id> {
         self.edges.undirected_edge_iter()
     }
 
     /// to iterator for directed edge
-    pub fn directed_edge_iter<'a>(
-        &'a self,
-    ) -> DirectedEdgeIter<'a, Id, impl Iterator<Item = (&'a Id, model::DirectedEdge<'a, Id>)>> {
+    pub fn directed_edge_iter<'a>(&'a self) -> DirectedEdgeIter<'a, Id> {
         self.edges.directed_edge_iter()
     }
 
     /// to iterator for undirected of directed edge
-    pub fn mixed_edge_iter<'a>(
-        &'a self,
-    ) -> MixedEdgeIter<'a, Id, impl Iterator<Item = (&'a Id, model::MixedEdge<'a, Id>)>> {
+    pub fn mixed_edge_iter<'a>(&'a self) -> MixedEdgeIter<'a, Id> {
         self.edges.mixed_edge_iter()
     }
 
     /// to iterator for undirected hyper edge
-    pub fn undirected_hyper_edge_iter<'a>(
-        &'a self,
-    ) -> UndirectedHyperEdgeIter<
-        'a,
-        Id,
-        impl Iterator<Item = (&'a Id, model::UndirectedHyperEdge<'a, Id>)>,
-    > {
+    pub fn undirected_hyper_edge_iter<'a>(&'a self) -> UndirectedHyperEdgeIter<'a, Id> {
         self.edges.undirected_hyper_edge_iter()
     }
 
     /// to iterator for directed hyper edge
-    pub fn directed_hyper_edge_iter<'a>(
-        &'a self,
-    ) -> DirectedHyperEdgeIter<
-        'a,
-        Id,
-        impl Iterator<Item = (&'a Id, model::DirectedHyperEdge<'a, Id>)>,
-    > {
+    pub fn directed_hyper_edge_iter<'a>(&'a self) -> DirectedHyperEdgeIter<'a, Id> {
         self.edges.directed_hyper_edge_iter()
     }
 
     /// to iterator for undirected or directed hyper edge
-    pub fn mixed_hyper_edge_iter<'a>(
-        &'a self,
-    ) -> MixedHyperEdgeIter<'a, Id, impl Iterator<Item = (&'a Id, model::MixedHyperEdge<'a, Id>)>>
-    {
+    pub fn mixed_hyper_edge_iter<'a>(&'a self) -> MixedHyperEdgeIter<'a, Id> {
         self.edges.mixed_hyper_edge_iter()
     }
 
@@ -1071,15 +1053,17 @@ impl<Id: Identity> Graph<Id> {
         let wait_checks = if edge.is_directed_hyper() {
             edge.get_target_ids()
         } else {
-           edge.get_incidence_node_ids_as_ref()
+            edge.get_incidence_node_ids_as_ref()
         };
 
         // run check
-      'check:  for wait_check in wait_checks.into_iter() {
+        'check: for wait_check in wait_checks.into_iter() {
             match self.nodes.flatten_parent_ids(wait_check) {
                 Ok(Some(flatten)) => {
-                    for checker in checkers.iter(){
-                        if checker.children_contains_other(&flatten) || flatten.children_contains_other(checker) {
+                    for checker in checkers.iter() {
+                        if checker.children_contains_other(&flatten)
+                            || flatten.children_contains_other(checker)
+                        {
                             exist_error_children_id.push(flatten.get_root().clone());
                             continue 'check;
                         }
