@@ -4,6 +4,50 @@ use crate::graph::edge;
 use crate::util::Identity;
 
 use std::fmt;
+/// Kind of Edge model
+#[derive(Debug, Eq, PartialEq, Copy, Clone)]
+pub enum EdgeKind {
+    /// Kind for Undirected edge
+    Undirected,
+    /// Kind for Directed edge
+    Directed,
+    /// Kind for Undirected hyper edge
+    UndirectedHyper,
+    /// Kind for Directed hyper edge
+    DirectedHyper,
+}
+
+impl EdgeKind {
+    /// check edge is undirected edge
+   pub fn is_undirected(&self) -> bool{
+        self == &EdgeKind::Undirected
+    }
+
+    /// check edge is directed edge
+    pub fn is_directed(&self) -> bool {
+        self == &EdgeKind::Directed
+    }
+
+    /// check edge is undirected or directed edge
+    pub fn is_edge(&self) -> bool {
+        self.is_undirected() || self.is_directed()
+    }
+
+    /// check edge is undirected hyper edge
+    pub fn is_undirected_hyper(&self) -> bool{
+        self == &EdgeKind::UndirectedHyper
+    }
+
+    /// check edge is directed hyper edge
+    pub fn is_directed_hyper(&self) -> bool{
+        self == &EdgeKind::DirectedHyper
+    }
+
+    /// check edge is undirected or directed hyper edge
+    pub fn is_hyper_edge(&self) -> bool {
+        self.is_undirected_hyper() || self.is_directed_hyper()
+    }
+}
 
 /// Model trait for Edge
 pub trait EdgeModel<Id: Identity> {
@@ -12,7 +56,10 @@ pub trait EdgeModel<Id: Identity> {
     // ---
 
     /// get weight for the edge.
-    fn get_weight(&self) -> &i16;
+    fn get_weight(&self) -> i16;
+
+    /// get edge kind for the edge
+    fn get_kind(&self) -> EdgeKind;
 
     /// get source node ids
     ///
@@ -37,25 +84,33 @@ pub trait EdgeModel<Id: Identity> {
     fn is_equal_to_without_weight(&self, other: &Self) -> bool;
 
     /// check edge is undirected edge
-    fn is_undirected(&self) -> bool;
+    fn is_undirected(&self) -> bool{
+        self.get_kind().is_undirected()
+    }
 
     /// check edge is directed edge
-    fn is_directed(&self) -> bool;
+    fn is_directed(&self) -> bool{
+        self.get_kind().is_directed()
+    }
 
     /// check edge is undirected or directed edge
     fn is_edge(&self) -> bool {
-        self.is_undirected() || self.is_directed()
+        self.get_kind().is_edge()
     }
 
     /// check edge is undirected hyper edge
-    fn is_undirected_hyper(&self) -> bool;
+    fn is_undirected_hyper(&self) -> bool{
+        self.get_kind().is_undirected_hyper()
+    }
 
     /// check edge is directed hyper edge
-    fn is_directed_hyper(&self) -> bool;
+    fn is_directed_hyper(&self) -> bool{
+        self.get_kind().is_directed_hyper()
+    }
 
     /// check edge is undirected or directed hyper edge
     fn is_hyper_edge(&self) -> bool {
-        self.is_undirected_hyper() || self.is_directed_hyper()
+        self.get_kind().is_hyper_edge()
     }
 }
 
@@ -78,8 +133,13 @@ impl<'a, Id: Identity> fmt::Display for UndirectedEdge<'a, Id> {
 
 impl<'a, Id: Identity> EdgeModel<Id> for UndirectedEdge<'a, Id> {
     /// get weight for the edge
-    fn get_weight(&self) -> &i16 {
-        &self.weight
+    fn get_weight(&self) -> i16 {
+        *self.weight
+    }
+
+    /// get edge kind for the edge
+    fn get_kind(&self) -> EdgeKind{
+        EdgeKind::Undirected
     }
 
     /// get source node ids
@@ -106,26 +166,6 @@ impl<'a, Id: Identity> EdgeModel<Id> for UndirectedEdge<'a, Id> {
     /// check edge is same to other edge without weight
     fn is_equal_to_without_weight(&self, other: &Self) -> bool {
         self.incidence == other.incidence
-    }
-
-    /// check edge is undirected edge
-    fn is_undirected(&self) -> bool {
-        true
-    }
-
-    /// check edge is directed edge
-    fn is_directed(&self) -> bool {
-        false
-    }
-
-    /// check edge is undirected hyper edge
-    fn is_undirected_hyper(&self) -> bool {
-        false
-    }
-
-    /// check edge is directed hyper edge
-    fn is_directed_hyper(&self) -> bool {
-        false
     }
 }
 
@@ -168,8 +208,13 @@ impl<'a, Id: Identity> fmt::Display for DirectedEdge<'a, Id> {
 
 impl<'a, Id: Identity> EdgeModel<Id> for DirectedEdge<'a, Id> {
     /// get weight for the edge
-    fn get_weight(&self) -> &i16 {
-        &self.weight
+    fn get_weight(&self) -> i16 {
+        *self.weight
+    }
+
+    /// get edge kind for the edge
+    fn get_kind(&self) -> EdgeKind{
+        EdgeKind::Directed
     }
 
     /// get source node ids
@@ -196,26 +241,6 @@ impl<'a, Id: Identity> EdgeModel<Id> for DirectedEdge<'a, Id> {
     /// check edge is same to other edge without weight
     fn is_equal_to_without_weight(&self, other: &Self) -> bool {
         self.incidence == other.incidence
-    }
-
-    /// check edge is undirected edge
-    fn is_undirected(&self) -> bool {
-        false
-    }
-
-    /// check edge is directed edge
-    fn is_directed(&self) -> bool {
-        true
-    }
-
-    /// check edge is undirected hyper edge
-    fn is_undirected_hyper(&self) -> bool {
-        false
-    }
-
-    /// check edge is directed hyper edge
-    fn is_directed_hyper(&self) -> bool {
-        false
     }
 }
 
@@ -263,12 +288,22 @@ impl<'a, Id: Identity> fmt::Display for MixedEdge<'a, Id> {
 
 impl<'a, Id: Identity> EdgeModel<Id> for MixedEdge<'a, Id> {
     /// get weight for the edge
-    fn get_weight(&self) -> &i16 {
+    fn get_weight(&self) -> i16 {
         use MixedEdge::*;
 
         match self {
             Undirected(e) => e.get_weight(),
             Directed(e) => e.get_weight(),
+        }
+    }
+
+    /// get edge kind for the edge
+    fn get_kind(&self) -> EdgeKind{
+        use MixedEdge::*;
+
+        match self {
+            Undirected(e) => e.get_kind(),
+            Directed(e) => e.get_kind(),
         }
     }
 
@@ -321,34 +356,6 @@ impl<'a, Id: Identity> EdgeModel<Id> for MixedEdge<'a, Id> {
             }
             _ => false,
         }
-    }
-
-    /// check edge is undirected edge
-    fn is_undirected(&self) -> bool {
-        if let Self::Undirected { .. } = self {
-            true
-        } else {
-            false
-        }
-    }
-
-    /// check edge is directed edge
-    fn is_directed(&self) -> bool {
-        if let Self::Directed { .. } = self {
-            true
-        } else {
-            false
-        }
-    }
-
-    /// check edge is undirected hyper edge
-    fn is_undirected_hyper(&self) -> bool {
-        false
-    }
-
-    /// check edge is directed hyper edge
-    fn is_directed_hyper(&self) -> bool {
-        false
     }
 }
 
@@ -402,8 +409,13 @@ impl<'a, Id: Identity> fmt::Display for UndirectedHyperEdge<'a, Id> {
 
 impl<'a, Id: Identity> EdgeModel<Id> for UndirectedHyperEdge<'a, Id> {
     /// get weight for the edge
-    fn get_weight(&self) -> &i16 {
-        &self.weight
+    fn get_weight(&self) -> i16 {
+        *self.weight
+    }
+
+    /// get edge kind for the edge
+    fn get_kind(&self) -> EdgeKind{
+        EdgeKind::UndirectedHyper
     }
 
     /// get source node ids
@@ -430,26 +442,6 @@ impl<'a, Id: Identity> EdgeModel<Id> for UndirectedHyperEdge<'a, Id> {
     /// check edge is same to other edge without weight
     fn is_equal_to_without_weight(&self, other: &Self) -> bool {
         self.incidence == other.incidence
-    }
-
-    /// check edge is undirected edge
-    fn is_undirected(&self) -> bool {
-        false
-    }
-
-    /// check edge is directed edge
-    fn is_directed(&self) -> bool {
-        false
-    }
-
-    /// check edge is undirected hyper edge
-    fn is_undirected_hyper(&self) -> bool {
-        true
-    }
-
-    /// check edge is directed hyper edge
-    fn is_directed_hyper(&self) -> bool {
-        false
     }
 }
 
@@ -493,8 +485,13 @@ impl<'a, Id: Identity> fmt::Display for DirectedHyperEdge<'a, Id> {
 
 impl<'a, Id: Identity> EdgeModel<Id> for DirectedHyperEdge<'a, Id> {
     /// get weight for the edge
-    fn get_weight(&self) -> &i16 {
-        &self.weight
+    fn get_weight(&self) -> i16 {
+        *self.weight
+    }
+
+    /// get edge kind for the edge
+    fn get_kind(&self) -> EdgeKind{
+        EdgeKind::DirectedHyper
     }
 
     /// get source node ids
@@ -521,26 +518,6 @@ impl<'a, Id: Identity> EdgeModel<Id> for DirectedHyperEdge<'a, Id> {
     /// check edge is same to other edge without weight
     fn is_equal_to_without_weight(&self, other: &Self) -> bool {
         self.incidence == other.incidence
-    }
-
-    /// check edge is undirected edge
-    fn is_undirected(&self) -> bool {
-        false
-    }
-
-    /// check edge is directed edge
-    fn is_directed(&self) -> bool {
-        false
-    }
-
-    /// check edge is undirected hyper edge
-    fn is_undirected_hyper(&self) -> bool {
-        false
-    }
-
-    /// check edge is directed hyper edge
-    fn is_directed_hyper(&self) -> bool {
-        true
     }
 }
 
@@ -588,12 +565,22 @@ impl<'a, Id: Identity> fmt::Display for MixedHyperEdge<'a, Id> {
 
 impl<'a, Id: Identity> EdgeModel<Id> for MixedHyperEdge<'a, Id> {
     /// get weight for the edge
-    fn get_weight(&self) -> &i16 {
+    fn get_weight(&self) -> i16 {
         use MixedHyperEdge::*;
 
         match self {
             Undirected(e) => e.get_weight(),
             Directed(e) => e.get_weight(),
+        }
+    }
+
+    /// get edge kind for the edge
+    fn get_kind(&self) -> EdgeKind{
+        use MixedHyperEdge::*;
+
+        match self {
+            Undirected(e) => e.get_kind(),
+            Directed(e) => e.get_kind(),
         }
     }
 
@@ -645,34 +632,6 @@ impl<'a, Id: Identity> EdgeModel<Id> for MixedHyperEdge<'a, Id> {
                 self_edge.is_equal_to_without_weight(other_edge)
             }
             _ => false,
-        }
-    }
-
-    /// check edge is undirected edge
-    fn is_undirected(&self) -> bool {
-        false
-    }
-
-    /// check edge is directed edge
-    fn is_directed(&self) -> bool {
-        false
-    }
-
-    /// check edge is undirected hyper edge
-    fn is_undirected_hyper(&self) -> bool {
-        if let Self::Undirected { .. } = self {
-            true
-        } else {
-            false
-        }
-    }
-
-    /// check edge is directed hyper edge
-    fn is_directed_hyper(&self) -> bool {
-        if let Self::Directed { .. } = self {
-            true
-        } else {
-            false
         }
     }
 }
@@ -734,7 +693,7 @@ impl<'a, Id: Identity> fmt::Display for Edge<'a, Id> {
 
 impl<'a, Id: Identity> EdgeModel<Id> for Edge<'a, Id> {
     /// get weight for the edge
-    fn get_weight(&self) -> &i16 {
+    fn get_weight(&self) -> i16 {
         use Edge::*;
 
         match self {
@@ -742,6 +701,18 @@ impl<'a, Id: Identity> EdgeModel<Id> for Edge<'a, Id> {
             Directed(e) => e.get_weight(),
             UndirectedHyper(e) => e.get_weight(),
             DirectedHyper(e) => e.get_weight(),
+        }
+    }
+
+    /// get edge kind for the edge
+    fn get_kind(&self) -> EdgeKind{
+        use Edge::*;
+
+        match self {
+            Undirected(e) => e.get_kind(),
+            Directed(e) => e.get_kind(),
+            UndirectedHyper(e) => e.get_kind(),
+            DirectedHyper(e) => e.get_kind(),
         }
     }
 
@@ -805,42 +776,6 @@ impl<'a, Id: Identity> EdgeModel<Id> for Edge<'a, Id> {
                 self_edge.is_equal_to_without_weight(other_edge)
             }
             _ => false,
-        }
-    }
-
-    /// check edge is undirected edge
-    fn is_undirected(&self) -> bool {
-        if let Self::Undirected { .. } = self {
-            true
-        } else {
-            false
-        }
-    }
-
-    /// check edge is directed edge
-    fn is_directed(&self) -> bool {
-        if let Self::Directed { .. } = self {
-            true
-        } else {
-            false
-        }
-    }
-
-    /// check edge is undirected hyper edge
-    fn is_undirected_hyper(&self) -> bool {
-        if let Self::UndirectedHyper { .. } = self {
-            true
-        } else {
-            false
-        }
-    }
-
-    /// check edge is directed hyper edge
-    fn is_directed_hyper(&self) -> bool {
-        if let Self::DirectedHyper { .. } = self {
-            true
-        } else {
-            false
         }
     }
 }

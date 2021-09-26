@@ -196,6 +196,8 @@ pub mod helper {
         }
     }
 }
+use crate::graph::edge::model::EdgeModel;
+use crate::graph::model::NodeModel;
 use helper::*;
 
 /// graph without layout
@@ -275,7 +277,7 @@ impl<Id: Identity> Graph<Id> {
     }
 
     // ---
-    // node
+    // getter Node
     // ---
 
     /// get incidence node ids to edges which incidence to the node which is between the node_id and top parent and get parent node ids
@@ -357,7 +359,7 @@ impl<Id: Identity> Graph<Id> {
     }
 
     // ---
-    // edge
+    // getter Edge
     // ---
 
     /// get edge ids which have same incidence nodes
@@ -523,6 +525,10 @@ impl<Id: Identity> Graph<Id> {
 
     // ---
     // setter
+    // ---
+
+    // ---
+    // setter Node
     // ---
 
     /// add vertex node if not exist.
@@ -716,6 +722,34 @@ impl<Id: Identity> Graph<Id> {
 
         Ok(None)
     }
+
+    /// update node weight from it's old weight.
+    pub fn update_node_weight<B: ?Sized, F>(
+        &mut self,
+        node_id: &B,
+        new_weight: F,
+    ) -> Result<(), GraphError<Id>>
+    where
+        Id: Borrow<B>,
+        B: Identity + ToOwned<Owned = Id>,
+        F: FnOnce(model::NodeKind, i16) -> i16,
+    {
+        return match self.nodes._get_node_as_mut(node_id) {
+            None => Err(GraphError::NotExistNodeAtId(node_id.to_owned())),
+            Some(node) => {
+                let model = node.as_model();
+                let kind = model.get_kind();
+                let old_weight = model.get_weight();
+                node.set_weight(new_weight(kind, old_weight));
+
+                Ok(())
+            }
+        };
+    }
+
+    // ---
+    // setter Edge
+    // ---
 
     /// add undirected edge.
     /// If already exist at the id, then will not create undirected edge and return the edge id.
@@ -923,6 +957,30 @@ impl<Id: Identity> Graph<Id> {
         }
     }
 
+    /// update edge weight from it's old weight.
+    pub fn update_edge_weight<B: ?Sized, F>(
+        &mut self,
+        edge_id: &B,
+        new_weight: F,
+    ) -> Result<(), GraphError<Id>>
+    where
+        Id: Borrow<B>,
+        B: Identity + ToOwned<Owned = Id>,
+        F: FnOnce(model::EdgeKind, i16) -> i16,
+    {
+        return match self.edges._get_edge_as_mut(edge_id) {
+            None => Err(GraphError::NotExistEdgeAtId(edge_id.to_owned())),
+            Some(edge) => {
+                let model = edge.as_model();
+                let kind = model.get_kind();
+                let old_weight = model.get_weight();
+                edge.set_weight(new_weight(kind, old_weight));
+
+                Ok(())
+            }
+        };
+    }
+
     // ---
     // checker
     // ---
@@ -1093,6 +1151,7 @@ impl<Id: Identity> Graph<Id> {
     // ---
     // delete
     // ---
+
     /// clear nodes and edges
     pub fn clear(&mut self) {
         self.nodes.clear();
@@ -1106,7 +1165,7 @@ impl<Id: Identity> Graph<Id> {
 
     /// clear all edges
     pub fn clear_edge(&mut self) {
-        self.nodes.clear_all_incidence();
+        self.nodes.clear_incidence();
         self.edges.clear();
     }
 
@@ -1124,14 +1183,7 @@ impl<Id: Identity> Graph<Id> {
         }
     }
 
-    /// delete nodes at node_id if exist with remove illegal edge.
-    pub fn delete_nodes(&mut self, node_ids: &[Id]) {
-        for node_id in node_ids.iter() {
-            self.delete_node(node_id);
-        }
-    }
-
-    /// delete node at the node_id with incidence edges
+    /// delete node at the node_id with incidence edges.
     pub fn delete_node_with_edge<B: ?Sized>(&mut self, node_id: &B)
     where
         Id: Borrow<B>,
@@ -1139,14 +1191,9 @@ impl<Id: Identity> Graph<Id> {
     {
         if let Some(pop_node) = self.nodes.pop_node(node_id) {
             let edge_ids = pop_node.incidences_into_edge_ids();
-            self.delete_edges(&edge_ids);
-        }
-    }
-
-    /// delete node at the node_id with incidence edges
-    pub fn delete_nodes_with_edge(&mut self, node_ids: &[Id]) {
-        for node_id in node_ids {
-            self.delete_node_with_edge(node_id);
+            for edge_id in edge_ids.iter() {
+                self.delete_edge::<Id>(edge_id);
+            }
         }
     }
 
@@ -1165,14 +1212,7 @@ impl<Id: Identity> Graph<Id> {
         }
     }
 
-    /// delete edges without delete node
-    pub fn delete_edges(&mut self, edge_ids: &[Id]) {
-        for edge_id in edge_ids {
-            self.delete_edge(edge_id);
-        }
-    }
-
-    /// delete edge with incidence node
+    /// delete edge with incidence node.
     pub fn delete_edge_with_node<B: ?Sized>(&mut self, edge_id: &B)
     where
         Id: Borrow<B>,
@@ -1180,22 +1220,9 @@ impl<Id: Identity> Graph<Id> {
     {
         if let Some(pop_edge) = self.edges.pop_edge(edge_id) {
             let will_delete_incidences = pop_edge.incidence_into_node_ids();
-            self.delete_nodes(&will_delete_incidences);
-        }
-    }
-
-    /// delete edges with incidence node
-    pub fn delete_edges_with_node(&mut self, edge_ids: &[Id]) {
-        let mut will_delete_nodes: Vec<Id> = Vec::new();
-        for edge_id in edge_ids.iter() {
-            if let Some(pop_edge) = self.edges.pop_edge(edge_id) {
-                will_delete_nodes.extend(pop_edge.incidence_into_node_ids());
+            for node_id in will_delete_incidences.iter() {
+                self.delete_node::<Id>(node_id);
             }
         }
-        // remove node_ids to unique
-        will_delete_nodes.sort();
-        will_delete_nodes.dedup();
-
-        self.delete_nodes(&will_delete_nodes);
     }
 }

@@ -6,14 +6,38 @@ use crate::util::Identity;
 
 use std::fmt;
 
+/// Kind of Node model
+#[derive(Debug, Eq, PartialEq, Copy, Clone)]
+pub enum NodeKind {
+    /// Kind for Vertex node
+    Vertex,
+    /// Kind for Group node
+    Group,
+}
+
+impl NodeKind {
+    /// check is node point
+    pub fn is_vertex(&self) -> bool {
+        self == &NodeKind::Vertex
+    }
+
+    /// check is node group
+    pub fn is_group(&self) -> bool {
+        self == &NodeKind::Group
+    }
+}
+
 /// Model trait for Node
 pub trait NodeModel<Id: Identity> {
     // ---
     // getter
     // ---
 
-    /// get weight for the edge
-    fn get_weight(&self) -> &i16;
+    /// get weight for the node
+    fn get_weight(&self) -> i16;
+
+    /// get kind for the node
+    fn get_kind(&self) -> NodeKind;
 
     /// get node_id for group which is contains me.
     fn get_parent(&self) -> &Option<Id>;
@@ -27,10 +51,14 @@ pub trait NodeModel<Id: Identity> {
     }
 
     /// check is node point
-    fn is_vertex(&self) -> bool;
+    fn is_vertex(&self) -> bool {
+        self.get_kind().is_vertex()
+    }
 
     /// check is node group
-    fn is_group(&self) -> bool;
+    fn is_group(&self) -> bool {
+        self.get_kind().is_group()
+    }
 }
 
 /// Model for Node point
@@ -61,24 +89,19 @@ impl<'a, Id: Identity> fmt::Display for VertexNode<'a, Id> {
 }
 
 impl<'a, Id: Identity> NodeModel<Id> for VertexNode<'a, Id> {
-    /// get weight for the edge
-    fn get_weight(&self) -> &i16 {
-        &self.weight
+    /// get weight for the node
+    fn get_weight(&self) -> i16 {
+        *self.weight
+    }
+
+    /// get kind for the node
+    fn get_kind(&self) -> NodeKind {
+        NodeKind::Vertex
     }
 
     /// get node_id for group which is contains me.
     fn get_parent(&self) -> &Option<Id> {
         self.parent
-    }
-
-    /// check is node point
-    fn is_vertex(&self) -> bool {
-        true
-    }
-
-    /// check is node group
-    fn is_group(&self) -> bool {
-        false
     }
 }
 
@@ -149,24 +172,19 @@ impl<'a, Id: Identity> fmt::Display for GroupNode<'a, Id> {
 }
 
 impl<'a, Id: Identity> NodeModel<Id> for GroupNode<'a, Id> {
-    /// get weight for the edge
-    fn get_weight(&self) -> &i16 {
-        &self.weight
+    /// get weight for the node
+    fn get_weight(&self) -> i16 {
+        *self.weight
+    }
+
+    /// get kind for the node
+    fn get_kind(&self) -> NodeKind {
+        NodeKind::Group
     }
 
     /// get node_id for group which is contains me.
     fn get_parent(&self) -> &Option<Id> {
         self.parent
-    }
-
-    /// check is node point
-    fn is_vertex(&self) -> bool {
-        false
-    }
-
-    /// check is node group
-    fn is_group(&self) -> bool {
-        true
     }
 }
 
@@ -224,13 +242,23 @@ impl<'a, Id: Identity> fmt::Display for Node<'a, Id> {
 }
 
 impl<'a, Id: Identity> NodeModel<Id> for Node<'a, Id> {
-    /// get weight for the edge
-    fn get_weight(&self) -> &i16 {
+    /// get weight for the node
+    fn get_weight(&self) -> i16 {
         use Node::*;
 
         match self {
             Vertex(n) => n.get_weight(),
             Group(n) => n.get_weight(),
+        }
+    }
+
+    /// get kind for the node
+    fn get_kind(&self) -> NodeKind {
+        use Node::*;
+
+        match self {
+            Vertex(n) => n.get_kind(),
+            Group(n) => n.get_kind(),
         }
     }
 
@@ -241,26 +269,6 @@ impl<'a, Id: Identity> NodeModel<Id> for Node<'a, Id> {
         match self {
             Vertex(n) => n.get_parent(),
             Group(n) => n.get_parent(),
-        }
-    }
-
-    /// check is node point
-    fn is_vertex(&self) -> bool {
-        use Node::*;
-
-        match self {
-            Vertex(n) => n.is_vertex(),
-            Group(n) => n.is_vertex(),
-        }
-    }
-
-    /// check is node group
-    fn is_group(&self) -> bool {
-        use Node::*;
-
-        match self {
-            Vertex(n) => n.is_group(),
-            Group(n) => n.is_group(),
         }
     }
 }

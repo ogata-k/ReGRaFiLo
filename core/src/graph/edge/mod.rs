@@ -201,17 +201,15 @@ impl<Id: Identity> Edge<Id> {
     // getter
     // ---
 
-    /// get weight.
+    /// get weight for the edge.
     /// If weight is 1 or no weight, the edge's weight is 1.
-    pub fn get_weight(&self) -> &i16 {
-        use Edge::*;
+    pub fn get_weight(&self) -> i16 {
+        self.as_model().get_weight()
+    }
 
-        match self {
-            Undirected { weight, .. }
-            | Directed { weight, .. }
-            | UndirectedHyper { weight, .. }
-            | DirectedHyper { weight, .. } => weight,
-        }
+    /// get kind for the edge.
+    pub fn get_kind(&self) -> model::EdgeKind {
+        self.as_model().get_kind()
     }
 
     /// Generate incidences data from the edge with assume that we already check support edge.
@@ -363,6 +361,30 @@ impl<Id: Identity> Edge<Id> {
     // setter
     // ---
 
+    /// set weight
+    pub fn set_weight(&mut self, weight: i16) {
+        use Edge::*;
+
+        match self {
+            Undirected {
+                weight: mut _weight,
+                ..
+            }
+            | Directed {
+                weight: mut _weight,
+                ..
+            }
+            | UndirectedHyper {
+                weight: mut _weight,
+                ..
+            }
+            | DirectedHyper {
+                weight: mut _weight,
+                ..
+            } => _weight = weight,
+        }
+    }
+
     // ---
     // checker
     // ---
@@ -492,6 +514,15 @@ impl<Id: Identity> EdgeStore<Id> {
         self.inner.get(edge_id)
     }
 
+    /// get edge as mutable at edge_id
+    pub(crate) fn _get_edge_as_mut<B: ?Sized>(&mut self, edge_id: &B) -> Option<&mut Edge<Id>>
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        self.inner.get_mut(edge_id)
+    }
+
     /// get incidence node ids searched by edge_ids.
     pub fn get_incidence_node_ids_by_ids(&self, edge_ids: &[&Id]) -> Vec<&Id> {
         let mut result = Vec::new();
@@ -515,59 +546,37 @@ impl<Id: Identity> EdgeStore<Id> {
     }
 
     /// to iterator for edge
-    pub fn edge_iter<'a>(
-        &'a self,
-    ) -> EdgeIter<'a, Id> {
+    pub fn edge_iter<'a>(&'a self) -> EdgeIter<'a, Id> {
         EdgeIter::new(self)
     }
 
     /// to iterator for undirected edge
-    pub fn undirected_edge_iter<'a>(
-        &'a self,
-    ) -> UndirectedEdgeIter<'a, Id>
-    {
+    pub fn undirected_edge_iter<'a>(&'a self) -> UndirectedEdgeIter<'a, Id> {
         UndirectedEdgeIter::new(self)
     }
 
     /// to iterator for directed edge
-    pub fn directed_edge_iter<'a>(
-        &'a self,
-    ) -> DirectedEdgeIter<'a, Id> {
+    pub fn directed_edge_iter<'a>(&'a self) -> DirectedEdgeIter<'a, Id> {
         DirectedEdgeIter::new(self)
     }
 
     /// to iterator for undirected or directed edge
-    pub fn mixed_edge_iter<'a>(
-        &'a self,
-    ) -> MixedEdgeIter<'a, Id> {
+    pub fn mixed_edge_iter<'a>(&'a self) -> MixedEdgeIter<'a, Id> {
         MixedEdgeIter::new(self)
     }
 
     /// to iterator for undirected hyper edge
-    pub fn undirected_hyper_edge_iter<'a>(
-        &'a self,
-    ) -> UndirectedHyperEdgeIter<
-        'a,
-        Id,
-    > {
+    pub fn undirected_hyper_edge_iter<'a>(&'a self) -> UndirectedHyperEdgeIter<'a, Id> {
         UndirectedHyperEdgeIter::new(self)
     }
 
     /// to iterator for directed hyper edge
-    pub fn directed_hyper_edge_iter<'a>(
-        &'a self,
-    ) -> DirectedHyperEdgeIter<
-        'a,
-        Id,
-    > {
+    pub fn directed_hyper_edge_iter<'a>(&'a self) -> DirectedHyperEdgeIter<'a, Id> {
         DirectedHyperEdgeIter::new(self)
     }
 
     /// to iterator for undirected or directed hyper edge
-    pub fn mixed_hyper_edge_iter<'a>(
-        &'a self,
-    ) -> MixedHyperEdgeIter<'a, Id>
-    {
+    pub fn mixed_hyper_edge_iter<'a>(&'a self) -> MixedHyperEdgeIter<'a, Id> {
         MixedHyperEdgeIter::new(self)
     }
 

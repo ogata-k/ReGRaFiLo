@@ -5,6 +5,7 @@ use crate::util::Identity;
 use std::error::Error;
 use std::fmt;
 use std::fmt::Debug;
+use crate::graph::model::EdgeModel;
 
 /// alias for Edge structure
 #[derive(Debug, Eq, PartialEq, Clone)]
@@ -40,8 +41,8 @@ impl<Id: Identity> ErrorEdge<Id> {
 
     /// get weight.
     /// If weight is 1 or no weight, the edge's weight is 1.
-    pub fn get_weight(&self) -> &i16 {
-        self.edge.get_weight()
+    pub fn get_weight(&self) -> i16 {
+        self.edge.as_model().get_weight()
     }
 
     /// create model as edge
@@ -96,6 +97,10 @@ pub enum GraphError<Id: Identity> {
     ///
     /// arg: node_id
     AlreadyExistNodeAtId(Id),
+    /// node not exist at the specified id.
+    ///
+    /// arg: node_id
+    NotExistNodeAtId(Id),
     /// not support group error.
     ///
     /// arg: group_node_id
@@ -126,6 +131,10 @@ pub enum GraphError<Id: Identity> {
     ///
     /// arg: edge_id
     AlreadyExistEdgeAtId(Id),
+    /// edge not exist at the specified id.
+    ///
+    /// arg: edge_id
+    NotExistEdgeAtId(Id),
     /// not support edge error
     ///
     /// arg: edge_id, edge
@@ -151,8 +160,11 @@ impl<Id: Identity> fmt::Display for GraphError<Id> {
         match self {
             // Node
             AlreadyExistNodeAtId(node_id) => {
-                write!(f, "Already node exist at the id {:?}.", node_id)
+                write!(f, "Already node is exist at the id {:?}.", node_id)
             }
+            NotExistNodeAtId(node_id) => {
+            write!(f, "Specified target node is not exist at the id {:?}.", node_id)
+        }
             NotSupportGroupNode(group_node_id) => {
                 write!(f, "Not support group node at the id {:?}.", group_node_id)
             }
@@ -230,7 +242,10 @@ impl<Id: Identity> fmt::Display for GraphError<Id> {
 
             // Edge
             AlreadyExistEdgeAtId(edge_id) => {
-                write!(f, "Already edge exist at the id {:?}.", edge_id)
+                write!(f, "Already edge is exist at the id {:?}.", edge_id)
+            }
+            NotExistEdgeAtId(edge_id) => {
+                write!(f, "Specified target edge is not exist at the id {:?}.", edge_id)
             }
             EdgeNotSupported(edge_id, edge) => write!(
                 f,

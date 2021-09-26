@@ -115,11 +115,13 @@ impl<Id: Identity> Node<Id> {
     // ---
 
     /// get weight for the node
-    pub fn get_weight(&self) -> &i16 {
-        match &self {
-            Node::Vertex { weight, .. } => weight,
-            Node::Group { weight, .. } => weight,
-        }
+    pub fn get_weight(&self) -> i16 {
+        self.as_model().get_weight()
+    }
+
+    /// get weight for the node
+    pub fn get_kind(&self) -> model::NodeKind {
+        self.as_model().get_kind()
     }
 
     /// get parent node_id for the node
@@ -162,7 +164,7 @@ impl<Id: Identity> Node<Id> {
         }
     }
 
-    /// get edge_ids from the node's incidenes
+    /// get edge_ids from the node's incidences
     pub fn incidences_into_edge_ids(self) -> Vec<Id> {
         let incidences = match self {
             Node::Vertex { incidences, .. } => incidences,
@@ -217,6 +219,22 @@ impl<Id: Identity> Node<Id> {
         match self {
             Node::Vertex { parent, .. } => mem::replace(parent, parent_id),
             Node::Group { parent, .. } => mem::replace(parent, parent_id),
+        }
+    }
+
+    /// set weight
+    pub fn set_weight(&mut self, weight: i16) {
+        use Node::*;
+
+        match self {
+            Vertex {
+                weight: mut _weight,
+                ..
+            }
+            | Group {
+                weight: mut _weight,
+                ..
+            } => _weight = weight,
         }
     }
 
@@ -675,23 +693,17 @@ impl<Id: Identity> NodeStore<Id> {
     }
 
     /// to iterator for node
-    pub fn node_iter<'a>(
-        &'a self,
-    ) -> NodeIter<'a, Id> {
+    pub fn node_iter<'a>(&'a self) -> NodeIter<'a, Id> {
         NodeIter::new(self)
     }
 
     /// to iterator for node point
-    pub fn vertex_node_iter<'a>(
-        &'a self,
-    ) -> VertexNodeIter<'a, Id> {
+    pub fn vertex_node_iter<'a>(&'a self) -> VertexNodeIter<'a, Id> {
         VertexNodeIter::new(self)
     }
 
     /// to iterator for node group
-    pub fn group_node_iter<'a>(
-        &'a self,
-    ) -> GroupNodeIter<'a, Id> {
+    pub fn group_node_iter<'a>(&'a self) -> GroupNodeIter<'a, Id> {
         GroupNodeIter::new(self)
     }
 
@@ -866,7 +878,7 @@ impl<Id: Identity> NodeStore<Id> {
     }
 
     /// clear all nodes
-    pub fn clear_all_incidence(&mut self) {
+    pub fn clear_incidence(&mut self) {
         for node in self.inner.values_mut() {
             node.clear_incidences();
         }
