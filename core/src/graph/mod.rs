@@ -1170,59 +1170,83 @@ impl<Id: Identity> Graph<Id> {
     }
 
     /// delete node at node_id if exist with remove illegal edge.
-    pub fn delete_node<B: ?Sized>(&mut self, node_id: &B)
+    ///
+    /// If exist node, then return the id.
+    pub fn delete_node<B: ?Sized>(&mut self, node_id: &B) -> Option<Id>
     where
         Id: Borrow<B>,
         B: Identity,
     {
-        if let Some((pop_node_id, pop_node)) = self.nodes.pop_node_with_get_id(node_id) {
+        if let Some((remove_node_id, remove_node)) = self.nodes.remove_with_get_id(node_id) {
             let will_delete_incidences = self
                 .edges
-                ._remove_node_id_and_illegal_edge_with_collect(pop_node_id, pop_node);
+                ._remove_node_id_and_illegal_edge_with_collect(&remove_node_id, remove_node);
             self.nodes.remove_edges_by_ids(&will_delete_incidences);
+
+            Some(remove_node_id)
+        } else {
+            None
         }
     }
 
     /// delete node at the node_id with incidence edges.
-    pub fn delete_node_with_edge<B: ?Sized>(&mut self, node_id: &B)
+    ///
+    /// If exist node, then return the id.
+    pub fn delete_node_with_edge<B: ?Sized>(&mut self, node_id: &B) -> Option<Id>
     where
         Id: Borrow<B>,
         B: Identity,
     {
-        if let Some(pop_node) = self.nodes.pop_node(node_id) {
-            let edge_ids = pop_node.incidences_into_edge_ids();
+        if let Some((remove_node_id, remove_node)) = self.nodes.remove_with_get_id(node_id) {
+            let edge_ids = remove_node.incidences_into_edge_ids();
             for edge_id in edge_ids.iter() {
                 self.delete_edge::<Id>(edge_id);
             }
+
+            Some(remove_node_id)
+        } else {
+            None
         }
     }
 
-    /// delete edge without delete node
-    pub fn delete_edge<B: ?Sized>(&mut self, edge_id: &B)
+    /// delete edge without delete node.
+    ///
+    /// If exist edge, then return the id.
+    pub fn delete_edge<B: ?Sized>(&mut self, edge_id: &B) -> Option<Id>
     where
         Id: Borrow<B>,
         B: Identity,
     {
-        if let Some(pop_edge) = self.edges.pop_edge(edge_id) {
-            let will_delete_node_id = pop_edge.incidence_into_node_ids();
+        if let Some((remove_edge_id, remove_edge)) = self.edges.remove_with_get_id(edge_id) {
+            let will_delete_node_id = remove_edge.incidence_into_node_ids();
             for delete_node_id in will_delete_node_id {
                 self.nodes
                     .remove_edges_by_id(delete_node_id.borrow(), &edge_id);
             }
+
+            Some(remove_edge_id)
+        } else {
+            None
         }
     }
 
     /// delete edge with incidence node.
-    pub fn delete_edge_with_node<B: ?Sized>(&mut self, edge_id: &B)
+    ///
+    /// If exist edge, then return the id.
+    pub fn delete_edge_with_node<B: ?Sized>(&mut self, edge_id: &B) -> Option<Id>
     where
         Id: Borrow<B>,
         B: Identity,
     {
-        if let Some(pop_edge) = self.edges.pop_edge(edge_id) {
-            let will_delete_incidences = pop_edge.incidence_into_node_ids();
+        if let Some((remove_edge_id, remove_edge)) = self.edges.remove_with_get_id(edge_id) {
+            let will_delete_incidences = remove_edge.incidence_into_node_ids();
             for node_id in will_delete_incidences.iter() {
                 self.delete_node::<Id>(node_id);
             }
+
+            Some(remove_edge_id)
+        } else {
+            None
         }
     }
 }

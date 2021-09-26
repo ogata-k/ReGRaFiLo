@@ -885,7 +885,7 @@ impl<Id: Identity> NodeStore<Id> {
     }
 
     /// remove and get node at node_id
-    pub fn pop_node<B: ?Sized>(&mut self, node_id: &B) -> Option<Node<Id>>
+    pub fn remove<B: ?Sized>(&mut self, node_id: &B) -> Option<Node<Id>>
     where
         Id: Borrow<B>,
         B: Identity,
@@ -893,8 +893,8 @@ impl<Id: Identity> NodeStore<Id> {
         self.inner.remove(node_id)
     }
 
-    /// remove and get node at node_id
-    pub fn pop_node_with_get_id<B: ?Sized>(&mut self, node_id: &B) -> Option<(Id, Node<Id>)>
+    /// remove and get node with node_id
+    pub fn remove_with_get_id<B: ?Sized>(&mut self, node_id: &B) -> Option<(Id, Node<Id>)>
     where
         Id: Borrow<B>,
         B: Identity,
@@ -903,7 +903,7 @@ impl<Id: Identity> NodeStore<Id> {
     }
 
     /// remove node's children ids
-    pub fn remove_children_id_to_id<B: ?Sized>(
+    pub fn remove_children_id<B: ?Sized>(
         &mut self,
         target_id: &B,
         from_ids: &[Id],
