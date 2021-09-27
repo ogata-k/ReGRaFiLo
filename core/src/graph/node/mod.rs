@@ -11,7 +11,7 @@ pub use flatten::*;
 pub use incidence::*;
 use iter::*;
 use std::borrow::Borrow;
-use std::collections::btree_map::{Entry, Iter};
+use std::collections::btree_map::Iter;
 use std::collections::BTreeMap;
 use std::fmt;
 use std::mem;
