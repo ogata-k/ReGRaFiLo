@@ -269,7 +269,7 @@ impl<Id: Identity> Edge<Id> {
     }
 
     /// get node_ids from the edge's incidenes
-    pub fn incidence_into_node_ids(self) -> Vec<Id> {
+    pub fn into_incidence_node_ids(self) -> Vec<Id> {
         match self {
             Edge::Undirected {
                 ids: [id1, id2], ..

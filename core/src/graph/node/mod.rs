@@ -148,6 +148,14 @@ impl<Id: Identity> Node<Id> {
         }
     }
 
+    /// get children. If this node is vertex node, return empty list.
+    pub fn get_children(&self) -> &[Id] {
+        match &self {
+            Node::Vertex { .. } => &[],
+            Node::Group { children, .. } => children.as_slice(),
+        }
+    }
+
     /// get incidences list for the node
     pub fn get_incidences(&self) -> &[Incidence<Id>] {
         match &self {
@@ -292,6 +300,23 @@ impl<Id: Identity> Node<Id> {
             Node::Group { parent, .. } => {
                 let _ = mem::replace(parent, None);
             }
+        }
+    }
+
+    /// remove specified child
+    pub(crate) fn _remove_child<B: ?Sized>(&mut self, child_id: &B)
+        where
+            Id: Borrow<B>,
+            B: Identity,
+    {
+        match self {
+            Node::Group {
+                children: _children,
+                ..
+            } => {
+                _children.retain(|_child_id| _child_id.borrow() != child_id);
+            }
+            _ => {}
         }
     }
 

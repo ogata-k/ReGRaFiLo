@@ -1172,16 +1172,84 @@ impl<Id: Identity> Graph<Id> {
     /// delete node at node_id if exist with remove illegal edge.
     ///
     /// If exist node, then return the id.
+    /// If specify node is group, remove the group node and not remove the group's children.
     pub fn delete_node<B: ?Sized>(&mut self, node_id: &B) -> Option<Id>
     where
         Id: Borrow<B>,
         B: Identity,
     {
         if let Some((remove_node_id, remove_node)) = self.nodes.remove_with_get_id(node_id) {
+            // If exist parent. remove the child from the parent group which have this node as the child.
+            if let Some(parent_id) = remove_node.get_parent() {
+                if let Some(_parent) = self.nodes._get_node_as_mut::<Id>(parent_id) {
+                    _parent._remove_child(node_id);
+                }
+            }
+
+            let _children: Vec<Id> = remove_node.get_children().to_vec();
+
             let will_delete_incidences = self
                 .edges
                 ._remove_node_id_and_illegal_edge_with_collect(&remove_node_id, remove_node);
             self.nodes.remove_edges_by_ids(&will_delete_incidences);
+
+            for child_id in _children.iter() {
+                if let Some(child) = self.nodes._get_node_as_mut::<Id>(child_id) {
+                    child.remove_parent();
+                }
+            }
+
+            Some(remove_node_id)
+        } else {
+            None
+        }
+    }
+
+    /// delete node at node_id if exist with remove illegal edge.
+    ///
+    /// If exist node, then return the id.
+    /// If specify node is group, remove the group node and the group's children.
+    pub fn delete_node_if_group_with_child<B: ?Sized>(&mut self, node_id: &B) -> Option<Id>
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        self._delete_node_if_group_with_child(node_id, true)
+    }
+
+    /// delete node at node_id if exist with remove illegal edge.
+    ///
+    /// If exist node, then return the id.
+    /// If specify node is group, remove the group node and the group's children.
+    fn _delete_node_if_group_with_child<B: ?Sized>(
+        &mut self,
+        node_id: &B,
+        is_root: bool,
+    ) -> Option<Id>
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        if let Some((remove_node_id, remove_node)) = self.nodes.remove_with_get_id(node_id) {
+            if is_root {
+                // If exist parent. remove the child from the parent group which have this node as the child.
+                if let Some(parent_id) = remove_node.get_parent() {
+                    if let Some(_parent) = self.nodes._get_node_as_mut::<Id>(parent_id) {
+                        _parent._remove_child(node_id);
+                    }
+                }
+            }
+
+            let mut _children: Vec<Id> = remove_node.get_children().to_vec();
+
+            let will_delete_incidences = self
+                .edges
+                ._remove_node_id_and_illegal_edge_with_collect(&remove_node_id, remove_node);
+            self.nodes.remove_edges_by_ids(&will_delete_incidences);
+
+            for child_id in _children.iter() {
+                self._delete_node_if_group_with_child::<Id>(child_id, false);
+            }
 
             Some(remove_node_id)
         } else {
@@ -1192,15 +1260,86 @@ impl<Id: Identity> Graph<Id> {
     /// delete node at the node_id with incidence edges.
     ///
     /// If exist node, then return the id.
+    /// If specify node is group, remove the group node and not remove the group's children.
     pub fn delete_node_with_edge<B: ?Sized>(&mut self, node_id: &B) -> Option<Id>
     where
         Id: Borrow<B>,
         B: Identity,
     {
         if let Some((remove_node_id, remove_node)) = self.nodes.remove_with_get_id(node_id) {
+            // If exist parent. remove the child from the parent group which have this node as the child.
+            if let Some(parent_id) = remove_node.get_parent() {
+                if let Some(_parent) = self.nodes._get_node_as_mut::<Id>(parent_id) {
+                    _parent._remove_child(node_id);
+                }
+            }
+
+            let _children: Vec<Id> = remove_node.get_children().to_vec();
+
             let edge_ids = remove_node.incidences_into_edge_ids();
             for edge_id in edge_ids.iter() {
                 self.delete_edge::<Id>(edge_id);
+            }
+
+            for child_id in _children.iter() {
+                if let Some(child) = self.nodes._get_node_as_mut::<Id>(child_id) {
+                    child.remove_parent();
+                }
+            }
+
+            Some(remove_node_id)
+        } else {
+            None
+        }
+    }
+
+    /// delete node at the node_id with incidence edges.
+    ///
+    /// If exist node, then return the id.
+    /// If specify node is group, remove the group node and the group's children.
+    pub fn delete_node_with_edge_if_group_with_child<B: ?Sized>(
+        &mut self,
+        node_id: &B,
+    ) -> Option<Id>
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        self._delete_node_with_edge_if_group_with_child(node_id, true)
+    }
+
+    /// delete node at the node_id with incidence edges.
+    ///
+    /// If exist node, then return the id.
+    /// If specify node is group, remove the group node and the group's children.
+    fn _delete_node_with_edge_if_group_with_child<B: ?Sized>(
+        &mut self,
+        node_id: &B,
+        is_root: bool,
+    ) -> Option<Id>
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        if let Some((remove_node_id, remove_node)) = self.nodes.remove_with_get_id(node_id) {
+            if is_root {
+                // If exist parent. remove the child from the parent group which have this node as the child.
+                if let Some(parent_id) = remove_node.get_parent() {
+                    if let Some(_parent) = self.nodes._get_node_as_mut::<Id>(parent_id) {
+                        _parent._remove_child(node_id);
+                    }
+                }
+            }
+
+            let mut _children: Vec<Id> = remove_node.get_children().to_vec();
+
+            let edge_ids = remove_node.incidences_into_edge_ids();
+            for edge_id in edge_ids.iter() {
+                self.delete_edge::<Id>(edge_id);
+            }
+
+            for child_id in _children.iter() {
+                self._delete_node_with_edge_if_group_with_child::<Id>(child_id, false);
             }
 
             Some(remove_node_id)
@@ -1218,10 +1357,10 @@ impl<Id: Identity> Graph<Id> {
         B: Identity,
     {
         if let Some((remove_edge_id, remove_edge)) = self.edges.remove_with_get_id(edge_id) {
-            let will_delete_node_id = remove_edge.incidence_into_node_ids();
-            for delete_node_id in will_delete_node_id {
+            let incidence_node_ids = remove_edge.into_incidence_node_ids();
+            for incidence_node_id in incidence_node_ids.iter() {
                 self.nodes
-                    .remove_edges_by_id(delete_node_id.borrow(), &edge_id);
+                    .remove_edges_by_id(incidence_node_id.borrow(), &edge_id);
             }
 
             Some(remove_edge_id)
@@ -1233,15 +1372,40 @@ impl<Id: Identity> Graph<Id> {
     /// delete edge with incidence node.
     ///
     /// If exist edge, then return the id.
+    /// If specify edge's incidence node is group, remove the group node and not remove the group's children.
     pub fn delete_edge_with_node<B: ?Sized>(&mut self, edge_id: &B) -> Option<Id>
     where
         Id: Borrow<B>,
         B: Identity,
     {
         if let Some((remove_edge_id, remove_edge)) = self.edges.remove_with_get_id(edge_id) {
-            let will_delete_incidences = remove_edge.incidence_into_node_ids();
-            for node_id in will_delete_incidences.iter() {
-                self.delete_node::<Id>(node_id);
+            let incidence_node_ids = remove_edge.into_incidence_node_ids();
+            for incidence_node_id in incidence_node_ids.iter() {
+                self.delete_node::<Id>(incidence_node_id);
+            }
+
+            Some(remove_edge_id)
+        } else {
+            None
+        }
+    }
+
+    /// delete edge with incidence node.
+    ///
+    /// If exist edge, then return the id.
+    /// If specify edge's incidence node is group, remove the group node and the group's children.
+    pub fn delete_edge_with_node_if_group_with_child<B: ?Sized>(
+        &mut self,
+        edge_id: &B,
+    ) -> Option<Id>
+    where
+        Id: Borrow<B>,
+        B: Identity,
+    {
+        if let Some((remove_edge_id, remove_edge)) = self.edges.remove_with_get_id(edge_id) {
+            let incidence_node_ids = remove_edge.into_incidence_node_ids();
+            for incidence_node_id in incidence_node_ids.iter() {
+                self.delete_node_if_group_with_child::<Id>(incidence_node_id);
             }
 
             Some(remove_edge_id)
