@@ -515,7 +515,7 @@ impl<Id: Identity> EdgeStore<Id> {
     }
 
     /// get edge as mutable at edge_id
-    pub(crate) fn _get_edge_as_mut<B: ?Sized>(&mut self, edge_id: &B) -> Option<&mut Edge<Id>>
+    pub fn get_edge_as_mut<B: ?Sized>(&mut self, edge_id: &B) -> Option<&mut Edge<Id>>
     where
         Id: Borrow<B>,
         B: Identity,
@@ -541,7 +541,7 @@ impl<Id: Identity> EdgeStore<Id> {
     }
 
     /// inner store iter
-    pub(crate) fn _iter<'a>(&'a self) -> Iter<'a, Id, Edge<Id>> {
+    pub fn inner_store_iter<'a>(&'a self) -> Iter<'a, Id, Edge<Id>> {
         self.inner.iter()
     }
 
@@ -639,7 +639,7 @@ impl<Id: Identity> EdgeStore<Id> {
 
     /// remove node_id and node's incidences from edge store
     /// return value is Vec<(node_id, edge_id>
-    pub(crate) fn _remove_node_id_and_illegal_edge_with_collect(
+    pub fn remove_node_id_and_illegal_edge_with_collect(
         &mut self,
         deleted_node_id: &Id,
         deleted_node: Node<Id>,

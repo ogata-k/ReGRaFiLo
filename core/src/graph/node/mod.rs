@@ -304,7 +304,7 @@ impl<Id: Identity> Node<Id> {
     }
 
     /// remove specified child
-    pub(crate) fn _remove_child<B: ?Sized>(&mut self, child_id: &B)
+    pub fn remove_child<B: ?Sized>(&mut self, child_id: &B)
         where
             Id: Borrow<B>,
             B: Identity,
@@ -321,7 +321,7 @@ impl<Id: Identity> Node<Id> {
     }
 
     /// remove specified children
-    pub(crate) fn _remove_children(&mut self, children: &[Id]) {
+    pub fn remove_children(&mut self, children: &[Id]) {
         match self {
             Node::Group {
                 children: _children,
@@ -420,17 +420,12 @@ impl<Id: Identity> NodeStore<Id> {
     }
 
     /// get node as mutable at node_id
-    pub(crate) fn _get_node_as_mut<B: ?Sized>(&mut self, node_id: &B) -> Option<&mut Node<Id>>
+    pub fn get_node_as_mut<B: ?Sized>(&mut self, node_id: &B) -> Option<&mut Node<Id>>
     where
         Id: Borrow<B>,
         B: Identity,
     {
         self.inner.get_mut(node_id)
-    }
-
-    /// get node entry
-    pub(crate) fn _get_node_entry<'a>(&'a mut self, node_id: Id) -> Entry<'a, Id, Node<Id>> {
-        self.inner.entry(node_id)
     }
 
     /// get incidence edge ids for node at node_id
@@ -450,7 +445,7 @@ impl<Id: Identity> NodeStore<Id> {
     }
 
     /// get incidence edge ids from the node to top parent and get parent node ids
-    pub(crate) fn _get_incidence_edge_ids_from_the_node_id_and_parent_ids(
+    pub fn get_incidence_edge_ids_from_the_node_id_and_parent_ids(
         &self,
         node_id: &Id,
     ) -> (Vec<&Id>, Vec<&Id>) {
@@ -713,7 +708,7 @@ impl<Id: Identity> NodeStore<Id> {
     }
 
     /// inner store iter
-    pub(crate) fn _iter<'a>(&'a self) -> Iter<'a, Id, Node<Id>> {
+    pub fn inner_store_iter<'a>(&'a self) -> Iter<'a, Id, Node<Id>> {
         self.inner.iter()
     }
 
@@ -753,66 +748,6 @@ impl<Id: Identity> NodeStore<Id> {
         self.inner.insert(node_id, node)
     }
 
-    /// set node as vertex at node_id, if not exist
-    pub(crate) fn _set_vertex_if_not_exist(&mut self, node_id: Id) {
-        self._set_vertex_with_weight_if_not_exist(node_id, 1)
-    }
-
-    /// set node as vertex at node_id with weight, if not exist
-    pub(crate) fn _set_vertex_with_weight_if_not_exist(&mut self, node_id: Id, weight: i16) {
-        let entry_node = self.inner.entry(node_id);
-        entry_node.or_insert_with(|| Node::vertex_with_weight(weight));
-    }
-
-    /// override to vertex node at node_id
-    pub fn override_as_vertex(&mut self, node_id: Id) {
-        self.override_as_vertex_with_weight(node_id, 1)
-    }
-
-    /// override to vertex node at node_id with weight
-    pub fn override_as_vertex_with_weight(&mut self, node_id: Id, weight: i16) {
-        let entry_node = self.inner.entry(node_id);
-        match entry_node {
-            Entry::Occupied(mut occupied) => {
-                let old = occupied.insert(Node::vertex_with_weight(weight));
-                match old {
-                    Node::Vertex {
-                        parent: parent,
-                        incidences,
-                        ..
-                    } => {
-                        let inserted_node = occupied.get_mut();
-                        if let Some(_parent) = parent {
-                            inserted_node.set_parent(_parent);
-                        }
-                        inserted_node.replace_incidences(incidences);
-                    }
-                    Node::Group {
-                        parent: parent,
-                        children,
-                        incidences,
-                        ..
-                    } => {
-                        let inserted_node = occupied.get_mut();
-                        if let Some(_parent) = parent {
-                            inserted_node.set_parent(_parent);
-                        }
-                        inserted_node.replace_incidences(incidences);
-
-                        for child_id in children.iter() {
-                            if let Some(child) = self.inner.get_mut(child_id) {
-                                child.remove_parent();
-                            }
-                        }
-                    }
-                }
-            }
-            Entry::Vacant(vacant) => {
-                vacant.insert(Node::vertex_with_weight(weight));
-            }
-        }
-    }
-
     /// replace node's parent id for node_ids
     pub fn replace_parent_at_ids(&mut self, parent_id: Id, node_ids: &[Id]) {
         for node_id in node_ids.iter() {
@@ -834,7 +769,7 @@ impl<Id: Identity> NodeStore<Id> {
         B: Identity,
     {
         self.inner.get_mut(target_id).map(|parent| {
-            parent._remove_children(from_ids);
+            parent.remove_children(from_ids);
             parent.add_child(to_id);
 
             // remove mutable
@@ -844,7 +779,7 @@ impl<Id: Identity> NodeStore<Id> {
     }
 
     /// add incidence for the node
-    pub fn add_incidence_already_exist(&mut self, node_id: Id, incidence: Incidence<Id>) {
+    pub fn add_incidence_to_already_exist_node(&mut self, node_id: Id, incidence: Incidence<Id>) {
         let node = self.inner.get_mut(&node_id).expect(&format!(
             "Already exist node at node id {:?}. Why not exist?",
             node_id
@@ -858,12 +793,12 @@ impl<Id: Identity> NodeStore<Id> {
         node_incidences: Vec<(Id, Incidence<Id>)>,
     ) {
         for (node_id, incidences) in node_incidences.into_iter() {
-            self.add_incidence_already_exist(node_id, incidences);
+            self.add_incidence_to_already_exist_node(node_id, incidences);
         }
     }
 
     /// replace incidence for the node
-    pub fn replace_incidence_already_exist(
+    pub fn replace_incidence_for_already_exist_node(
         &mut self,
         node_id: Id,
         incidence: Incidence<Id>,
@@ -879,13 +814,13 @@ impl<Id: Identity> NodeStore<Id> {
     }
 
     /// replace same edge incidence for each node
-    pub fn replace_incidences_each_node(
+    pub fn replace_incidences_each_already_exist_node(
         &mut self,
         node_incidences: Vec<(Id, Incidence<Id>)>,
         same_edge_ids: &[Id],
     ) {
         for (node_id, incidences) in node_incidences.into_iter() {
-            self.replace_incidence_already_exist(node_id, incidences, same_edge_ids);
+            self.replace_incidence_for_already_exist_node(node_id, incidences, same_edge_ids);
         }
     }
 
@@ -938,7 +873,7 @@ impl<Id: Identity> NodeStore<Id> {
         B: Identity,
     {
         self.inner.get_mut(target_id).map(|parent| {
-            parent._remove_children(from_ids);
+            parent.remove_children(from_ids);
 
             // remove mutable
             let parent: &Node<Id> = parent;

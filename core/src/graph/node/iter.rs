@@ -17,7 +17,7 @@ impl<'a, Id: Identity> NodeIter<'a, Id> {
     /// create this iterator
     pub fn new(store: &'a NodeStore<Id>) -> Self {
         NodeIter {
-            store_iter: store._iter(),
+            store_iter: store.inner_store_iter(),
         }
     }
 }
@@ -40,7 +40,7 @@ impl<'a, Id: Identity> VertexNodeIter<'a, Id> {
     /// create this iterator
     pub fn new(store: &'a NodeStore<Id>) -> Self {
         VertexNodeIter {
-            store_iter: store._iter(),
+            store_iter: store.inner_store_iter(),
         }
     }
 }
@@ -78,7 +78,7 @@ impl<'a, Id: Identity> GroupNodeIter<'a, Id> {
     /// create this iterator
     pub fn new(store: &'a NodeStore<Id>) -> Self {
         GroupNodeIter {
-            store_iter: store._iter(),
+            store_iter: store.inner_store_iter(),
         }
     }
 }
@@ -157,7 +157,7 @@ impl<'a, Id: Identity> GroupChildNodeIter<'a, Id> {
             group_node: result_node,
             specified_group_children: child_vec,
             store,
-            store_iter: store._iter(),
+            store_iter: store.inner_store_iter(),
         }
     }
 

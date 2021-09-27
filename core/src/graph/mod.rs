@@ -287,7 +287,7 @@ impl<Id: Identity> Graph<Id> {
     ) -> (Vec<&Id>, Vec<&Id>) {
         let (incidence_edge_ids_from_self, parent_node_ids) = self
             .nodes
-            ._get_incidence_edge_ids_from_the_node_id_and_parent_ids(node_id);
+            .get_incidence_edge_ids_from_the_node_id_and_parent_ids(node_id);
         let incidence_node_ids_from_self = self
             .edges
             .get_incidence_node_ids_by_ids(incidence_edge_ids_from_self.as_slice());
@@ -680,7 +680,7 @@ impl<Id: Identity> Graph<Id> {
             }
             Some(_parent_id) => {
                 // check parent
-                match self.nodes._get_node_as_mut(&_parent_id) {
+                match self.nodes.get_node_as_mut(&_parent_id) {
                     Some(parent) if !parent.is_group() => {
                         return Err(GraphError::NotExistGroup(parent_id.unwrap()));
                     }
@@ -691,7 +691,7 @@ impl<Id: Identity> Graph<Id> {
                         // can create group node
 
                         // remove children from old parent and set the group id
-                        parent._remove_children(&child_node_ids);
+                        parent.remove_children(&child_node_ids);
                         parent.add_child(node_id.clone());
                     }
                 }
@@ -703,7 +703,7 @@ impl<Id: Identity> Graph<Id> {
             if !not_exist_child_ids.contains(child_id) {
                 let node = self
                     .nodes
-                    ._get_node_as_mut(child_id)
+                    .get_node_as_mut(child_id)
                     .expect("Fail resolve exist node.");
                 node.set_parent(node_id.clone());
             }
@@ -734,7 +734,7 @@ impl<Id: Identity> Graph<Id> {
         B: Identity + ToOwned<Owned = Id>,
         F: FnOnce(model::NodeKind, i16) -> i16,
     {
-        return match self.nodes._get_node_as_mut(node_id) {
+        return match self.nodes.get_node_as_mut(node_id) {
             None => Err(GraphError::NotExistNodeAtId(node_id.to_owned())),
             Some(node) => {
                 let model = node.as_model();
@@ -934,7 +934,7 @@ impl<Id: Identity> Graph<Id> {
 
             // replace incidence data for node
             self.nodes
-                .replace_incidences_each_node(incidences, &same_edge_ids);
+                .replace_incidences_each_already_exist_node(incidences, &same_edge_ids);
 
             Ok(None)
         } else {
@@ -971,7 +971,7 @@ impl<Id: Identity> Graph<Id> {
         B: Identity + ToOwned<Owned = Id>,
         F: FnOnce(model::EdgeKind, i16) -> i16,
     {
-        return match self.edges._get_edge_as_mut(edge_id) {
+        return match self.edges.get_edge_as_mut(edge_id) {
             None => Err(GraphError::NotExistEdgeAtId(edge_id.to_owned())),
             Some(edge) => {
                 let model = edge.as_model();
@@ -1184,8 +1184,8 @@ impl<Id: Identity> Graph<Id> {
         if let Some((remove_node_id, remove_node)) = self.nodes.remove_with_get_id(node_id) {
             // If exist parent. remove the child from the parent group which have this node as the child.
             if let Some(parent_id) = remove_node.get_parent() {
-                if let Some(_parent) = self.nodes._get_node_as_mut::<Id>(parent_id) {
-                    _parent._remove_child(node_id);
+                if let Some(_parent) = self.nodes.get_node_as_mut::<Id>(parent_id) {
+                    _parent.remove_child(node_id);
                 }
             }
 
@@ -1193,11 +1193,11 @@ impl<Id: Identity> Graph<Id> {
 
             let will_delete_incidences = self
                 .edges
-                ._remove_node_id_and_illegal_edge_with_collect(&remove_node_id, remove_node);
+                .remove_node_id_and_illegal_edge_with_collect(&remove_node_id, remove_node);
             self.nodes.remove_edges_by_ids(&will_delete_incidences);
 
             for child_id in _children.iter() {
-                if let Some(child) = self.nodes._get_node_as_mut::<Id>(child_id) {
+                if let Some(child) = self.nodes.get_node_as_mut::<Id>(child_id) {
                     child.remove_parent();
                 }
             }
@@ -1237,8 +1237,8 @@ impl<Id: Identity> Graph<Id> {
             if is_root {
                 // If exist parent. remove the child from the parent group which have this node as the child.
                 if let Some(parent_id) = remove_node.get_parent() {
-                    if let Some(_parent) = self.nodes._get_node_as_mut::<Id>(parent_id) {
-                        _parent._remove_child(node_id);
+                    if let Some(_parent) = self.nodes.get_node_as_mut::<Id>(parent_id) {
+                        _parent.remove_child(node_id);
                     }
                 }
             }
@@ -1247,7 +1247,7 @@ impl<Id: Identity> Graph<Id> {
 
             let will_delete_incidences = self
                 .edges
-                ._remove_node_id_and_illegal_edge_with_collect(&remove_node_id, remove_node);
+                .remove_node_id_and_illegal_edge_with_collect(&remove_node_id, remove_node);
             self.nodes.remove_edges_by_ids(&will_delete_incidences);
 
             for child_id in _children.iter() {
@@ -1272,8 +1272,8 @@ impl<Id: Identity> Graph<Id> {
         if let Some((remove_node_id, remove_node)) = self.nodes.remove_with_get_id(node_id) {
             // If exist parent. remove the child from the parent group which have this node as the child.
             if let Some(parent_id) = remove_node.get_parent() {
-                if let Some(_parent) = self.nodes._get_node_as_mut::<Id>(parent_id) {
-                    _parent._remove_child(node_id);
+                if let Some(_parent) = self.nodes.get_node_as_mut::<Id>(parent_id) {
+                    _parent.remove_child(node_id);
                 }
             }
 
@@ -1285,7 +1285,7 @@ impl<Id: Identity> Graph<Id> {
             }
 
             for child_id in _children.iter() {
-                if let Some(child) = self.nodes._get_node_as_mut::<Id>(child_id) {
+                if let Some(child) = self.nodes.get_node_as_mut::<Id>(child_id) {
                     child.remove_parent();
                 }
             }
@@ -1328,8 +1328,8 @@ impl<Id: Identity> Graph<Id> {
             if is_root {
                 // If exist parent. remove the child from the parent group which have this node as the child.
                 if let Some(parent_id) = remove_node.get_parent() {
-                    if let Some(_parent) = self.nodes._get_node_as_mut::<Id>(parent_id) {
-                        _parent._remove_child(node_id);
+                    if let Some(_parent) = self.nodes.get_node_as_mut::<Id>(parent_id) {
+                        _parent.remove_child(node_id);
                     }
                 }
             }

@@ -17,7 +17,7 @@ impl<'a, Id:  Identity> EdgeIter<'a, Id>
     /// create this iterator
     pub fn new(store: &'a EdgeStore<Id>) -> Self
     {
-        EdgeIter { store_iter: store._iter() }
+        EdgeIter { store_iter: store.inner_store_iter() }
     }
 }
 
@@ -42,7 +42,7 @@ impl<'a, Id:  Identity> UndirectedEdgeIter<'a, Id>
     /// create this iterator
     pub fn new(store: &'a EdgeStore<Id>) -> Self
     {
-        UndirectedEdgeIter { store_iter: store._iter() }
+        UndirectedEdgeIter { store_iter: store.inner_store_iter() }
     }
 }
 
@@ -82,7 +82,7 @@ impl<'a, Id:  Identity> DirectedEdgeIter<'a, Id>
     /// create this iterator
     pub fn new(store: &'a EdgeStore<Id>) -> Self
     {
-        DirectedEdgeIter { store_iter: store._iter() }
+        DirectedEdgeIter { store_iter: store.inner_store_iter() }
     }
 }
 
@@ -122,7 +122,7 @@ impl<'a, Id:  Identity> MixedEdgeIter<'a, Id>
     /// create this iterator
     pub fn new(store: &'a EdgeStore<Id>) -> Self
     {
-        MixedEdgeIter { store_iter: store._iter() }
+        MixedEdgeIter { store_iter: store.inner_store_iter() }
     }
 }
 
@@ -162,7 +162,7 @@ impl<'a, Id:  Identity> UndirectedHyperEdgeIter<'a, Id>
     /// create this iterator
     pub fn new(store: &'a EdgeStore<Id>) -> Self
     {
-        UndirectedHyperEdgeIter { store_iter: store._iter() }
+        UndirectedHyperEdgeIter { store_iter: store.inner_store_iter() }
     }
 }
 
@@ -202,7 +202,7 @@ impl<'a, Id:  Identity> DirectedHyperEdgeIter<'a, Id>
     /// create this iterator
     pub fn new(store: &'a EdgeStore<Id>) -> Self
     {
-        DirectedHyperEdgeIter { store_iter: store._iter() }
+        DirectedHyperEdgeIter { store_iter: store.inner_store_iter() }
     }
 }
 
@@ -242,7 +242,7 @@ impl<'a, Id:  Identity> MixedHyperEdgeIter<'a, Id>
     /// create this iterator
     pub fn new(store: &'a EdgeStore<Id>) -> Self
     {
-        MixedHyperEdgeIter { store_iter: store._iter() }
+        MixedHyperEdgeIter { store_iter: store.inner_store_iter() }
     }
 }
 
