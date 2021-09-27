@@ -14,7 +14,7 @@ use std::fmt;
 
 /// helper for sort id and for sort with distinct.
 /// If sort for undirected or directed edge, must not use distinct option because of exist self loop.
-fn _sort_ids<T: Ord>(vec: &mut Vec<T>, distinct: bool) {
+fn sort_ids<T: Ord>(vec: &mut Vec<T>, distinct: bool) {
     vec.sort();
     if distinct {
         vec.dedup();
@@ -105,7 +105,7 @@ impl<Id: Identity> Edge<Id> {
 
     /// constructor for undirected hyper edge with weight
     pub fn undirected_hyper_with_weight(mut ids: Vec<Id>, weight: i16) -> Self {
-        _sort_ids(&mut ids, true);
+        sort_ids(&mut ids, true);
 
         Self::UndirectedHyper {
             weight: weight,
@@ -119,8 +119,8 @@ impl<Id: Identity> Edge<Id> {
         mut target_ids: Vec<Id>,
         weight: i16,
     ) -> Self {
-        _sort_ids(&mut source_ids, true);
-        _sort_ids(&mut target_ids, true);
+        sort_ids(&mut source_ids, true);
+        sort_ids(&mut target_ids, true);
 
         Self::DirectedHyper {
             weight: weight,

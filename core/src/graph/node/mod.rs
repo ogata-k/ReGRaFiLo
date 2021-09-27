@@ -659,7 +659,7 @@ impl<Id: Identity> NodeStore<Id> {
 
                     let mut acc: Vec<&'a Id> = Vec::new();
                     for child_node_id in children.iter() {
-                        acc.extend(self._flatten_children_id_with_check(
+                        acc.extend(self.rec_flatten_children_id_with_check(
                             parent_id,
                             child_node_id,
                             &illegal_ids,
@@ -676,7 +676,7 @@ impl<Id: Identity> NodeStore<Id> {
 
     /// helper for flatten_children_id function with replace at the id.
     /// if not exist at node_id, get Node as Vertex
-    fn _flatten_children_id_with_check<'a>(
+    fn rec_flatten_children_id_with_check<'a>(
         &'a self,
         parent_id: &'a Option<Id>,
         node_id: &'a Id,
@@ -698,7 +698,7 @@ impl<Id: Identity> NodeStore<Id> {
                 Node::Group { children, .. } => {
                     let mut result: Vec<&'a Id> = vec![node_id];
                     for child_id in children.iter() {
-                        result.extend(self._flatten_children_id_with_check(
+                        result.extend(self.rec_flatten_children_id_with_check(
                             parent_id,
                             child_id,
                             illegal_ids,

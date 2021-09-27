@@ -281,7 +281,7 @@ impl<Id: Identity> Graph<Id> {
     // ---
 
     /// get incidence node ids to edges which incidence to the node which is between the node_id and top parent and get parent node ids
-    fn _get_incidence_node_ids_from_self_and_parent_node_ids(
+    fn get_incidence_node_ids_from_self_and_parent_node_ids(
         &self,
         node_id: &Id,
     ) -> (Vec<&Id>, Vec<&Id>) {
@@ -549,12 +549,12 @@ impl<Id: Identity> Graph<Id> {
         node_id: Id,
         weight: i16,
     ) -> GraphItemExistedResult<Id> {
-        self._add_vertex_node_with_weight_if_old_not_exist(parent_id, node_id, weight)
+        self.add_vertex_node_with_weight_if_old_not_exist(parent_id, node_id, weight)
     }
 
     /// add vertex node with weight.
     /// If already exist at the id, then will not vertex node and return the node_id.
-    fn _add_vertex_node_with_weight_if_old_not_exist(
+    fn add_vertex_node_with_weight_if_old_not_exist(
         &mut self,
         parent_id: Option<Id>,
         node_id: Id,
@@ -620,13 +620,13 @@ impl<Id: Identity> Graph<Id> {
         weight: i16,
         children: Vec<Id>,
     ) -> GraphItemExistedResult<Id> {
-        self._add_group_node_with_weight_if_old_not_exist(parent_id, node_id, weight, children)
+        self.add_group_node_with_weight_if_old_not_exist(parent_id, node_id, weight, children)
     }
 
     /// add group node with weight.
     /// If already exist at the id, then will not create group node and return the node id.
     /// If use the mode to create not exist vertex node and children is available, create not exist child as vertex node.
-    fn _add_group_node_with_weight_if_old_not_exist(
+    fn add_group_node_with_weight_if_old_not_exist(
         &mut self,
         parent_id: Option<Id>,
         node_id: Id,
@@ -665,7 +665,7 @@ impl<Id: Identity> Graph<Id> {
 
         // check illegal children
         let not_exist_child_ids =
-            self._check_children_can_be_made_group(&parent_id, &node_id, &child_node_ids)?;
+            self.check_children_can_be_made_group(&parent_id, &node_id, &child_node_ids)?;
         if !not_exist_child_ids.is_empty() && !config.can_create_not_exist_vertex_node() {
             return Err(GraphError::NotExistChildrenCannotMakeEdge(
                 node_id,
@@ -773,7 +773,7 @@ impl<Id: Identity> Graph<Id> {
         node_id2: Id,
         weight: i16,
     ) -> GraphItemExistedResult<Id> {
-        self._add_edge_with_weight_if_old_not_exist(
+        self.add_edge_with_weight_if_old_not_exist(
             edge_id,
             Edge::undirected_with_weight(node_id1, node_id2, weight),
         )
@@ -801,7 +801,7 @@ impl<Id: Identity> Graph<Id> {
         target_node_id: Id,
         weight: i16,
     ) -> GraphItemExistedResult<Id> {
-        self._add_edge_with_weight_if_old_not_exist(
+        self.add_edge_with_weight_if_old_not_exist(
             edge_id,
             Edge::directed_with_weight(source_node_id, target_node_id, weight),
         )
@@ -827,7 +827,7 @@ impl<Id: Identity> Graph<Id> {
         node_ids: Vec<Id>,
         weight: i16,
     ) -> GraphItemExistedResult<Id> {
-        self._add_edge_with_weight_if_old_not_exist(
+        self.add_edge_with_weight_if_old_not_exist(
             edge_id,
             Edge::undirected_hyper_with_weight(node_ids, weight),
         )
@@ -855,7 +855,7 @@ impl<Id: Identity> Graph<Id> {
         target_node_ids: Vec<Id>,
         weight: i16,
     ) -> GraphItemExistedResult<Id> {
-        self._add_edge_with_weight_if_old_not_exist(
+        self.add_edge_with_weight_if_old_not_exist(
             edge_id,
             Edge::directed_hyper_with_weight(source_node_ids, target_node_ids, weight),
         )
@@ -863,7 +863,7 @@ impl<Id: Identity> Graph<Id> {
 
     /// Add edge. If exist at the edge_id, not replace when replace is false.
     /// If inserted at the edge_id, replace insert at the edge_id
-    fn _add_edge_with_weight_if_old_not_exist(
+    fn add_edge_with_weight_if_old_not_exist(
         &mut self,
         edge_id: Id,
         edge: Edge<Id>,
@@ -887,7 +887,7 @@ impl<Id: Identity> Graph<Id> {
         }
 
         // check can construct the edge
-        let not_exist_child_ids = self._check_incidence_nodes_can_make_edge(&edge_id, &edge)?;
+        let not_exist_child_ids = self.check_incidence_nodes_can_make_edge(&edge_id, &edge)?;
         if !not_exist_child_ids.is_empty() && !config.can_create_not_exist_vertex_node() {
             return Err(GraphError::NotExistChildrenCannotMakeEdge(
                 edge_id,
@@ -986,7 +986,7 @@ impl<Id: Identity> Graph<Id> {
     // ---
 
     /// check children to be able to make group at node id in the parent
-    fn _check_children_can_be_made_group(
+    fn check_children_can_be_made_group(
         &self,
         parent_id: &Option<Id>,
         node_id: &Id,
@@ -999,7 +999,7 @@ impl<Id: Identity> Graph<Id> {
         let illegal_node_ids = match parent_id.as_ref() {
             Some(_parent_id) => {
                 let (incidence_node_ids_from_self, parent_ids) =
-                    self._get_incidence_node_ids_from_self_and_parent_node_ids(_parent_id);
+                    self.get_incidence_node_ids_from_self_and_parent_node_ids(_parent_id);
                 let mut _illegal_node_ids = incidence_node_ids_from_self;
                 _illegal_node_ids.extend(parent_ids);
                 // set the node_id at this time because of satisfy lifetime.
@@ -1083,7 +1083,7 @@ impl<Id: Identity> Graph<Id> {
     }
 
     /// check incidence nodes to be able to make group at edge id
-    fn _check_incidence_nodes_can_make_edge(
+    fn check_incidence_nodes_can_make_edge(
         &self,
         edge_id: &Id,
         edge: &Edge<Id>,
@@ -1214,14 +1214,14 @@ impl<Id: Identity> Graph<Id> {
         Id: Borrow<B>,
         B: Identity,
     {
-        self._delete_node_if_group_with_child(node_id, true)
+        self.rec_delete_node_if_group_with_child(node_id, true)
     }
 
     /// delete node at node_id if exist with remove illegal edge.
     ///
     /// If exist node, then return the id.
     /// If specify node is group, remove the group node and the group's children.
-    fn _delete_node_if_group_with_child<B: ?Sized>(
+    fn rec_delete_node_if_group_with_child<B: ?Sized>(
         &mut self,
         node_id: &B,
         is_root: bool,
@@ -1248,7 +1248,7 @@ impl<Id: Identity> Graph<Id> {
             self.nodes.remove_edges_by_ids(&will_delete_incidences);
 
             for child_id in _children.iter() {
-                self._delete_node_if_group_with_child::<Id>(child_id, false);
+                self.rec_delete_node_if_group_with_child::<Id>(child_id, false);
             }
 
             Some(remove_node_id)
@@ -1305,14 +1305,14 @@ impl<Id: Identity> Graph<Id> {
         Id: Borrow<B>,
         B: Identity,
     {
-        self._delete_node_with_edge_if_group_with_child(node_id, true)
+        self.rec_delete_node_with_edge_if_group_with_child(node_id, true)
     }
 
     /// delete node at the node_id with incidence edges.
     ///
     /// If exist node, then return the id.
     /// If specify node is group, remove the group node and the group's children.
-    fn _delete_node_with_edge_if_group_with_child<B: ?Sized>(
+    fn rec_delete_node_with_edge_if_group_with_child<B: ?Sized>(
         &mut self,
         node_id: &B,
         is_root: bool,
@@ -1339,7 +1339,7 @@ impl<Id: Identity> Graph<Id> {
             }
 
             for child_id in _children.iter() {
-                self._delete_node_with_edge_if_group_with_child::<Id>(child_id, false);
+                self.rec_delete_node_with_edge_if_group_with_child::<Id>(child_id, false);
             }
 
             Some(remove_node_id)
