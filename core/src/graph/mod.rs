@@ -926,10 +926,13 @@ impl<Id: Identity> Graph<Id> {
             //create incidence data from edge
             let incidences = edge.generate_incidences_without_check(&edge_id);
 
-            // add edge (old edge not exist)
+            // replace edge
+            for same_edge_id in same_edge_ids.iter() {
+                self.edges.remove(same_edge_id);
+            }
             self.edges.insert_edge(edge_id, edge);
 
-            // add incidence data for node
+            // replace incidence data for node
             self.nodes
                 .replace_incidences_each_node(incidences, &same_edge_ids);
 
