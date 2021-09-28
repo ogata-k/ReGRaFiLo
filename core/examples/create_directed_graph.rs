@@ -1,37 +1,85 @@
 //! example for create directed graph without layout
 
 use regrafilo_core::graph::{Graph, GraphConfig};
+use regrafilo_core::graph::helper::GraphItemExistedResultExt;
 use regrafilo_core::util::Identity;
 
 fn main() {
     let can_multiple = false;
     let use_node_group = true;
-    let config =
-        GraphConfig::directed_graph(can_multiple, use_node_group).to_replace_same_edge_mode();
-    let mut graph: Graph<u8> = Graph::create_by_config(config);
-    graph.add_vertex_node(1);
-    graph.add_vertex_node(2);
-    graph.add_vertex_node(3);
+    let config = GraphConfig::directed_graph(can_multiple, use_node_group);
+    let mut graph: Graph<String> = Graph::create_by_config(config);
 
-    // when not inserted node at the id, automatic insert node at the id
-    graph.add_directed_edge(1, 1, 100).unwrap();
-    // replace edge at edge_id 1 because win insert after
-    graph.add_directed_edge(1, 1, 2).unwrap();
-    graph.add_directed_edge(2, 2, 3).unwrap();
-    // not multiple edge at edge id 2, 3 because of 2->3 != 3->2
-    graph.add_directed_edge(3, 3, 2).unwrap();
-    graph.add_directed_edge(4, 1, 1).unwrap();
-    graph.add_directed_edge(5, 2, 2).unwrap();
-    graph.add_directed_edge(6, 3, 3).unwrap();
-    // When can_multiple = false,
-    // with remove edge_id 6 because of same edge in replace same edge mode
-    // or fail insert in not the mode.
-    // When can_multiple = true, success insert.
-    graph.add_directed_edge(7, 3, 3).unwrap();
+    // Create item action is failed when old item exist.
+    // If catch as error, need convert to error.
 
-    graph.add_node_grouping(8, vec![1, 2]).unwrap();
-    // Following is always fail in not replace same edge mode because of inserted same group
-    graph.add_node_grouping(9, vec![1, 2]).unwrap();
+    // ---
+    // Node
+    // ---
+
+    graph
+        .add_group_node(None, 1.to_string(), vec![])
+        .old_node_exist_to_error()
+        .unwrap();
+    graph
+        .add_group_node(Some(1.to_string()), 2.to_string(), vec![])
+        .old_node_exist_to_error()
+        .unwrap();
+    graph
+        .add_vertex_node(Some(1.to_string()), 3.to_string())
+        .old_node_exist_to_error()
+        .unwrap();
+    graph
+        .add_vertex_node(Some(2.to_string()), 4.to_string())
+        .old_node_exist_to_error()
+        .unwrap();
+    graph
+        .add_group_node(None, 5.to_string(), vec![])
+        .old_node_exist_to_error()
+        .unwrap();
+    graph
+        .add_vertex_node(Some(5.to_string()), 6.to_string())
+        .old_node_exist_to_error()
+        .unwrap();
+    graph
+        .add_vertex_node(None, 7.to_string())
+        .old_node_exist_to_error()
+        .unwrap();
+    // can make group with nodes whose parent is None or specified parent
+    graph
+        .add_group_node(Some(5.to_string()), 8.to_string(), vec![6.to_string(), 7.to_string()])
+        .old_node_exist_to_error()
+        .unwrap();
+
+    // ---
+    // Edge
+    // ---
+
+    graph
+        .add_directed_edge(1.to_string(), 1.to_string(), 1.to_string())
+        .old_edge_exist_to_error()
+        .unwrap();
+    graph
+        .add_directed_edge(2.to_string(), 2.to_string(), 3.to_string())
+        .old_edge_exist_to_error()
+        .unwrap();
+    // cannot create edge between a group and the group's child
+    // graph.add_directed_edge(3.to_string(), 2.to_string(), 4.to_string()).unwrap();
+    // graph.add_directed_edge(4.to_string(), 4.to_string(), 2.to_string()).unwrap();
+    graph
+        .add_directed_edge(5.to_string(), 2.to_string(), 5.to_string())
+        .old_edge_exist_to_error()
+        .unwrap();
+    graph
+        .add_directed_edge(6.to_string(), 6.to_string(), 2.to_string())
+        .old_edge_exist_to_error()
+        .unwrap();
+    // If replace same edge mode, then success insert with replace same edge.
+    // This edge is not same to the edge with edge_id 2.Because fail assert 2->3 != 3->2.
+    graph
+        .add_directed_edge(7.to_string(), 3.to_string(), 2.to_string())
+        .old_edge_exist_to_error()
+        .unwrap();
 
     print_graph(&graph);
 }

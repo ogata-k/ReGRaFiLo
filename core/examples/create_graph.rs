@@ -1,36 +1,85 @@
 //! example for create graph without layout
 
 use regrafilo_core::graph::{Graph, GraphConfig};
+use regrafilo_core::graph::helper::GraphItemExistedResultExt;
 use regrafilo_core::util::Identity;
 
 fn main() {
     let can_multiple = true;
     let use_node_group = true;
-    let config =
-        GraphConfig::undirected_graph(can_multiple, use_node_group).to_replace_same_edge_mode();
+    let config = GraphConfig::undirected_graph(can_multiple, use_node_group)
+        .to_replace_same_edge_mode()
+        .to_create_not_exist_vertex_node();
     let mut graph: Graph<u8> = Graph::create_by_config(config);
-    graph.add_vertex_node(1);
-    graph.add_vertex_node(2);
-    graph.add_vertex_node(3);
 
-    // when not inserted node at the id, automatic insert node at the id
-    graph.add_undirected_edge(1, 1, 100).unwrap();
-    // replace edge at edge_id 1 because win insert after
-    graph.add_undirected_edge(1, 1, 2).unwrap();
-    graph.add_undirected_edge(2, 2, 3).unwrap();
-    graph.add_undirected_edge(3, 3, 1).unwrap();
-    graph.add_undirected_edge(4, 1, 1).unwrap();
-    graph.add_undirected_edge(5, 2, 2).unwrap();
-    graph.add_undirected_edge(6, 3, 3).unwrap();
-    // When can_multiple = false,
-    // with remove edge_id 6 because of same edge in replace same edge mode
-    // or fail insert in not the mode.
-    // When can_multiple = true, success insert.
-    graph.add_undirected_edge(7, 3, 3).unwrap();
+    // Create item action is failed when old item exist.
+    // If catch as error, need convert to error.
 
-    graph.add_node_grouping(8, vec![1, 2]).unwrap();
-    // Following is always fail in not replace same edge mode because of inserted same group
-    graph.add_node_grouping(9, vec![1, 2]).unwrap();
+    // ---
+    // Node
+    // ---
+
+    graph
+        .add_group_node(None, 1, vec![])
+        .old_node_exist_to_error()
+        .unwrap();
+    graph
+        .add_group_node(Some(1), 2, vec![4])
+        .old_node_exist_to_error()
+        .unwrap();
+    graph
+        .add_vertex_node(Some(1), 3)
+        .old_node_exist_to_error()
+        .unwrap();
+    // already created when create the group node at node_id 2.
+    // graph.add_vertex_node(Some(2), 4).old_node_exist_to_error().unwrap();
+    graph
+        .add_group_node(None, 5, vec![])
+        .old_node_exist_to_error()
+        .unwrap();
+    graph
+        .add_vertex_node(Some(5), 6)
+        .old_node_exist_to_error()
+        .unwrap();
+    graph
+        .add_vertex_node(None, 7)
+        .old_node_exist_to_error()
+        .unwrap();
+    // can make group with nodes whose parent is None or specified parent
+    graph
+        .add_group_node(Some(5), 8, vec![6, 7])
+        .old_node_exist_to_error()
+        .unwrap();
+
+    // ---
+    // Edge
+    // ---
+
+    graph
+        .add_undirected_edge(1, 1, 1)
+        .old_edge_exist_to_error()
+        .unwrap();
+    graph
+        .add_undirected_edge(2, 2, 3)
+        .old_edge_exist_to_error()
+        .unwrap();
+    // cannot create edge between a group and the group's child
+    // graph.add_undirected_edge(3, 2, 4).unwrap();
+    // graph.add_undirected_edge(4, 4, 2).unwrap();
+    graph
+        .add_undirected_edge(5, 2, 5)
+        .old_edge_exist_to_error()
+        .unwrap();
+    graph
+        .add_undirected_edge(6, 6, 2)
+        .old_edge_exist_to_error()
+        .unwrap();
+    // When use replace same edge mode, insert edge successfully with replace same edge.
+    // This edge is same to the edge with edge_id 2.
+    graph
+        .add_undirected_edge(7, 3, 2)
+        .old_edge_exist_to_error()
+        .unwrap();
 
     print_graph(&graph);
 }
