@@ -1,9 +1,9 @@
 //! Module of edge model
 
-use crate::graph::edge;
 use crate::util::Identity;
 
 use std::fmt;
+
 /// Kind of Edge model
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub enum EdgeKind {
@@ -19,7 +19,7 @@ pub enum EdgeKind {
 
 impl EdgeKind {
     /// check edge is undirected edge
-   pub fn is_undirected(&self) -> bool{
+    pub fn is_undirected(&self) -> bool {
         self == &EdgeKind::Undirected
     }
 
@@ -34,12 +34,12 @@ impl EdgeKind {
     }
 
     /// check edge is undirected hyper edge
-    pub fn is_undirected_hyper(&self) -> bool{
+    pub fn is_undirected_hyper(&self) -> bool {
         self == &EdgeKind::UndirectedHyper
     }
 
     /// check edge is directed hyper edge
-    pub fn is_directed_hyper(&self) -> bool{
+    pub fn is_directed_hyper(&self) -> bool {
         self == &EdgeKind::DirectedHyper
     }
 
@@ -84,12 +84,12 @@ pub trait EdgeModel<Id: Identity> {
     fn is_equal_to_without_weight(&self, other: &Self) -> bool;
 
     /// check edge is undirected edge
-    fn is_undirected(&self) -> bool{
+    fn is_undirected(&self) -> bool {
         self.get_kind().is_undirected()
     }
 
     /// check edge is directed edge
-    fn is_directed(&self) -> bool{
+    fn is_directed(&self) -> bool {
         self.get_kind().is_directed()
     }
 
@@ -99,12 +99,12 @@ pub trait EdgeModel<Id: Identity> {
     }
 
     /// check edge is undirected hyper edge
-    fn is_undirected_hyper(&self) -> bool{
+    fn is_undirected_hyper(&self) -> bool {
         self.get_kind().is_undirected_hyper()
     }
 
     /// check edge is directed hyper edge
-    fn is_directed_hyper(&self) -> bool{
+    fn is_directed_hyper(&self) -> bool {
         self.get_kind().is_directed_hyper()
     }
 
@@ -118,8 +118,8 @@ pub trait EdgeModel<Id: Identity> {
 /// If weight is 1 or no weight, the edge's weight is 1.
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct UndirectedEdge<'a, Id: Identity> {
-    weight: &'a i16,
-    incidence: &'a [Id; 2],
+    pub(in crate::graph) weight: &'a i16,
+    pub(in crate::graph) incidence: &'a [Id; 2],
 }
 
 impl<'a, Id: Identity> fmt::Display for UndirectedEdge<'a, Id> {
@@ -138,7 +138,7 @@ impl<'a, Id: Identity> EdgeModel<Id> for UndirectedEdge<'a, Id> {
     }
 
     /// get edge kind for the edge
-    fn get_kind(&self) -> EdgeKind{
+    fn get_kind(&self) -> EdgeKind {
         EdgeKind::Undirected
     }
 
@@ -174,12 +174,6 @@ impl<'a, Id: Identity> UndirectedEdge<'a, Id> {
     // constructor
     // ---
 
-    /// create undirected edge structure
-    #[inline]
-    pub(crate) fn _create(weight: &'a i16, incidence: &'a [Id; 2]) -> Self {
-        UndirectedEdge { weight, incidence }
-    }
-
     // ---
     // getter
     // ---
@@ -193,8 +187,8 @@ impl<'a, Id: Identity> UndirectedEdge<'a, Id> {
 /// If weight is 1 or no weight, the edge's weight is 1.
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct DirectedEdge<'a, Id: Identity> {
-    weight: &'a i16,
-    incidence: (&'a Id, &'a Id),
+    pub(in crate::graph) weight: &'a i16,
+    pub(in crate::graph) incidence: (&'a Id, &'a Id),
 }
 
 impl<'a, Id: Identity> fmt::Display for DirectedEdge<'a, Id> {
@@ -213,7 +207,7 @@ impl<'a, Id: Identity> EdgeModel<Id> for DirectedEdge<'a, Id> {
     }
 
     /// get edge kind for the edge
-    fn get_kind(&self) -> EdgeKind{
+    fn get_kind(&self) -> EdgeKind {
         EdgeKind::Directed
     }
 
@@ -248,15 +242,6 @@ impl<'a, Id: Identity> DirectedEdge<'a, Id> {
     // ---
     // constructor
     // ---
-
-    /// create directed edge structure
-    #[inline]
-    pub(crate) fn _create(weight: &'a i16, source: &'a Id, target: &'a Id) -> Self {
-        DirectedEdge {
-            weight,
-            incidence: (source, target),
-        }
-    }
 
     // ---
     // getter
@@ -298,7 +283,7 @@ impl<'a, Id: Identity> EdgeModel<Id> for MixedEdge<'a, Id> {
     }
 
     /// get edge kind for the edge
-    fn get_kind(&self) -> EdgeKind{
+    fn get_kind(&self) -> EdgeKind {
         use MixedEdge::*;
 
         match self {
@@ -364,24 +349,6 @@ impl<'a, Id: Identity> MixedEdge<'a, Id> {
     // constructor
     // ---
 
-    /// create edge structure
-    #[inline]
-    pub(crate) fn _create(edge: &'a edge::Edge<Id>) -> Option<Self> {
-        match edge {
-            edge::Edge::Undirected { weight, ids } => {
-                Some(MixedEdge::Undirected(UndirectedEdge::_create(weight, ids)))
-            }
-            edge::Edge::Directed {
-                weight,
-                source_id,
-                target_id,
-            } => Some(MixedEdge::Directed(DirectedEdge::_create(
-                weight, source_id, target_id,
-            ))),
-            edge::Edge::UndirectedHyper { .. } | edge::Edge::DirectedHyper { .. } => None,
-        }
-    }
-
     // ---
     // getter
     // ---
@@ -395,8 +362,8 @@ impl<'a, Id: Identity> MixedEdge<'a, Id> {
 /// If weight is 1 or no weight, the edge's weight is 1.
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct UndirectedHyperEdge<'a, Id: Identity> {
-    weight: &'a i16,
-    incidence: &'a [Id],
+    pub(in crate::graph) weight: &'a i16,
+    pub(in crate::graph) incidence: &'a [Id],
 }
 
 impl<'a, Id: Identity> fmt::Display for UndirectedHyperEdge<'a, Id> {
@@ -414,7 +381,7 @@ impl<'a, Id: Identity> EdgeModel<Id> for UndirectedHyperEdge<'a, Id> {
     }
 
     /// get edge kind for the edge
-    fn get_kind(&self) -> EdgeKind{
+    fn get_kind(&self) -> EdgeKind {
         EdgeKind::UndirectedHyper
     }
 
@@ -450,12 +417,6 @@ impl<'a, Id: Identity> UndirectedHyperEdge<'a, Id> {
     // constructor
     // ---
 
-    /// create undirected hyper edge structure
-    #[inline]
-    pub(crate) fn _create(weight: &'a i16, incidence: &'a [Id]) -> Self {
-        UndirectedHyperEdge { weight, incidence }
-    }
-
     // ---
     // getter
     // ---
@@ -469,8 +430,8 @@ impl<'a, Id: Identity> UndirectedHyperEdge<'a, Id> {
 /// If weight is 1 or no weight, the edge's weight is 1.
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct DirectedHyperEdge<'a, Id: Identity> {
-    weight: &'a i16,
-    incidence: (&'a [Id], &'a [Id]),
+    pub(in crate::graph) weight: &'a i16,
+    pub(in crate::graph) incidence: (&'a [Id], &'a [Id]),
 }
 
 impl<'a, Id: Identity> fmt::Display for DirectedHyperEdge<'a, Id> {
@@ -490,7 +451,7 @@ impl<'a, Id: Identity> EdgeModel<Id> for DirectedHyperEdge<'a, Id> {
     }
 
     /// get edge kind for the edge
-    fn get_kind(&self) -> EdgeKind{
+    fn get_kind(&self) -> EdgeKind {
         EdgeKind::DirectedHyper
     }
 
@@ -525,15 +486,6 @@ impl<'a, Id: Identity> DirectedHyperEdge<'a, Id> {
     // ---
     // constructor
     // ---
-
-    /// create directed hyper edge structure
-    #[inline]
-    pub(crate) fn _create(weight: &'a i16, source: &'a [Id], target: &'a [Id]) -> Self {
-        DirectedHyperEdge {
-            weight,
-            incidence: (source, target),
-        }
-    }
 
     // ---
     // getter
@@ -575,7 +527,7 @@ impl<'a, Id: Identity> EdgeModel<Id> for MixedHyperEdge<'a, Id> {
     }
 
     /// get edge kind for the edge
-    fn get_kind(&self) -> EdgeKind{
+    fn get_kind(&self) -> EdgeKind {
         use MixedHyperEdge::*;
 
         match self {
@@ -641,24 +593,6 @@ impl<'a, Id: Identity> MixedHyperEdge<'a, Id> {
     // constructor
     // ---
 
-    /// create node structure
-    #[inline]
-    pub(crate) fn _create(edge: &'a edge::Edge<Id>) -> Option<Self> {
-        match edge {
-            edge::Edge::Undirected { .. } | edge::Edge::Directed { .. } => None,
-            edge::Edge::UndirectedHyper { weight, ids } => Some(MixedHyperEdge::Undirected(
-                UndirectedHyperEdge::_create(weight, ids),
-            )),
-            edge::Edge::DirectedHyper {
-                weight,
-                source_ids,
-                target_ids,
-            } => Some(MixedHyperEdge::Directed(DirectedHyperEdge::_create(
-                weight, source_ids, target_ids,
-            ))),
-        }
-    }
-
     // ---
     // getter
     // ---
@@ -705,7 +639,7 @@ impl<'a, Id: Identity> EdgeModel<Id> for Edge<'a, Id> {
     }
 
     /// get edge kind for the edge
-    fn get_kind(&self) -> EdgeKind{
+    fn get_kind(&self) -> EdgeKind {
         use Edge::*;
 
         match self {
@@ -784,29 +718,6 @@ impl<'a, Id: Identity> Edge<'a, Id> {
     // ---
     // constructor
     // ---
-
-    /// create edge structure
-    #[inline]
-    pub(crate) fn _create(edge: &'a edge::Edge<Id>) -> Self {
-        match edge {
-            edge::Edge::Undirected { weight, ids } => {
-                Edge::Undirected(UndirectedEdge::_create(weight, ids))
-            }
-            edge::Edge::Directed {
-                weight,
-                source_id,
-                target_id,
-            } => Edge::Directed(DirectedEdge::_create(weight, source_id, target_id)),
-            edge::Edge::UndirectedHyper { weight, ids } => {
-                Edge::UndirectedHyper(UndirectedHyperEdge::_create(weight, ids))
-            }
-            edge::Edge::DirectedHyper {
-                weight,
-                source_ids,
-                target_ids,
-            } => Edge::DirectedHyper(DirectedHyperEdge::_create(weight, source_ids, target_ids)),
-        }
-    }
 
     // ---
     // getter

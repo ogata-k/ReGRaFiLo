@@ -47,7 +47,11 @@ fn main() {
         .unwrap();
     // can make group with nodes whose parent is None or specified parent
     graph
-        .add_group_node(Some(5.to_string()), 8.to_string(), vec![6.to_string(), 7.to_string()])
+        .add_group_node(
+            Some(5.to_string()),
+            8.to_string(),
+            vec![6.to_string(), 7.to_string()],
+        )
         .old_node_exist_to_error()
         .unwrap();
 

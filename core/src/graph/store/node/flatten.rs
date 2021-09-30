@@ -4,7 +4,7 @@ use crate::util::Identity;
 
 /// ids helper to flatten ids
 #[derive(Eq, PartialEq, Clone)]
-pub struct FlattenIds<'a, Id: 'a + Identity> {
+pub(in crate::graph) struct FlattenIds<'a, Id: 'a + Identity> {
     is_group: bool,
     root: &'a Id,
     children: Vec<&'a Id>,
@@ -16,7 +16,7 @@ impl<'a, Id: 'a + Identity> FlattenIds<'a, Id> {
     // ---
 
     /// constructor for child
-    pub(crate) fn _create_as_point(child_id: &'a Id) -> Self {
+    pub(in crate::graph) fn _create_as_point(child_id: &'a Id) -> Self {
         FlattenIds {
             is_group: false,
             root: child_id,
@@ -25,7 +25,7 @@ impl<'a, Id: 'a + Identity> FlattenIds<'a, Id> {
     }
 
     /// constructor for flatten group
-    pub(crate) fn _create_as_group(root_id: &'a Id, mut children: Vec<&'a Id>) -> Self {
+    pub(in crate::graph) fn _create_as_group(root_id: &'a Id, mut children: Vec<&'a Id>) -> Self {
         // Do sort to use binary search
         children.sort();
         // Do unique. But did deduped because uniqueness is ensured by the way of construction.
@@ -43,12 +43,12 @@ impl<'a, Id: 'a + Identity> FlattenIds<'a, Id> {
     // ---
 
     /// get root id
-    pub fn get_root(&self) -> &Id {
+    pub(in crate::graph) fn get_root(&self) -> &Id {
         self.root
     }
 
     /// get grouping children
-    pub fn get_children(&self) -> &[&'a Id] {
+    pub(in crate::graph) fn get_children(&self) -> &[&'a Id] {
         self.children.as_slice()
     }
 
@@ -56,7 +56,7 @@ impl<'a, Id: 'a + Identity> FlattenIds<'a, Id> {
     // setter
     // ---
     /// drain from the other
-    pub fn drain_one(&mut self, other: Self) {
+    pub(in crate::graph) fn drain_one(&mut self, other: Self) {
         let FlattenIds {
             is_group: _,
             root,
@@ -70,7 +70,7 @@ impl<'a, Id: 'a + Identity> FlattenIds<'a, Id> {
     }
 
     /// drain from the others
-    pub fn drain<I: IntoIterator<Item = Self>>(&mut self, others: I) {
+    pub(in crate::graph) fn drain<I: IntoIterator<Item = Self>>(&mut self, others: I) {
         for other in others.into_iter() {
             let FlattenIds {
                 is_group: _,
@@ -90,12 +90,12 @@ impl<'a, Id: 'a + Identity> FlattenIds<'a, Id> {
     // ---
 
     /// check can be use as point
-    pub fn is_point(&self) -> bool {
+    pub(in crate::graph) fn is_point(&self) -> bool {
         !self.is_group
     }
 
     /// check can use as group
-    pub fn is_group(&self) -> bool {
+    pub(in crate::graph) fn is_group(&self) -> bool {
         self.is_group
     }
 
@@ -104,7 +104,7 @@ impl<'a, Id: 'a + Identity> FlattenIds<'a, Id> {
     // ---
 
     /// check self root and children in other root and children
-    pub fn is_part_of_other(&self, other: &Self) -> bool {
+    pub(in crate::graph) fn is_part_of_other(&self, other: &Self) -> bool {
         if !(self.root == other.root || other.children.binary_search(&self.root).is_ok()) {
             return false;
         }
@@ -119,12 +119,12 @@ impl<'a, Id: 'a + Identity> FlattenIds<'a, Id> {
     }
 
     /// check other root and children in self root and children
-    pub fn contains_other(&self, other: &Self) -> bool {
+    pub(in crate::graph) fn contains_other(&self, other: &Self) -> bool {
         other.is_part_of_other(self)
     }
 
     /// check intersection for self root and children and other root and children not exist
-    pub fn has_no_intersection_other(&self, other: &Self) -> bool {
+    pub(in crate::graph) fn has_no_intersection_other(&self, other: &Self) -> bool {
         if self.root == other.root || other.children.binary_search(&self.root).is_ok() {
             return false;
         }
@@ -142,7 +142,7 @@ impl<'a, Id: 'a + Identity> FlattenIds<'a, Id> {
     // ---
 
     /// check self root and children in other children
-    pub fn is_part_of_other_children(&self, other: &Self) -> bool {
+    pub(in crate::graph) fn is_part_of_other_children(&self, other: &Self) -> bool {
         if !(other.children.binary_search(&self.root).is_ok()) {
             return false;
         }
@@ -157,12 +157,12 @@ impl<'a, Id: 'a + Identity> FlattenIds<'a, Id> {
     }
 
     /// check other children in self root and children
-    pub fn contains_other_children(&self, other: &Self) -> bool {
+    pub(in crate::graph) fn contains_other_children(&self, other: &Self) -> bool {
         other.children_is_part_of_other(self)
     }
 
     /// check intersection for self root and children and other chilren not exist
-    pub fn has_no_intersection_other_children(&self, other: &Self) -> bool {
+    pub(in crate::graph) fn has_no_intersection_other_children(&self, other: &Self) -> bool {
         if other.children.binary_search(&self.root).is_ok() {
             return false;
         }
@@ -180,7 +180,7 @@ impl<'a, Id: 'a + Identity> FlattenIds<'a, Id> {
     // ---
 
     /// check self children in other root and children
-    pub fn children_is_part_of_other(&self, other: &Self) -> bool {
+    pub(in crate::graph) fn children_is_part_of_other(&self, other: &Self) -> bool {
         for self_child in self.children.iter() {
             if !(self_child == &other.root || other.children.binary_search(&self_child).is_ok()) {
                 return false;
@@ -191,12 +191,12 @@ impl<'a, Id: 'a + Identity> FlattenIds<'a, Id> {
     }
 
     /// check other root and children in self children
-    pub fn children_contains_other(&self, other: &Self) -> bool {
+    pub(in crate::graph) fn children_contains_other(&self, other: &Self) -> bool {
         other.is_part_of_other_children(self)
     }
 
     /// check intersection for self children and other root and children not exist
-    pub fn children_has_no_intersection_other(&self, other: &Self) -> bool {
+    pub(in crate::graph) fn children_has_no_intersection_other(&self, other: &Self) -> bool {
         for self_child in self.children.iter() {
             if self_child == &other.root || other.children.binary_search(&self_child).is_ok() {
                 return false;
@@ -211,7 +211,7 @@ impl<'a, Id: 'a + Identity> FlattenIds<'a, Id> {
     // ---
 
     /// check self children in other children
-    pub fn children_is_part_of_other_children(&self, other: &Self) -> bool {
+    pub(in crate::graph) fn children_is_part_of_other_children(&self, other: &Self) -> bool {
         for self_child in self.children.iter() {
             if !(other.children.binary_search(&self_child).is_ok()) {
                 return false;
@@ -222,12 +222,15 @@ impl<'a, Id: 'a + Identity> FlattenIds<'a, Id> {
     }
 
     /// check other children in self children
-    pub fn children_contains_other_children(&self, other: &Self) -> bool {
+    pub(in crate::graph) fn children_contains_other_children(&self, other: &Self) -> bool {
         other.children_is_part_of_other_children(self)
     }
 
     /// check intersection for self children and other children not exist
-    pub fn children_has_no_intersection_other_children(&self, other: &Self) -> bool {
+    pub(in crate::graph) fn children_has_no_intersection_other_children(
+        &self,
+        other: &Self,
+    ) -> bool {
         for self_child in self.children.iter() {
             if other.children.binary_search(&self_child).is_ok() {
                 return false;

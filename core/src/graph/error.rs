@@ -1,11 +1,13 @@
 //! Module for error of graph without layout
 
-use crate::graph::edge::{model, Edge};
+use crate::graph::as_model::AsEdgeModel;
+use crate::graph::model;
+use crate::graph::model::EdgeModel;
+use crate::graph::store::Edge;
 use crate::util::Identity;
 use std::error::Error;
 use std::fmt;
 use std::fmt::Debug;
-use crate::graph::model::EdgeModel;
 
 /// alias for Edge structure
 #[derive(Debug, Eq, PartialEq, Clone)]
@@ -163,8 +165,12 @@ impl<Id: Identity> fmt::Display for GraphError<Id> {
                 write!(f, "Already node is exist at the id {:?}.", node_id)
             }
             NotExistNodeAtId(node_id) => {
-            write!(f, "Specified target node is not exist at the id {:?}.", node_id)
-        }
+                write!(
+                    f,
+                    "Specified target node is not exist at the id {:?}.",
+                    node_id
+                )
+            }
             NotSupportGroupNode(group_node_id) => {
                 write!(f, "Not support group node at the id {:?}.", group_node_id)
             }
@@ -245,7 +251,11 @@ impl<Id: Identity> fmt::Display for GraphError<Id> {
                 write!(f, "Already edge is exist at the id {:?}.", edge_id)
             }
             NotExistEdgeAtId(edge_id) => {
-                write!(f, "Specified target edge is not exist at the id {:?}.", edge_id)
+                write!(
+                    f,
+                    "Specified target edge is not exist at the id {:?}.",
+                    edge_id
+                )
             }
             EdgeNotSupported(edge_id, edge) => write!(
                 f,

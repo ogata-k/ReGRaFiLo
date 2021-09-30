@@ -3,31 +3,12 @@
 use std::borrow::Borrow;
 use std::fmt;
 
-pub use config::*;
-use edge::*;
-use node::*;
-
-use crate::graph::error::GraphError;
-use crate::graph::iter::*;
-use crate::util::Identity;
-
+mod as_model;
 mod config;
-mod edge;
 pub mod error;
-mod node;
-
-pub mod iter {
-    //! Module for iterator for graph items
-    pub use crate::graph::edge::iter::*;
-    pub use crate::graph::node::iter::*;
-}
-
-pub mod model {
-    //! Module for model of item
-    pub use crate::graph::edge::model::*;
-    pub use crate::graph::node::model::*;
-}
-
+pub mod iter;
+pub mod model;
+mod store;
 pub mod helper {
     //! Module for helper for handling graph items
 
@@ -196,9 +177,20 @@ pub mod helper {
         }
     }
 }
-use crate::graph::edge::model::EdgeModel;
-use crate::graph::model::NodeModel;
+
+use crate::graph::as_model::{AsEdgeModel, AsNodeModel};
+use crate::graph::error::GraphError;
+use crate::graph::iter::{
+    DirectedEdgeIter, DirectedHyperEdgeIter, EdgeIter, GroupChildNodeIter, GroupNodeIter,
+    MixedEdgeIter, MixedHyperEdgeIter, NodeIter, UndirectedEdgeIter, UndirectedHyperEdgeIter,
+    VertexNodeIter,
+};
+use crate::graph::model::{EdgeModel, NodeModel};
+use crate::graph::store::{Edge, EdgeStore, Incidence, Node, NodeStore};
+use crate::util::Identity;
+pub use config::*;
 use helper::*;
+use std::collections::btree_map::Entry;
 
 /// graph without layout
 #[derive(Debug, Eq, PartialEq, Clone)]
@@ -267,6 +259,69 @@ impl<Id: Identity> Graph<Id> {
         Self::create_by_config(GraphConfig::mixed_hyper_graph(can_multiple_hyper_edge))
     }
 
+    /// Generate incidences data from the edge with assume that we already check support edge.
+    fn generate_incidences_without_check(
+        &self,
+        edge_id: &Id,
+        edge: &store::Edge<Id>,
+    ) -> Vec<(Id, store::Incidence<Id>)> {
+        let mut result = Vec::new();
+        // No check support incidence with config
+        match &edge {
+            store::Edge::Undirected { ids, .. } => {
+                for node_id in ids {
+                    result.push((
+                        node_id.clone(),
+                        store::Incidence::undirected(edge_id.clone()),
+                    ));
+                }
+            }
+            store::Edge::Directed {
+                source_id,
+                target_id,
+                ..
+            } => {
+                result.push((
+                    source_id.clone(),
+                    store::Incidence::directed_source(edge_id.clone()),
+                ));
+                result.push((
+                    target_id.clone(),
+                    store::Incidence::directed_target(edge_id.clone()),
+                ));
+            }
+            store::Edge::UndirectedHyper { ids, .. } => {
+                for node_id in ids {
+                    result.push((
+                        node_id.clone(),
+                        store::Incidence::undirected_hyper(edge_id.clone()),
+                    ));
+                }
+            }
+            store::Edge::DirectedHyper {
+                source_ids,
+                target_ids,
+                ..
+            } => {
+                for source_id in source_ids {
+                    result.push((
+                        source_id.clone(),
+                        store::Incidence::directed_hyper_source(edge_id.clone()),
+                    ));
+                }
+
+                for target_id in target_ids {
+                    result.push((
+                        target_id.clone(),
+                        store::Incidence::directed_hyper_target(edge_id.clone()),
+                    ));
+                }
+            }
+        }
+
+        result
+    }
+
     // ---
     // getter
     // ---
@@ -333,17 +388,17 @@ impl<Id: Identity> Graph<Id> {
 
     /// to iterator for node
     pub fn node_iter<'a>(&'a self) -> NodeIter<'a, Id> {
-        self.nodes.node_iter()
+        NodeIter::new(&self.nodes)
     }
 
     /// to iterator for node point
     pub fn vertex_node_iter<'a>(&'a self) -> VertexNodeIter<'a, Id> {
-        self.nodes.vertex_node_iter()
+        VertexNodeIter::new(&self.nodes)
     }
 
     /// to iterator for node group
     pub fn group_node_iter<'a>(&'a self) -> GroupNodeIter<'a, Id> {
-        self.nodes.group_node_iter()
+        GroupNodeIter::new(&self.nodes)
     }
 
     /// to iterator for grouping child nodes
@@ -355,7 +410,7 @@ impl<Id: Identity> Graph<Id> {
         Id: Borrow<B>,
         B: Identity,
     {
-        self.nodes.group_child_node_iter(group_id)
+        GroupChildNodeIter::new(group_id, &self.nodes)
     }
 
     // ---
@@ -363,7 +418,7 @@ impl<Id: Identity> Graph<Id> {
     // ---
 
     /// get edge ids which have same incidence nodes
-    pub fn get_same_edge_ids(&self, edge: &Edge<Id>) -> Vec<Id> {
+    fn get_same_edge_ids(&self, edge: &Edge<Id>) -> Vec<Id> {
         match edge.get_incidence_node_ids_as_ref().first() {
             None => vec![],
             Some(node_id) => {
@@ -490,37 +545,37 @@ impl<Id: Identity> Graph<Id> {
 
     /// to iterator for edge
     pub fn edge_iter<'a>(&'a self) -> EdgeIter<'a, Id> {
-        self.edges.edge_iter()
+        EdgeIter::new(&self.edges)
     }
 
     /// to iterator for undirected edge
     pub fn undirected_edge_iter<'a>(&'a self) -> UndirectedEdgeIter<'a, Id> {
-        self.edges.undirected_edge_iter()
+        UndirectedEdgeIter::new(&self.edges)
     }
 
     /// to iterator for directed edge
     pub fn directed_edge_iter<'a>(&'a self) -> DirectedEdgeIter<'a, Id> {
-        self.edges.directed_edge_iter()
+        DirectedEdgeIter::new(&self.edges)
     }
 
     /// to iterator for undirected of directed edge
     pub fn mixed_edge_iter<'a>(&'a self) -> MixedEdgeIter<'a, Id> {
-        self.edges.mixed_edge_iter()
+        MixedEdgeIter::new(&self.edges)
     }
 
     /// to iterator for undirected hyper edge
     pub fn undirected_hyper_edge_iter<'a>(&'a self) -> UndirectedHyperEdgeIter<'a, Id> {
-        self.edges.undirected_hyper_edge_iter()
+        UndirectedHyperEdgeIter::new(&self.edges)
     }
 
     /// to iterator for directed hyper edge
     pub fn directed_hyper_edge_iter<'a>(&'a self) -> DirectedHyperEdgeIter<'a, Id> {
-        self.edges.directed_hyper_edge_iter()
+        DirectedHyperEdgeIter::new(&self.edges)
     }
 
     /// to iterator for undirected or directed hyper edge
     pub fn mixed_hyper_edge_iter<'a>(&'a self) -> MixedHyperEdgeIter<'a, Id> {
-        self.edges.mixed_hyper_edge_iter()
+        MixedHyperEdgeIter::new(&self.edges)
     }
 
     // ---
@@ -593,7 +648,7 @@ impl<Id: Identity> Graph<Id> {
         }
 
         // can create vertex node
-        let mut node = Node::vertex_with_weight(weight);
+        let mut node = store::Node::vertex_with_weight(weight);
         node.set_parent_optional(parent_id);
         self.nodes.insert_node(node_id, node);
 
@@ -711,12 +766,12 @@ impl<Id: Identity> Graph<Id> {
 
         // already check can create. create under this graph root
         for not_exist_child_id in not_exist_child_ids.into_iter() {
-            let mut child_node = Node::vertex_with_weight(1);
+            let mut child_node = store::Node::vertex_with_weight(1);
             child_node.set_parent(node_id.clone());
             self.nodes.insert_node(not_exist_child_id, child_node);
         }
 
-        let mut group_node = Node::group_with_weight(weight, child_node_ids);
+        let mut group_node = store::Node::group_with_weight(weight, child_node_ids);
         group_node.set_parent_optional(parent_id);
         self.nodes.insert_node(node_id, group_node);
 
@@ -877,7 +932,7 @@ impl<Id: Identity> Graph<Id> {
         let config: &GraphConfig = self.get_config();
 
         // check support edge
-        if !edge.is_support(config) {
+        if !self.is_support_edge(&edge) {
             return Err(GraphError::EdgeNotSupported(edge_id, edge.into()));
         }
 
@@ -919,12 +974,12 @@ impl<Id: Identity> Graph<Id> {
 
             // already check can create. create under this graph root
             for not_exist_child_id in not_exist_child_ids.into_iter() {
-                let child_node = Node::vertex_with_weight(1);
+                let child_node = store::Node::vertex_with_weight(1);
                 self.nodes.insert_node(not_exist_child_id, child_node);
             }
 
             //create incidence data from edge
-            let incidences = edge.generate_incidences_without_check(&edge_id);
+            let incidences = self.generate_incidences_without_check(&edge_id, &edge);
 
             // replace edge
             for same_edge_id in same_edge_ids.iter() {
@@ -942,12 +997,12 @@ impl<Id: Identity> Graph<Id> {
 
             // already check can create. create under this graph root
             for not_exist_child_id in not_exist_child_ids.into_iter() {
-                let child_node = Node::vertex_with_weight(1);
+                let child_node = store::Node::vertex_with_weight(1);
                 self.nodes.insert_node(not_exist_child_id, child_node);
             }
 
             //create incidence data from edge
-            let incidences = edge.generate_incidences_without_check(&edge_id);
+            let incidences = self.generate_incidences_without_check(&edge_id, &edge);
 
             // add edge (old edge not exist)
             self.edges.insert_edge(edge_id, edge);
@@ -1089,7 +1144,7 @@ impl<Id: Identity> Graph<Id> {
     fn check_incidence_nodes_can_make_edge(
         &self,
         edge_id: &Id,
-        edge: &Edge<Id>,
+        edge: &store::Edge<Id>,
     ) -> Result<Vec<Id>, GraphError<Id>> {
         let mut not_exist_children_id = Vec::new();
         let mut exist_error_children_id = Vec::new();
@@ -1151,6 +1206,19 @@ impl<Id: Identity> Graph<Id> {
         Ok(not_exist_children_id)
     }
 
+    /// check configure support this edge type.
+    fn is_support_edge(&self, edge: &Edge<Id>) -> bool {
+        use store::Edge::*;
+        let config = self.get_config();
+
+        match edge {
+            Undirected { .. } => config.can_use_undirected_edge(),
+            Directed { .. } => config.can_use_directed_edge(),
+            UndirectedHyper { .. } => config.can_use_undirected_hyper_edge(),
+            DirectedHyper { .. } => config.can_use_directed_hyper_edge(),
+        }
+    }
+
     // ---
     // delete
     // ---
@@ -1172,6 +1240,226 @@ impl<Id: Identity> Graph<Id> {
         self.edges.clear();
     }
 
+    /// remove node_id and node's incidences from edge store
+    /// return value is Vec<(node_id, edge_id>
+    fn remove_node_id_and_illegal_edge_with_collect(
+        &mut self,
+        deleted_node_id: &Id,
+        deleted_node: Node<Id>,
+    ) -> Vec<(Id, Id)> {
+        let deleted_incidences = deleted_node.into_incidences();
+        let mut will_delete_node_id_edge_id: Vec<(Id, Id)> = Vec::new();
+        for incidence in deleted_incidences.into_iter() {
+            match incidence {
+                Incidence::Undirected { edge_id } => {
+                    let edge_entry = self.edges.entry(edge_id);
+                    match edge_entry {
+                        Entry::Vacant(_) => {
+                            // If already remove the edge, not exist.
+                            continue;
+                        }
+                        Entry::Occupied(occupied) => {
+                            if let Edge::Undirected { ids, .. } = occupied.get() {
+                                // This edge is illegal because exist edge remove node_id from ids
+                                // remove node id from ids
+                                let remove_first = deleted_node_id == &ids[0];
+                                let remove_second = deleted_node_id == &ids[1];
+
+                                // remove illegal edge
+                                if remove_first || remove_second {
+                                    if let (
+                                        remove_edge_id,
+                                        Edge::Undirected {
+                                            ids: removable_node_ids,
+                                            ..
+                                        },
+                                    ) = occupied.remove_entry()
+                                    {
+                                        let [first_node_id, second_node_id] = removable_node_ids;
+
+                                        // if remove first or second
+                                        match (remove_first, remove_second) {
+                                            (false, true) => {
+                                                // retain first
+                                                will_delete_node_id_edge_id
+                                                    .push((first_node_id, remove_edge_id));
+                                            }
+                                            (true, false) => {
+                                                // retain second
+                                                will_delete_node_id_edge_id
+                                                    .push((second_node_id, remove_edge_id));
+                                            }
+                                            _ => {}
+                                        }
+                                    } else {
+                                        unreachable!();
+                                    }
+                                }
+                            } else {
+                                panic!(
+                                    "Unknown edge {} for incidence {}",
+                                    occupied.get(),
+                                    Incidence::Undirected {
+                                        edge_id: occupied.key()
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+                Incidence::DirectedSource { edge_id } | Incidence::DirectedTarget { edge_id } => {
+                    let edge_entry = self.edges.entry(edge_id);
+                    match edge_entry {
+                        Entry::Vacant(_) => {
+                            // If already remove the edge, not exist.
+                            continue;
+                        }
+                        Entry::Occupied(occupied) => {
+                            if let Edge::Directed {
+                                source_id,
+                                target_id,
+                                ..
+                            } = occupied.get()
+                            {
+                                // This edge is illegal because exist edge remove node_id from ids
+                                // remove node id from ids
+                                let remove_source = deleted_node_id == source_id;
+                                let remove_target = deleted_node_id == target_id;
+
+                                // remove illegal edge
+                                if remove_source || remove_target {
+                                    if let (
+                                        remove_edge_id,
+                                        Edge::Directed {
+                                            source_id: source_node_id,
+                                            target_id: target_node_id,
+                                            ..
+                                        },
+                                    ) = occupied.remove_entry()
+                                    {
+                                        // if remove source or target
+                                        match (remove_source, remove_target) {
+                                            (false, true) => {
+                                                // retain source
+                                                will_delete_node_id_edge_id
+                                                    .push((source_node_id, remove_edge_id));
+                                            }
+                                            (true, false) => {
+                                                // retain target
+                                                will_delete_node_id_edge_id
+                                                    .push((target_node_id, remove_edge_id));
+                                            }
+                                            _ => {}
+                                        }
+                                    } else {
+                                        unreachable!();
+                                    }
+                                }
+                            } else {
+                                panic!(
+                                    "Unknown edge {} for incidence {}",
+                                    occupied.get(),
+                                    Incidence::Undirected {
+                                        edge_id: occupied.key()
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+                Incidence::UndirectedHyper { edge_id } => {
+                    let edge_entry = self.edges.entry(edge_id);
+                    match edge_entry {
+                        Entry::Vacant(_) => {
+                            // If already remove the edge, not exist.
+                            continue;
+                        }
+                        Entry::Occupied(mut occupied) => {
+                            if let Edge::UndirectedHyper { ids, .. } = occupied.get_mut() {
+                                // This edge is illegal because exist edge remove node_id from ids
+                                // remove node id from ids
+                                ids.retain(|id| deleted_node_id != id);
+
+                                // remove illegal edge
+                                if ids.is_empty() {
+                                    let _ = occupied.remove_entry();
+                                    // none removable incidence edge
+                                }
+                            } else {
+                                panic!(
+                                    "Unknown edge {} for incidence {}",
+                                    occupied.get(),
+                                    Incidence::Undirected {
+                                        edge_id: occupied.key()
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+                Incidence::DirectedHyperSource { edge_id }
+                | Incidence::DirectedHyperTarget { edge_id } => {
+                    let edge_entry = self.edges.entry(edge_id);
+                    match edge_entry {
+                        Entry::Vacant(_) => {
+                            // If already remove the edge, not exist.
+                            continue;
+                        }
+                        Entry::Occupied(mut occupied) => {
+                            if let Edge::DirectedHyper {
+                                source_ids,
+                                target_ids,
+                                ..
+                            } = occupied.get_mut()
+                            {
+                                // This edge is illegal because exist edge remove node_id from ids
+                                // remove node id from ids
+                                source_ids.retain(|id| deleted_node_id != id);
+                                target_ids.retain(|id| deleted_node_id != id);
+
+                                // remove illegal edge
+                                if source_ids.is_empty() || target_ids.is_empty() {
+                                    if let (
+                                        remove_edge_id,
+                                        Edge::DirectedHyper {
+                                            source_ids: removable_source_node_ids,
+                                            target_ids: removable_target_node_ids,
+                                            ..
+                                        },
+                                    ) = occupied.remove_entry()
+                                    {
+                                        for source_node_id in removable_source_node_ids {
+                                            // retain source
+                                            will_delete_node_id_edge_id
+                                                .push((source_node_id, remove_edge_id.clone()));
+                                        }
+                                        for target_node_id in removable_target_node_ids {
+                                            // retain source
+                                            will_delete_node_id_edge_id
+                                                .push((target_node_id, remove_edge_id.clone()));
+                                        }
+                                    } else {
+                                        unreachable!();
+                                    }
+                                }
+                            } else {
+                                panic!(
+                                    "Unknown edge {} for incidence {}",
+                                    occupied.get(),
+                                    Incidence::Undirected {
+                                        edge_id: occupied.key()
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        will_delete_node_id_edge_id
+    }
+
     /// delete node at node_id if exist with remove illegal edge.
     ///
     /// If exist node, then return the id.
@@ -1191,9 +1479,8 @@ impl<Id: Identity> Graph<Id> {
 
             let _children: Vec<Id> = remove_node.get_children().to_vec();
 
-            let will_delete_incidences = self
-                .edges
-                .remove_node_id_and_illegal_edge_with_collect(&remove_node_id, remove_node);
+            let will_delete_incidences =
+                self.remove_node_id_and_illegal_edge_with_collect(&remove_node_id, remove_node);
             self.nodes.remove_edges_by_ids(&will_delete_incidences);
 
             for child_id in _children.iter() {
@@ -1245,9 +1532,8 @@ impl<Id: Identity> Graph<Id> {
 
             let mut _children: Vec<Id> = remove_node.get_children().to_vec();
 
-            let will_delete_incidences = self
-                .edges
-                .remove_node_id_and_illegal_edge_with_collect(&remove_node_id, remove_node);
+            let will_delete_incidences =
+                self.remove_node_id_and_illegal_edge_with_collect(&remove_node_id, remove_node);
             self.nodes.remove_edges_by_ids(&will_delete_incidences);
 
             for child_id in _children.iter() {

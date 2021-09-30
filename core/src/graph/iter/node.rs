@@ -1,21 +1,22 @@
 //! Module for iterator of node
 
-use crate::graph::node::{model, NodeStore};
+use crate::graph::as_model::AsNodeModel;
+use crate::graph::model;
+use crate::graph::store;
+use crate::graph::store::{Node, NodeStore};
 use crate::util::Identity;
-
-use crate::graph::Node;
 use std::borrow::Borrow;
 use std::collections::btree_map::Iter;
 use std::iter::Iterator;
 
 /// Iterator for node
 pub struct NodeIter<'a, Id: Identity> {
-    store_iter: Iter<'a, Id, Node<Id>>,
+    store_iter: Iter<'a, Id, store::Node<Id>>,
 }
 
 impl<'a, Id: Identity> NodeIter<'a, Id> {
     /// create this iterator
-    pub fn new(store: &'a NodeStore<Id>) -> Self {
+    pub(in crate::graph) fn new(store: &'a NodeStore<Id>) -> Self {
         NodeIter {
             store_iter: store.inner_store_iter(),
         }
@@ -38,7 +39,7 @@ pub struct VertexNodeIter<'a, Id: Identity> {
 
 impl<'a, Id: Identity> VertexNodeIter<'a, Id> {
     /// create this iterator
-    pub fn new(store: &'a NodeStore<Id>) -> Self {
+    pub(in crate::graph) fn new(store: &'a NodeStore<Id>) -> Self {
         VertexNodeIter {
             store_iter: store.inner_store_iter(),
         }
@@ -76,7 +77,7 @@ pub struct GroupNodeIter<'a, Id: Identity> {
 
 impl<'a, Id: Identity> GroupNodeIter<'a, Id> {
     /// create this iterator
-    pub fn new(store: &'a NodeStore<Id>) -> Self {
+    pub(in crate::graph) fn new(store: &'a NodeStore<Id>) -> Self {
         GroupNodeIter {
             store_iter: store.inner_store_iter(),
         }
@@ -121,7 +122,10 @@ pub struct GroupChildNodeIter<'a, Id: Identity> {
 impl<'a, Id: Identity> GroupChildNodeIter<'a, Id> {
     /// create this iterator
     /// If specified group is root or not exist group, then return None.
-    pub fn new<B: ?Sized>(group_id: Option<&'a B>, store: &'a NodeStore<Id>) -> Self
+    pub(in crate::graph) fn new<B: ?Sized>(
+        group_id: Option<&'a B>,
+        store: &'a NodeStore<Id>,
+    ) -> Self
     where
         Id: Borrow<B>,
         B: Identity,
