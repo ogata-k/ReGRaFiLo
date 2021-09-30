@@ -1,13 +1,12 @@
 //! Module for Convert to model
 
 use crate::graph::model;
-use crate::graph::store::{Incidence, Node, NodeStore};
+use crate::graph::store::{Incidence, Node};
 use crate::util::Identity;
 
 /// convert to Node's Incidence model
 pub(in crate::graph) trait AsNodeIncidenceModel<Id: Identity> {
     /// create model as node's incidence edge
-    #[inline]
     fn as_model<'a>(&'a self) -> model::Incidence<'a, Id>;
 }
 
@@ -37,15 +36,12 @@ impl<Id: Identity> AsNodeIncidenceModel<Id> for Incidence<Id> {
 /// convert to Node model
 pub(in crate::graph) trait AsNodeModel<Id: Identity> {
     /// create model as node
-    #[inline]
     fn as_model<'a>(&'a self) -> model::Node<'a, Id>;
 
     /// create model as node point
-    #[inline]
     fn as_vertex_model<'a>(&'a self) -> Option<model::VertexNode<'a, Id>>;
 
     /// create model as node group
-    #[inline]
     fn as_group_model<'a>(&'a self) -> Option<model::GroupNode<'a, Id>>;
 }
 

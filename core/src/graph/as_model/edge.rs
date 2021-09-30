@@ -7,31 +7,24 @@ use crate::util::Identity;
 /// convert to Edge model
 pub(in crate::graph) trait AsEdgeModel<Id: Identity> {
     /// create model as edge
-    #[inline]
     fn as_model<'a>(&'a self) -> model::Edge<'a, Id>;
 
     /// create model as undirected edge
-    #[inline]
     fn as_undirected_model<'a>(&'a self) -> Option<model::UndirectedEdge<'a, Id>>;
 
     /// create model as directed edge
-    #[inline]
     fn as_directed_model<'a>(&'a self) -> Option<model::DirectedEdge<'a, Id>>;
 
     /// create model as mixed edge
-    #[inline]
     fn as_mixed_model<'a>(&'a self) -> Option<model::MixedEdge<'a, Id>>;
 
     /// create model as undirected hyper edge
-    #[inline]
     fn as_undirected_hyper_model<'a>(&'a self) -> Option<model::UndirectedHyperEdge<'a, Id>>;
 
     /// create model as mixed hyper edge
-    #[inline]
     fn as_directed_hyper_model<'a>(&'a self) -> Option<model::DirectedHyperEdge<'a, Id>>;
 
     /// create model as mixed hyper edge
-    #[inline]
     fn as_mixed_hyper_model<'a>(&'a self) -> Option<model::MixedHyperEdge<'a, Id>>;
 }
 
