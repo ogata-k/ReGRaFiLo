@@ -2,6 +2,70 @@
 
 use std::fmt;
 
+/// Kind of Graph. The kind is HyperGraph or not.
+#[derive(Debug, Eq, PartialEq, Copy, Clone)]
+pub enum GraphKind {
+    /// Undirected Graph or Directed Graph
+    Graph,
+
+    /// Undirected Hyper Graph or Directed Hyper Graph
+    HyperGraph,
+}
+
+impl fmt::Display for GraphKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_fmt(format_args!("{:?}", &self))
+    }
+}
+
+impl GraphKind {
+    /// check graph is graph which has edge
+    pub fn is_graph(&self) -> bool {
+        self == &GraphKind::Graph
+    }
+
+    /// check graph is graph which has hyper edge
+    pub fn is_hyper_graph(&self) -> bool {
+        self == &GraphKind::HyperGraph
+    }
+}
+
+/// Spec of an available Edge for the Graph.
+#[derive(Debug, Eq, PartialEq, Copy, Clone)]
+pub enum EdgeSpec {
+    /// Undirected Edge or Undirected Hyper Edge
+    Undirected,
+
+    /// Directed Edge or Directed Hyper Edge
+    Directed,
+
+    /// Undirected and Directed Edge or Undirected and Directed Hyper Edge
+    Mixed,
+}
+
+impl fmt::Display for EdgeSpec {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_fmt(format_args!("{:?}", &self))
+    }
+}
+
+impl EdgeSpec {
+    /// check the spec of edge is Undirected
+    pub fn is_undirected(&self) -> bool {
+        self == &EdgeSpec::Undirected
+    }
+
+    /// check the spec of edge is Directed
+    pub fn is_directed(&self) -> bool {
+        self == &EdgeSpec::Directed
+    }
+
+    /// check the spec of edge is Mixed
+    pub fn is_mixed(&self) -> bool {
+        self == &EdgeSpec::Mixed
+    }
+}
+
 /// Type of Graph. We use the type to check edge type.
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
 pub enum GraphType {
@@ -40,11 +104,24 @@ impl fmt::Display for GraphType {
 }
 
 impl GraphType {
-    /// check type is kind of Graph
-    pub fn is_kind_of_graph(&self) -> bool {
+    /// get kind of the configured Graph
+    pub fn get_graph_kind(&self) -> GraphKind {
         match self {
-            GraphType::UndirectedGraph | GraphType::DirectedGraph | GraphType::MixedGraph => true,
-            _ => false,
+            GraphType::UndirectedGraph | GraphType::DirectedGraph | GraphType::MixedGraph => {
+                GraphKind::Graph
+            }
+            GraphType::UndirectedHyperGraph
+            | GraphType::DirectedHyperGraph
+            | GraphType::MixedHyperGraph => GraphKind::HyperGraph,
+        }
+    }
+
+    /// get spec of an available edge of the configured Graph
+    pub fn get_edge_spec(&self) -> EdgeSpec {
+        match self {
+            GraphType::UndirectedGraph | GraphType::UndirectedHyperGraph => EdgeSpec::Undirected,
+            GraphType::DirectedGraph | GraphType::DirectedHyperGraph => EdgeSpec::Directed,
+            GraphType::MixedGraph | GraphType::MixedHyperGraph => EdgeSpec::Mixed,
         }
     }
 
@@ -63,16 +140,6 @@ impl GraphType {
         self == &GraphType::MixedGraph
     }
 
-    /// check type is kind of HyperGraph
-    pub fn is_kind_of_hyper_graph(&self) -> bool {
-        match self {
-            GraphType::UndirectedHyperGraph
-            | GraphType::DirectedHyperGraph
-            | GraphType::MixedHyperGraph => true,
-            _ => false,
-        }
-    }
-
     /// check type is for Hyper Graph
     pub fn is_undirected_hyper_graph(&self) -> bool {
         self == &GraphType::UndirectedHyperGraph
@@ -84,7 +151,7 @@ impl GraphType {
     }
 
     /// check type is for Mixed Hyper Graph
-    pub fn is_mixed_hyper_graph(&self) -> bool {
+    fn is_mixed_hyper_graph(&self) -> bool {
         self == &GraphType::MixedHyperGraph
     }
 }
@@ -115,31 +182,13 @@ pub struct GraphConfig {
 
 impl fmt::Display for GraphConfig {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use GraphType::*;
-
-        match self.graph_type {
-            UndirectedGraph => {
-                f.write_str("{graph_kind: Graph, edge_spec: Undirected")?;
-            },
-            DirectedGraph => {
-                f.write_str("{graph_kind: Graph, edge_spec: Directed")?;
-            },
-            MixedGraph => {
-                f.write_str("{graph_kind: Graph, edge_spec: Mixed")?;
-            },
-            UndirectedHyperGraph => {
-                f.write_str("{graph_kind: HyperGraph, edge_spec: Undirected")?;
-            },
-            DirectedHyperGraph => {
-                f.write_str("{graph_kind: HyperGraph, edge_spec: Directed")?;
-            },
-            MixedHyperGraph => {
-                f.write_str("{graph_kind: HyperGraph, edge_spec: Mixed")?;
-            },
-        }
+        let graph_type = self.get_graph_type();
         f.write_fmt(format_args!(
-            ", node_group: {}, can_multiple: {}}}",
-            self.use_group_node, self.multiple_edge
+            "{{graph_kind: {}, edge_spec: {}, node_group: {}, can_multiple: {}}}",
+            graph_type.get_graph_kind(),
+            graph_type.get_edge_spec(),
+            self.use_group_node,
+            self.multiple_edge
         ))
     }
 }
@@ -220,7 +269,7 @@ impl GraphConfig {
     // ---
 
     /// get graph type
-    pub fn get_type(&self) -> GraphType {
+    pub fn get_graph_type(&self) -> GraphType {
         self.graph_type
     }
 
@@ -279,63 +328,23 @@ impl GraphConfig {
         self.replace_same_edge
     }
 
-    /// check type is kind of Graph
-    pub fn is_kind_of_graph(&self) -> bool {
-        self.get_type().is_kind_of_graph()
-    }
-
-    /// check configure is for Graph
-    pub fn is_undirected_graph(&self) -> bool {
-        self.get_type().is_undirected_graph()
-    }
-
-    /// check configure is for Directed Graph
-    pub fn is_directed_graph(&self) -> bool {
-        self.get_type().is_directed_graph()
-    }
-
-    /// check configure is for Mixed Graph
-    pub fn is_mixed_graph(&self) -> bool {
-        self.get_type().is_mixed_graph()
-    }
-
-    /// check type is kind of HyperGraph
-    pub fn is_kind_of_hyper_graph(&self) -> bool {
-        self.get_type().is_kind_of_hyper_graph()
-    }
-
-    /// check configure is for Hyper Graph
-    pub fn is_undirected_hyper_graph(&self) -> bool {
-        self.get_type().is_undirected_hyper_graph()
-    }
-
-    /// check configure is for Directed Hyper Graph
-    pub fn is_directed_hyper_graph(&self) -> bool {
-        self.get_type().is_directed_hyper_graph()
-    }
-
-    /// check configure is for Mixed Hyper Graph
-    pub fn is_mixed_hyper_graph(&self) -> bool {
-        self.get_type().is_mixed_hyper_graph()
-    }
-
     /// check graph can use undirected edge
     pub fn can_use_undirected_edge(&self) -> bool {
-        let graph_type = self.get_type();
+        let graph_type = self.get_graph_type();
 
         graph_type.is_undirected_graph() || graph_type.is_mixed_graph()
     }
 
     /// check graph can use directed edge
     pub fn can_use_directed_edge(&self) -> bool {
-        let graph_type = self.get_type();
+        let graph_type = self.get_graph_type();
 
         graph_type.is_directed_graph() || graph_type.is_mixed_graph()
     }
 
     /// check graph can use edge
     pub fn can_use_edge(&self) -> bool {
-        let graph_type = self.get_type();
+        let graph_type = self.get_graph_type();
 
         graph_type.is_undirected_graph()
             || graph_type.is_directed_graph()
@@ -344,21 +353,21 @@ impl GraphConfig {
 
     /// check graph can use undirected hyper edge
     pub fn can_use_undirected_hyper_edge(&self) -> bool {
-        let graph_type = self.get_type();
+        let graph_type = self.get_graph_type();
 
         graph_type.is_undirected_hyper_graph() || graph_type.is_mixed_hyper_graph()
     }
 
     /// check graph can use directed hyper edge
     pub fn can_use_directed_hyper_edge(&self) -> bool {
-        let graph_type = self.get_type();
+        let graph_type = self.get_graph_type();
 
         graph_type.is_directed_hyper_graph() || graph_type.is_mixed_hyper_graph()
     }
 
     /// check graph can use hyper edge
     pub fn can_use_hyper_edge(&self) -> bool {
-        let graph_type = self.get_type();
+        let graph_type = self.get_graph_type();
 
         graph_type.is_undirected_hyper_graph()
             || graph_type.is_directed_hyper_graph()
