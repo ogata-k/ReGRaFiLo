@@ -5,11 +5,9 @@ use regrafilo_core::graph::helper::GraphItemExistedResultExt;
 use regrafilo_core::util::Identity;
 
 fn main() {
-    let can_multiple = false;
-    let use_node_group = false;
     let config =
-        GraphConfig::mixed_graph(can_multiple, use_node_group).to_create_not_exist_vertex_node();
-    let mut graph: Graph<u8> = Graph::create_by_config(config);
+        GraphConfig::mixed_graph().create_not_exist_vertex_node();
+    let mut graph: Graph<u8> = Graph::create(config);
 
     // Create item action is failed when old item exist.
     // If catch as error, need convert to error.

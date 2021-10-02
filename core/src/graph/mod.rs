@@ -218,45 +218,12 @@ impl<Id: Identity> Graph<Id> {
     // ---
 
     /// construct graph with use the config
-    pub fn create_by_config(config: GraphConfig) -> Self {
+    pub fn create(config: GraphConfig) -> Self {
         Self {
             config,
             nodes: NodeStore::create(),
             edges: EdgeStore::create(),
         }
-    }
-
-    /// constructor for Graph
-    pub fn create_as_undirected_graph(can_multiple_edge: bool, use_grouping: bool) -> Self {
-        Self::create_by_config(GraphConfig::undirected_graph(
-            can_multiple_edge,
-            use_grouping,
-        ))
-    }
-
-    /// constructor for Directed Graph
-    pub fn create_as_directed_graph(can_multiple_edge: bool, use_grouping: bool) -> Self {
-        Self::create_by_config(GraphConfig::directed_graph(can_multiple_edge, use_grouping))
-    }
-
-    /// constructor for Mixed Graph
-    pub fn create_as_mixed_graph(can_multiple_edge: bool, use_grouping: bool) -> Self {
-        Self::create_by_config(GraphConfig::mixed_graph(can_multiple_edge, use_grouping))
-    }
-
-    /// constructor for Hyper Graph
-    pub fn create_as_undirected_hyper_graph(can_multiple_edge: bool) -> Self {
-        Self::create_by_config(GraphConfig::undirected_hyper_graph(can_multiple_edge))
-    }
-
-    /// constructor for Directed Hyper Graph
-    pub fn create_as_directed_hyper_graph(can_multiple_hyper_edge: bool) -> Self {
-        Self::create_by_config(GraphConfig::directed_hyper_graph(can_multiple_hyper_edge))
-    }
-
-    /// constructor for Mixed Hyper Graph
-    pub fn create_as_mixed_hyper_graph(can_multiple_hyper_edge: bool) -> Self {
-        Self::create_by_config(GraphConfig::mixed_hyper_graph(can_multiple_hyper_edge))
     }
 
     /// Generate incidences data from the edge with assume that we already check support edge.
@@ -951,11 +918,8 @@ impl<Id: Identity> Graph<Id> {
         }
 
         // check same edge
-        let can_multiple = if edge.is_edge() {
-            config.can_multiple_edge()
-        } else {
-            config.can_multiple_hyper_edge()
-        };
+        let can_multiple = config.can_multiple_edge();
+
         let can_replace_mode = config.can_replace_same_edge();
         let same_edge_ids = self.get_same_edge_ids(&edge);
 

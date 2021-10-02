@@ -5,9 +5,8 @@ use regrafilo_core::graph::helper::GraphItemExistedResultExt;
 use regrafilo_core::util::Identity;
 
 fn main() {
-    let can_multiple = false;
-    let config = GraphConfig::directed_hyper_graph(can_multiple).to_replace_same_edge_mode();
-    let mut graph: Graph<u8> = Graph::create_by_config(config);
+    let config = GraphConfig::directed_hyper_graph().replace_same_edge();
+    let mut graph: Graph<u8> = Graph::create(config);
 
     // Create item action is failed when old item exist.
     // If catch as error, need convert to error.

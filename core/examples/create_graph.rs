@@ -5,12 +5,12 @@ use regrafilo_core::graph::helper::GraphItemExistedResultExt;
 use regrafilo_core::util::Identity;
 
 fn main() {
-    let can_multiple = true;
-    let use_node_group = true;
-    let config = GraphConfig::undirected_graph(can_multiple, use_node_group)
-        .to_replace_same_edge_mode()
-        .to_create_not_exist_vertex_node();
-    let mut graph: Graph<u8> = Graph::create_by_config(config);
+    let config = GraphConfig::undirected_graph()
+        .use_group_node()
+        .use_multiple_edge()
+        .replace_same_edge()
+        .create_not_exist_vertex_node();
+    let mut graph: Graph<u8> = Graph::create(config);
 
     // Create item action is failed when old item exist.
     // If catch as error, need convert to error.
