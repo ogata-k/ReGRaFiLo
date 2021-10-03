@@ -1,7 +1,6 @@
 //! example for create graph without layout
 
-use regrafilo_core::graph::{Graph, GraphConfig};
-use regrafilo_core::graph::helper::{EdgeExistedResultExt, NodeExistedResultExt};
+use regrafilo_core::graph::{EdgeExistedResultExt, Graph, GraphConfig, NodeExistedResultExt};
 use regrafilo_core::util::Identity;
 
 fn main() {

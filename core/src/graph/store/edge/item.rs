@@ -117,7 +117,11 @@ impl<NodeId: Identity, EdgeId: Identity> Edge<NodeId, EdgeId> {
     }
 
     /// constructor for undirected edge with edge
-    pub(in crate::graph) fn undirected_with_weight(id1: NodeId, id2: NodeId, weight: Weight) -> Self {
+    pub(in crate::graph) fn undirected_with_weight(
+        id1: NodeId,
+        id2: NodeId,
+        weight: Weight,
+    ) -> Self {
         if &id1 <= &id2 {
             Self::Undirected {
                 weight: weight,

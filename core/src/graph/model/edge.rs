@@ -137,7 +137,7 @@ impl<'a, NodeId: Identity, EdgeId: Identity> EdgeModel<NodeId, EdgeId>
     for UndirectedEdge<'a, NodeId, EdgeId>
 {
     /// get weight for the edge
-    fn get_weight(&self) -> Weight{
+    fn get_weight(&self) -> Weight {
         *self.weight
     }
 
@@ -195,7 +195,7 @@ impl<'a, NodeId: Identity, EdgeId: Identity> EdgeModel<NodeId, EdgeId>
     for DirectedEdge<'a, NodeId, EdgeId>
 {
     /// get weight for the edge
-    fn get_weight(&self) -> Weight{
+    fn get_weight(&self) -> Weight {
         *self.weight
     }
 
