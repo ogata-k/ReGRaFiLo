@@ -24,171 +24,180 @@ use std::borrow::Borrow;
 use std::collections::btree_map::Entry;
 use std::fmt;
 
-/// helper for handling existed node
-pub trait NodeExistedResultExt<NodeId: Identity, EdgeId: Identity> {
-    /// If old node exist, then return Err(GraphError::AlreadyNodeExist). Others same.
-    fn old_node_exist_to_error(self) -> Result<(), GraphError<NodeId, EdgeId>>;
-    /// If old node exist, then return Ok(Some(model::Node))
-    fn with_old_node_model<'a>(
-        self,
-        graph: &'a Graph<NodeId, EdgeId>,
-    ) -> Result<Option<(NodeId, model::Node<'a, NodeId, EdgeId>)>, GraphError<NodeId, EdgeId>>;
-    /// call callback when old node exist
-    fn call_if_old_node_exist<F>(self, callback: F) -> Result<(), GraphError<NodeId, EdgeId>>
-    where
-        F: FnOnce(NodeId) -> Result<(), GraphError<NodeId, EdgeId>>;
-    /// map if inserted node. If op's arg is None then create just time else already exist.
-    fn map_if_node_inserted<U, F>(self, op: F) -> Result<U, GraphError<NodeId, EdgeId>>
-    where
-        F: FnOnce(Option<NodeId>) -> Result<U, GraphError<NodeId, EdgeId>>;
-}
+mod helper {
+    //! Module for helper of Graph handling.
 
-/// helper for handling existed edge
-pub trait EdgeExistedResultExt<NodeId: Identity, EdgeId: Identity> {
-    /// If old edge exist, then return Err(GraphError::AlreadyEdgeExist). Others same.
-    fn old_edge_exist_to_error(self) -> Result<(), GraphError<NodeId, EdgeId>>;
-    /// If old edge exist, then return Ok(Some(model::Edge))
-    fn with_old_edge_model<'a>(
-        self,
-        graph: &'a Graph<NodeId, EdgeId>,
-    ) -> Result<Option<(EdgeId, model::Edge<'a, NodeId, EdgeId>)>, GraphError<NodeId, EdgeId>>;
-    /// call callback when old edge exist
-    fn call_if_old_edge_exist<F>(self, callback: F) -> Result<(), GraphError<NodeId, EdgeId>>
-    where
-        F: FnOnce(EdgeId) -> Result<(), GraphError<NodeId, EdgeId>>;
-    /// map if inserted edge. If op's arg is None then create just time else already exist.
-    fn map_if_edge_inserted<U, F>(self, op: F) -> Result<U, GraphError<NodeId, EdgeId>>
-    where
-        F: FnOnce(Option<EdgeId>) -> Result<U, GraphError<NodeId, EdgeId>>;
-}
+    use crate::graph::error::GraphError;
+    use crate::graph::{Graph, model};
+    use crate::util::Identity;
 
-/// If this value is Ok(Some(id)), then old graph item exist at the id.
-pub type GraphItemExistedResult<Id, NodeId, EdgeId> =
+    /// helper for handling existed node
+    pub trait NodeExistedResultExt<NodeId: Identity, EdgeId: Identity> {
+        /// If old node exist, then return Err(GraphError::AlreadyNodeExist). Others same.
+        fn old_node_exist_to_error(self) -> Result<(), GraphError<NodeId, EdgeId>>;
+        /// If old node exist, then return Ok(Some(model::Node))
+        fn with_old_node_model<'a>(
+            self,
+            graph: &'a Graph<NodeId, EdgeId>,
+        ) -> Result<Option<(NodeId, model::Node<'a, NodeId, EdgeId>)>, GraphError<NodeId, EdgeId>>;
+        /// call callback when old node exist
+        fn call_if_old_node_exist<F>(self, callback: F) -> Result<(), GraphError<NodeId, EdgeId>>
+            where
+                F: FnOnce(NodeId) -> Result<(), GraphError<NodeId, EdgeId>>;
+        /// map if inserted node. If op's arg is None then create just time else already exist.
+        fn map_if_node_inserted<U, F>(self, op: F) -> Result<U, GraphError<NodeId, EdgeId>>
+            where
+                F: FnOnce(Option<NodeId>) -> Result<U, GraphError<NodeId, EdgeId>>;
+    }
+
+    /// helper for handling existed edge
+    pub trait EdgeExistedResultExt<NodeId: Identity, EdgeId: Identity> {
+        /// If old edge exist, then return Err(GraphError::AlreadyEdgeExist). Others same.
+        fn old_edge_exist_to_error(self) -> Result<(), GraphError<NodeId, EdgeId>>;
+        /// If old edge exist, then return Ok(Some(model::Edge))
+        fn with_old_edge_model<'a>(
+            self,
+            graph: &'a Graph<NodeId, EdgeId>,
+        ) -> Result<Option<(EdgeId, model::Edge<'a, NodeId, EdgeId>)>, GraphError<NodeId, EdgeId>>;
+        /// call callback when old edge exist
+        fn call_if_old_edge_exist<F>(self, callback: F) -> Result<(), GraphError<NodeId, EdgeId>>
+            where
+                F: FnOnce(EdgeId) -> Result<(), GraphError<NodeId, EdgeId>>;
+        /// map if inserted edge. If op's arg is None then create just time else already exist.
+        fn map_if_edge_inserted<U, F>(self, op: F) -> Result<U, GraphError<NodeId, EdgeId>>
+            where
+                F: FnOnce(Option<EdgeId>) -> Result<U, GraphError<NodeId, EdgeId>>;
+    }
+
+    /// If this value is Ok(Some(id)), then old graph item exist at the id.
+    pub type GraphItemExistedResult<Id, NodeId, EdgeId> =
     Result<Option<Id>, GraphError<NodeId, EdgeId>>;
 
-impl<NodeId: Identity, EdgeId: Identity> NodeExistedResultExt<NodeId, EdgeId>
+    impl<NodeId: Identity, EdgeId: Identity> NodeExistedResultExt<NodeId, EdgeId>
     for GraphItemExistedResult<NodeId, NodeId, EdgeId>
-{
-    fn with_old_node_model<'a>(
-        self,
-        graph: &'a Graph<NodeId, EdgeId>,
-    ) -> Result<Option<(NodeId, model::Node<'a, NodeId, EdgeId>)>, GraphError<NodeId, EdgeId>> {
-        self.map_if_node_inserted(|node_id| match node_id {
-            None => Ok(None),
-            Some(_node_id) => {
-                let node = graph.get_node(&_node_id).expect(&format!(
-                    "Already exist old node at node_id {:?}. Why not exist?",
-                    _node_id
-                ));
-                Ok(Some((_node_id, node)))
+    {
+        fn with_old_node_model<'a>(
+            self,
+            graph: &'a Graph<NodeId, EdgeId>,
+        ) -> Result<Option<(NodeId, model::Node<'a, NodeId, EdgeId>)>, GraphError<NodeId, EdgeId>> {
+            self.map_if_node_inserted(|node_id| match node_id {
+                None => Ok(None),
+                Some(_node_id) => {
+                    let node = graph.get_node(&_node_id).expect(&format!(
+                        "Already exist old node at node_id {:?}. Why not exist?",
+                        _node_id
+                    ));
+                    Ok(Some((_node_id, node)))
+                }
+            })
+        }
+
+        fn old_node_exist_to_error(self) -> Result<(), GraphError<NodeId, EdgeId>> {
+            self.and_then(old_node_exist_to_error)
+        }
+
+        fn call_if_old_node_exist<F>(self, callback: F) -> Result<(), GraphError<NodeId, EdgeId>>
+            where
+                F: FnOnce(NodeId) -> Result<(), GraphError<NodeId, EdgeId>>,
+        {
+            match self {
+                Ok(None) => Ok(()),
+                Ok(Some(node_id)) => callback(node_id),
+                Err(e) => Err(e),
             }
-        })
-    }
+        }
 
-    fn old_node_exist_to_error(self) -> Result<(), GraphError<NodeId, EdgeId>> {
-        self.and_then(old_node_exist_to_error)
-    }
-
-    fn call_if_old_node_exist<F>(self, callback: F) -> Result<(), GraphError<NodeId, EdgeId>>
-    where
-        F: FnOnce(NodeId) -> Result<(), GraphError<NodeId, EdgeId>>,
-    {
-        match self {
-            Ok(None) => Ok(()),
-            Ok(Some(node_id)) => callback(node_id),
-            Err(e) => Err(e),
+        fn map_if_node_inserted<U, F>(self, op: F) -> Result<U, GraphError<NodeId, EdgeId>>
+            where
+                F: FnOnce(Option<NodeId>) -> Result<U, GraphError<NodeId, EdgeId>>,
+        {
+            match self {
+                Ok(s) => op(s),
+                Err(e) => Err(e),
+            }
         }
     }
 
-    fn map_if_node_inserted<U, F>(self, op: F) -> Result<U, GraphError<NodeId, EdgeId>>
-    where
-        F: FnOnce(Option<NodeId>) -> Result<U, GraphError<NodeId, EdgeId>>,
-    {
-        match self {
-            Ok(s) => op(s),
-            Err(e) => Err(e),
-        }
-    }
-}
-
-impl<NodeId: Identity, EdgeId: Identity> EdgeExistedResultExt<NodeId, EdgeId>
+    impl<NodeId: Identity, EdgeId: Identity> EdgeExistedResultExt<NodeId, EdgeId>
     for GraphItemExistedResult<EdgeId, NodeId, EdgeId>
-{
-    fn old_edge_exist_to_error(self) -> Result<(), GraphError<NodeId, EdgeId>> {
-        self.and_then(old_edge_exist_to_error)
-    }
+    {
+        fn old_edge_exist_to_error(self) -> Result<(), GraphError<NodeId, EdgeId>> {
+            self.and_then(old_edge_exist_to_error)
+        }
 
-    fn with_old_edge_model<'a>(
-        self,
-        graph: &'a Graph<NodeId, EdgeId>,
-    ) -> Result<Option<(EdgeId, model::Edge<'a, NodeId, EdgeId>)>, GraphError<NodeId, EdgeId>> {
-        self.map_if_edge_inserted(|edge_id| match edge_id {
-            None => Ok(None),
-            Some(_edge_id) => {
-                let edge = graph.get_edge(&_edge_id).expect(&format!(
-                    "Already exist old edge at edge_id {:?}. Why not exist?",
-                    _edge_id
-                ));
-                Ok(Some((_edge_id, edge)))
+        fn with_old_edge_model<'a>(
+            self,
+            graph: &'a Graph<NodeId, EdgeId>,
+        ) -> Result<Option<(EdgeId, model::Edge<'a, NodeId, EdgeId>)>, GraphError<NodeId, EdgeId>> {
+            self.map_if_edge_inserted(|edge_id| match edge_id {
+                None => Ok(None),
+                Some(_edge_id) => {
+                    let edge = graph.get_edge(&_edge_id).expect(&format!(
+                        "Already exist old edge at edge_id {:?}. Why not exist?",
+                        _edge_id
+                    ));
+                    Ok(Some((_edge_id, edge)))
+                }
+            })
+        }
+
+        fn call_if_old_edge_exist<F>(self, callback: F) -> Result<(), GraphError<NodeId, EdgeId>>
+            where
+                F: FnOnce(EdgeId) -> Result<(), GraphError<NodeId, EdgeId>>,
+        {
+            match self {
+                Ok(None) => Ok(()),
+                Ok(Some(edge_id)) => callback(edge_id),
+                Err(e) => Err(e),
             }
-        })
-    }
+        }
 
-    fn call_if_old_edge_exist<F>(self, callback: F) -> Result<(), GraphError<NodeId, EdgeId>>
-    where
-        F: FnOnce(EdgeId) -> Result<(), GraphError<NodeId, EdgeId>>,
-    {
-        match self {
-            Ok(None) => Ok(()),
-            Ok(Some(edge_id)) => callback(edge_id),
-            Err(e) => Err(e),
+        fn map_if_edge_inserted<U, F>(self, op: F) -> Result<U, GraphError<NodeId, EdgeId>>
+            where
+                F: FnOnce(Option<EdgeId>) -> Result<U, GraphError<NodeId, EdgeId>>,
+        {
+            match self {
+                Ok(s) => op(s),
+                Err(e) => Err(e),
+            }
         }
     }
 
-    fn map_if_edge_inserted<U, F>(self, op: F) -> Result<U, GraphError<NodeId, EdgeId>>
-    where
-        F: FnOnce(Option<EdgeId>) -> Result<U, GraphError<NodeId, EdgeId>>,
-    {
-        match self {
-            Ok(s) => op(s),
-            Err(e) => Err(e),
+    /// helper for create already exist node error.
+    ///
+    /// e.g.
+    /// let result: Result<Option<Id>, GraphError>;  // result for create new node
+    /// result.and_then(old_node_exist_to_error)?;
+    pub fn old_node_exist_to_error<NodeId: Identity, EdgeId: Identity>(
+        old_node_exist: Option<NodeId>,
+    ) -> Result<(), GraphError<NodeId, EdgeId>> {
+        match old_node_exist {
+            Some(node_id) => {
+                // old node exist
+                Err(GraphError::AlreadyExistNodeAtId(node_id))
+            }
+            None => Ok(()),
+        }
+    }
+
+    /// helper for create already exist edge error.
+    ///
+    /// e.g.
+    /// let result: Result<Option<Id>, GraphError>;  // result for create new edge
+    /// result.and_then(old_edge_exist_to_error)?;
+    pub fn old_edge_exist_to_error<NodeId: Identity, EdgeId: Identity>(
+        old_edge_exist: Option<EdgeId>,
+    ) -> Result<(), GraphError<NodeId, EdgeId>> {
+        match old_edge_exist {
+            Some(edge_id) => {
+                // old edge exist
+                Err(GraphError::AlreadyExistEdgeAtId(edge_id))
+            }
+            None => Ok(()),
         }
     }
 }
-
-/// helper for create already exist node error.
-///
-/// e.g.
-/// let result: Result<Option<Id>, GraphError>;  // result for create new node
-/// result.and_then(old_node_exist_to_error)?;
-pub fn old_node_exist_to_error<NodeId: Identity, EdgeId: Identity>(
-    old_node_exist: Option<NodeId>,
-) -> Result<(), GraphError<NodeId, EdgeId>> {
-    match old_node_exist {
-        Some(node_id) => {
-            // old node exist
-            Err(GraphError::AlreadyExistNodeAtId(node_id))
-        }
-        None => Ok(()),
-    }
-}
-
-/// helper for create already exist edge error.
-///
-/// e.g.
-/// let result: Result<Option<Id>, GraphError>;  // result for create new edge
-/// result.and_then(old_edge_exist_to_error)?;
-pub fn old_edge_exist_to_error<NodeId: Identity, EdgeId: Identity>(
-    old_edge_exist: Option<EdgeId>,
-) -> Result<(), GraphError<NodeId, EdgeId>> {
-    match old_edge_exist {
-        Some(edge_id) => {
-            // old edge exist
-            Err(GraphError::AlreadyExistEdgeAtId(edge_id))
-        }
-        None => Ok(()),
-    }
-}
+pub use helper::*;
 
 /// graph without layout
 #[derive(Debug, Eq, PartialEq, Clone)]
