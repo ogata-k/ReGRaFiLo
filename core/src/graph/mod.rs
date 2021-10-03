@@ -194,7 +194,7 @@ use crate::graph::iter::{
 };
 use crate::graph::model::{EdgeModel, NodeModel};
 use crate::graph::store::{Edge, EdgeStore, Incidence, Node, NodeStore};
-use crate::util::Identity;
+use crate::util::{Identity, Weight};
 pub use config::*;
 use helper::*;
 use std::collections::btree_map::Entry;
@@ -583,7 +583,7 @@ impl<NodeId: Identity, EdgeId: Identity> Graph<NodeId, EdgeId> {
         &mut self,
         parent_id: Option<NodeId>,
         node_id: NodeId,
-        weight: i16,
+        weight: Weight,
     ) -> GraphItemExistedResult<NodeId, NodeId, EdgeId> {
         self.add_vertex_node_with_weight_if_old_not_exist(parent_id, node_id, weight)
     }
@@ -594,7 +594,7 @@ impl<NodeId: Identity, EdgeId: Identity> Graph<NodeId, EdgeId> {
         &mut self,
         parent_id: Option<NodeId>,
         node_id: NodeId,
-        weight: i16,
+        weight: Weight,
     ) -> GraphItemExistedResult<NodeId, NodeId, EdgeId> {
         // check old exist
         if self.nodes.get_node(&node_id).is_some() {
@@ -653,7 +653,7 @@ impl<NodeId: Identity, EdgeId: Identity> Graph<NodeId, EdgeId> {
         &mut self,
         parent_id: Option<NodeId>,
         node_id: NodeId,
-        weight: i16,
+        weight: Weight,
         children: Vec<NodeId>,
     ) -> GraphItemExistedResult<NodeId, NodeId, EdgeId> {
         self.add_group_node_with_weight_if_old_not_exist(parent_id, node_id, weight, children)
@@ -666,7 +666,7 @@ impl<NodeId: Identity, EdgeId: Identity> Graph<NodeId, EdgeId> {
         &mut self,
         parent_id: Option<NodeId>,
         node_id: NodeId,
-        weight: i16,
+        weight: Weight,
         child_node_ids: Vec<NodeId>,
     ) -> GraphItemExistedResult<NodeId, NodeId, EdgeId> {
         // check old exist
@@ -768,7 +768,7 @@ impl<NodeId: Identity, EdgeId: Identity> Graph<NodeId, EdgeId> {
     where
         NodeId: Borrow<B>,
         B: Identity + ToOwned<Owned = NodeId>,
-        F: FnOnce(model::NodeKind, i16) -> i16,
+        F: FnOnce(model::NodeKind, Weight) -> Weight,
     {
         return match self.nodes.get_node_as_mut(node_id) {
             None => Err(GraphError::NotExistNodeAtId(node_id.to_owned())),
@@ -796,7 +796,7 @@ impl<NodeId: Identity, EdgeId: Identity> Graph<NodeId, EdgeId> {
         node_id1: NodeId,
         node_id2: NodeId,
     ) -> GraphItemExistedResult<EdgeId, NodeId, EdgeId> {
-        self.add_undirected_edge_with_weight(edge_id, node_id1, node_id2, 1)
+        self.add_undirected_edge_with_weight(edge_id, node_id1, node_id2, 1 as Weight)
     }
 
     /// add undirected edge with weight.
@@ -807,7 +807,7 @@ impl<NodeId: Identity, EdgeId: Identity> Graph<NodeId, EdgeId> {
         edge_id: EdgeId,
         node_id1: NodeId,
         node_id2: NodeId,
-        weight: i16,
+        weight: Weight,
     ) -> GraphItemExistedResult<EdgeId, NodeId, EdgeId> {
         self.add_edge_with_weight_if_old_not_exist(
             edge_id,
@@ -835,7 +835,7 @@ impl<NodeId: Identity, EdgeId: Identity> Graph<NodeId, EdgeId> {
         edge_id: EdgeId,
         source_node_id: NodeId,
         target_node_id: NodeId,
-        weight: i16,
+        weight: Weight,
     ) -> GraphItemExistedResult<EdgeId, NodeId, EdgeId> {
         self.add_edge_with_weight_if_old_not_exist(
             edge_id,
@@ -861,7 +861,7 @@ impl<NodeId: Identity, EdgeId: Identity> Graph<NodeId, EdgeId> {
         &mut self,
         edge_id: EdgeId,
         node_ids: Vec<NodeId>,
-        weight: i16,
+        weight: Weight,
     ) -> GraphItemExistedResult<EdgeId, NodeId, EdgeId> {
         self.add_edge_with_weight_if_old_not_exist(
             edge_id,
@@ -889,7 +889,7 @@ impl<NodeId: Identity, EdgeId: Identity> Graph<NodeId, EdgeId> {
         edge_id: EdgeId,
         source_node_ids: Vec<NodeId>,
         target_node_ids: Vec<NodeId>,
-        weight: i16,
+        weight: Weight,
     ) -> GraphItemExistedResult<EdgeId, NodeId, EdgeId> {
         self.add_edge_with_weight_if_old_not_exist(
             edge_id,
@@ -1003,7 +1003,7 @@ impl<NodeId: Identity, EdgeId: Identity> Graph<NodeId, EdgeId> {
     where
         EdgeId: Borrow<B>,
         B: Identity + ToOwned<Owned = EdgeId>,
-        F: FnOnce(model::EdgeKind, i16) -> i16,
+        F: FnOnce(model::EdgeKind, Weight) -> Weight,
     {
         return match self.edges.get_edge_as_mut(edge_id) {
             None => Err(GraphError::NotExistEdgeAtId(edge_id.to_owned())),

@@ -1,6 +1,6 @@
 //! Module of node model
 
-use crate::util::Identity;
+use crate::util::{Identity, Weight};
 
 use std::fmt;
 use std::marker::PhantomData;
@@ -106,7 +106,7 @@ pub trait NodeModel<'a, NodeId: Identity, EdgeId: Identity> {
     // ---
 
     /// get weight for the node
-    fn get_weight(&self) -> i16;
+    fn get_weight(&self) -> Weight;
 
     /// get kind for the node
     fn get_kind(&self) -> NodeKind;
@@ -139,7 +139,7 @@ pub trait NodeModel<'a, NodeId: Identity, EdgeId: Identity> {
 /// Model for Node point
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct VertexNode<'a, NodeId: Identity, EdgeId: Identity> {
-    pub(in crate::graph) weight: &'a i16,
+    pub(in crate::graph) weight: &'a Weight,
     pub(in crate::graph) parent: &'a Option<NodeId>,
     pub(in crate::graph) incidences: Vec<Incidence<'a, NodeId, EdgeId>>,
 }
@@ -167,7 +167,7 @@ impl<'a, NodeId: Identity, EdgeId: Identity> NodeModel<'a, NodeId, EdgeId>
     for VertexNode<'a, NodeId, EdgeId>
 {
     /// get weight for the node
-    fn get_weight(&self) -> i16 {
+    fn get_weight(&self) -> Weight {
         *self.weight
     }
 
@@ -190,7 +190,7 @@ impl<'a, NodeId: Identity, EdgeId: Identity> NodeModel<'a, NodeId, EdgeId>
 /// Model for Node group
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct GroupNode<'a, NodeId: Identity, EdgeId: Identity> {
-    pub(in crate::graph) weight: &'a i16,
+    pub(in crate::graph) weight: &'a Weight,
     pub(in crate::graph) parent: &'a Option<NodeId>,
     pub(in crate::graph) children: &'a [NodeId],
     pub(in crate::graph) incidences: Vec<Incidence<'a, NodeId, EdgeId>>,
@@ -229,7 +229,7 @@ impl<'a, NodeId: Identity, EdgeId: Identity> NodeModel<'a, NodeId, EdgeId>
     for GroupNode<'a, NodeId, EdgeId>
 {
     /// get weight for the node
-    fn get_weight(&self) -> i16 {
+    fn get_weight(&self) -> Weight {
         *self.weight
     }
 
@@ -290,7 +290,7 @@ impl<'a, NodeId: Identity, EdgeId: Identity> NodeModel<'a, NodeId, EdgeId>
     for Node<'a, NodeId, EdgeId>
 {
     /// get weight for the node
-    fn get_weight(&self) -> i16 {
+    fn get_weight(&self) -> Weight {
         use Node::*;
 
         match self {

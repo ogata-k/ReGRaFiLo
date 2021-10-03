@@ -1,6 +1,6 @@
 //! Module for Edge item
 
-use crate::util::Identity;
+use crate::util::{Identity, Weight};
 use std::fmt;
 use std::marker::PhantomData;
 
@@ -20,14 +20,14 @@ fn sort_ids<T: Ord>(vec: &mut Vec<T>, distinct: bool) {
 pub(in crate::graph) enum Edge<NodeId: Identity, EdgeId: Identity> {
     /// undirected edge
     Undirected {
-        weight: i16,
+        weight: Weight,
         ids: [NodeId; 2],
         _edge_id: PhantomData<EdgeId>,
     },
 
     /// Directed edge
     Directed {
-        weight: i16,
+        weight: Weight,
         source_id: NodeId,
         target_id: NodeId,
         _edge_id: PhantomData<EdgeId>,
@@ -35,14 +35,14 @@ pub(in crate::graph) enum Edge<NodeId: Identity, EdgeId: Identity> {
 
     /// undirected Hyper edge
     UndirectedHyper {
-        weight: i16,
+        weight: Weight,
         ids: Vec<NodeId>,
         _edge_id: PhantomData<EdgeId>,
     },
 
     /// Directed Hyper edge
     DirectedHyper {
-        weight: i16,
+        weight: Weight,
         source_ids: Vec<NodeId>,
         target_ids: Vec<NodeId>,
         _edge_id: PhantomData<EdgeId>,
@@ -95,17 +95,17 @@ impl<NodeId: Identity, EdgeId: Identity> Edge<NodeId, EdgeId> {
 
     /// constructor for undirected edge
     pub(in crate::graph) fn undirected(id1: NodeId, id2: NodeId) -> Self {
-        Self::undirected_with_weight(id1, id2, 1_i16)
+        Self::undirected_with_weight(id1, id2, 1 as Weight)
     }
 
     /// constructor for directed edge
     pub(in crate::graph) fn directed(source_id: NodeId, target_id: NodeId) -> Self {
-        Self::directed_with_weight(source_id, target_id, 1_i16)
+        Self::directed_with_weight(source_id, target_id, 1 as Weight)
     }
 
     /// constructor for undirected hyper edge
     pub(in crate::graph) fn undirected_hyper(ids: Vec<NodeId>) -> Self {
-        Self::undirected_hyper_with_weight(ids, 1_i16)
+        Self::undirected_hyper_with_weight(ids, 1 as Weight)
     }
 
     /// constructor for directed hyper edge
@@ -113,11 +113,11 @@ impl<NodeId: Identity, EdgeId: Identity> Edge<NodeId, EdgeId> {
         source_ids: Vec<NodeId>,
         target_ids: Vec<NodeId>,
     ) -> Self {
-        Self::directed_hyper_with_weight(source_ids, target_ids, 1_i16)
+        Self::directed_hyper_with_weight(source_ids, target_ids, 1 as Weight)
     }
 
     /// constructor for undirected edge with edge
-    pub(in crate::graph) fn undirected_with_weight(id1: NodeId, id2: NodeId, weight: i16) -> Self {
+    pub(in crate::graph) fn undirected_with_weight(id1: NodeId, id2: NodeId, weight: Weight) -> Self {
         if &id1 <= &id2 {
             Self::Undirected {
                 weight: weight,
@@ -137,7 +137,7 @@ impl<NodeId: Identity, EdgeId: Identity> Edge<NodeId, EdgeId> {
     pub(in crate::graph) fn directed_with_weight(
         source_id: NodeId,
         target_id: NodeId,
-        weight: i16,
+        weight: Weight,
     ) -> Self {
         Self::Directed {
             weight: weight,
@@ -150,7 +150,7 @@ impl<NodeId: Identity, EdgeId: Identity> Edge<NodeId, EdgeId> {
     /// constructor for undirected hyper edge with weight
     pub(in crate::graph) fn undirected_hyper_with_weight(
         mut ids: Vec<NodeId>,
-        weight: i16,
+        weight: Weight,
     ) -> Self {
         sort_ids(&mut ids, true);
 
@@ -165,7 +165,7 @@ impl<NodeId: Identity, EdgeId: Identity> Edge<NodeId, EdgeId> {
     pub(in crate::graph) fn directed_hyper_with_weight(
         mut source_ids: Vec<NodeId>,
         mut target_ids: Vec<NodeId>,
-        weight: i16,
+        weight: Weight,
     ) -> Self {
         sort_ids(&mut source_ids, true);
         sort_ids(&mut target_ids, true);
@@ -184,7 +184,7 @@ impl<NodeId: Identity, EdgeId: Identity> Edge<NodeId, EdgeId> {
 
     /// get weight for the edge.
     /// If weight is 1 or no weight, the edge's weight is 1.
-    pub(in crate::graph) fn get_weight(&self) -> i16 {
+    pub(in crate::graph) fn get_weight(&self) -> Weight {
         match self {
             Edge::Undirected { weight, .. }
             | Edge::Directed { weight, .. }
@@ -287,7 +287,7 @@ impl<NodeId: Identity, EdgeId: Identity> Edge<NodeId, EdgeId> {
     // ---
 
     /// set weight
-    pub(in crate::graph) fn set_weight(&mut self, weight: i16) {
+    pub(in crate::graph) fn set_weight(&mut self, weight: Weight) {
         use Edge::*;
 
         match self {

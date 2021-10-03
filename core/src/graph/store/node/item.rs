@@ -1,6 +1,6 @@
 //! Module for Node item
 
-use crate::util::Identity;
+use crate::util::{Identity, Weight};
 use std::borrow::Borrow;
 use std::fmt;
 use std::marker::PhantomData;
@@ -234,13 +234,13 @@ impl<NodeId: Identity, EdgeId: Identity> Incidence<NodeId, EdgeId> {
 pub(in crate::graph) enum Node<NodeId: Identity, EdgeId: Identity> {
     /// Node point
     Vertex {
-        weight: i16,
+        weight: Weight,
         parent: Option<NodeId>,
         incidences: Vec<Incidence<NodeId, EdgeId>>,
     },
     /// Node group
     Group {
-        weight: i16,
+        weight: Weight,
         parent: Option<NodeId>,
         children: Vec<NodeId>,
         incidences: Vec<Incidence<NodeId, EdgeId>>,
@@ -312,11 +312,11 @@ impl<NodeId: Identity, EdgeId: Identity> Node<NodeId, EdgeId> {
 
     /// create node point structure
     pub(in crate::graph) fn vertex() -> Self {
-        Self::vertex_with_weight(1)
+        Self::vertex_with_weight(1 as Weight)
     }
 
     /// create node point structure with weight
-    pub(in crate::graph) fn vertex_with_weight(weight: i16) -> Self {
+    pub(in crate::graph) fn vertex_with_weight(weight: Weight) -> Self {
         Node::Vertex {
             weight: weight,
             parent: None,
@@ -326,11 +326,11 @@ impl<NodeId: Identity, EdgeId: Identity> Node<NodeId, EdgeId> {
 
     /// create node group structure
     pub(in crate::graph) fn group(children: Vec<NodeId>) -> Self {
-        Self::group_with_weight(1, children)
+        Self::group_with_weight(1 as Weight, children)
     }
 
     /// create node group structure with weight
-    pub(in crate::graph) fn group_with_weight(weight: i16, children: Vec<NodeId>) -> Self {
+    pub(in crate::graph) fn group_with_weight(weight: Weight, children: Vec<NodeId>) -> Self {
         Node::Group {
             weight: weight,
             parent: None,
@@ -344,7 +344,7 @@ impl<NodeId: Identity, EdgeId: Identity> Node<NodeId, EdgeId> {
     // ---
 
     /// get weight for the node
-    pub(in crate::graph) fn get_weight(&self) -> i16 {
+    pub(in crate::graph) fn get_weight(&self) -> Weight {
         match self {
             Node::Vertex { weight, .. } => *weight,
             Node::Group { weight, .. } => *weight,
@@ -465,7 +465,7 @@ impl<NodeId: Identity, EdgeId: Identity> Node<NodeId, EdgeId> {
     }
 
     /// set weight
-    pub(in crate::graph) fn set_weight(&mut self, weight: i16) {
+    pub(in crate::graph) fn set_weight(&mut self, weight: Weight) {
         use Node::*;
 
         match self {

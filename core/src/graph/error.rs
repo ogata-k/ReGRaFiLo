@@ -4,7 +4,7 @@ use crate::graph::as_model::AsEdgeModel;
 use crate::graph::model;
 use crate::graph::model::EdgeModel;
 use crate::graph::store::Edge;
-use crate::util::Identity;
+use crate::util::{Identity, Weight};
 use std::error::Error;
 use std::fmt;
 use std::fmt::Debug;
@@ -43,7 +43,7 @@ impl<NodeId: Identity, EdgeId: Identity> ErrorEdge<NodeId, EdgeId> {
 
     /// get weight.
     /// If weight is 1 or no weight, the edge's weight is 1.
-    pub fn get_weight(&self) -> i16 {
+    pub fn get_weight(&self) -> Weight {
         self.edge.as_model().get_weight()
     }
 

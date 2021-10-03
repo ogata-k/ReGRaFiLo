@@ -1,6 +1,6 @@
 //! Module of edge model
 
-use crate::util::Identity;
+use crate::util::{Identity, Weight};
 
 use std::fmt;
 use std::marker::PhantomData;
@@ -57,7 +57,7 @@ pub trait EdgeModel<NodeId: Identity, EdgeId: Identity> {
     // ---
 
     /// get weight for the edge.
-    fn get_weight(&self) -> i16;
+    fn get_weight(&self) -> Weight;
 
     /// get edge kind for the edge
     fn get_kind(&self) -> EdgeKind;
@@ -119,7 +119,7 @@ pub trait EdgeModel<NodeId: Identity, EdgeId: Identity> {
 /// If weight is 1 or no weight, the edge's weight is 1.
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct UndirectedEdge<'a, NodeId: Identity, EdgeId: Identity> {
-    pub(in crate::graph) weight: &'a i16,
+    pub(in crate::graph) weight: &'a Weight,
     pub(in crate::graph) incidence: &'a [NodeId; 2],
     pub(in crate::graph) _edge_id: PhantomData<EdgeId>,
 }
@@ -137,7 +137,7 @@ impl<'a, NodeId: Identity, EdgeId: Identity> EdgeModel<NodeId, EdgeId>
     for UndirectedEdge<'a, NodeId, EdgeId>
 {
     /// get weight for the edge
-    fn get_weight(&self) -> i16 {
+    fn get_weight(&self) -> Weight{
         *self.weight
     }
 
@@ -177,7 +177,7 @@ impl<'a, NodeId: Identity, EdgeId: Identity> EdgeModel<NodeId, EdgeId>
 /// If weight is 1 or no weight, the edge's weight is 1.
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct DirectedEdge<'a, NodeId: Identity, EdgeId: Identity> {
-    pub(in crate::graph) weight: &'a i16,
+    pub(in crate::graph) weight: &'a Weight,
     pub(in crate::graph) incidence: (&'a NodeId, &'a NodeId),
     pub(in crate::graph) _edge_id: PhantomData<EdgeId>,
 }
@@ -195,7 +195,7 @@ impl<'a, NodeId: Identity, EdgeId: Identity> EdgeModel<NodeId, EdgeId>
     for DirectedEdge<'a, NodeId, EdgeId>
 {
     /// get weight for the edge
-    fn get_weight(&self) -> i16 {
+    fn get_weight(&self) -> Weight{
         *self.weight
     }
 
@@ -254,7 +254,7 @@ impl<'a, NodeId: Identity, EdgeId: Identity> EdgeModel<NodeId, EdgeId>
     for MixedEdge<'a, NodeId, EdgeId>
 {
     /// get weight for the edge
-    fn get_weight(&self) -> i16 {
+    fn get_weight(&self) -> Weight {
         use MixedEdge::*;
 
         match self {
@@ -329,7 +329,7 @@ impl<'a, NodeId: Identity, EdgeId: Identity> EdgeModel<NodeId, EdgeId>
 /// If weight is 1 or no weight, the edge's weight is 1.
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct UndirectedHyperEdge<'a, NodeId: Identity, EdgeId: Identity> {
-    pub(in crate::graph) weight: &'a i16,
+    pub(in crate::graph) weight: &'a Weight,
     pub(in crate::graph) incidence: &'a [NodeId],
     pub(in crate::graph) _edge_id: PhantomData<EdgeId>,
 }
@@ -348,7 +348,7 @@ impl<'a, NodeId: Identity, EdgeId: Identity> EdgeModel<NodeId, EdgeId>
     for UndirectedHyperEdge<'a, NodeId, EdgeId>
 {
     /// get weight for the edge
-    fn get_weight(&self) -> i16 {
+    fn get_weight(&self) -> Weight {
         *self.weight
     }
 
@@ -388,7 +388,7 @@ impl<'a, NodeId: Identity, EdgeId: Identity> EdgeModel<NodeId, EdgeId>
 /// If weight is 1 or no weight, the edge's weight is 1.
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct DirectedHyperEdge<'a, NodeId: Identity, EdgeId: Identity> {
-    pub(in crate::graph) weight: &'a i16,
+    pub(in crate::graph) weight: &'a Weight,
     pub(in crate::graph) incidence: (&'a [NodeId], &'a [NodeId]),
     pub(in crate::graph) _edge_id: PhantomData<EdgeId>,
 }
@@ -409,7 +409,7 @@ impl<'a, NodeId: Identity, EdgeId: Identity> EdgeModel<NodeId, EdgeId>
     for DirectedHyperEdge<'a, NodeId, EdgeId>
 {
     /// get weight for the edge
-    fn get_weight(&self) -> i16 {
+    fn get_weight(&self) -> Weight {
         *self.weight
     }
 
@@ -468,7 +468,7 @@ impl<'a, NodeId: Identity, EdgeId: Identity> EdgeModel<NodeId, EdgeId>
     for MixedHyperEdge<'a, NodeId, EdgeId>
 {
     /// get weight for the edge
-    fn get_weight(&self) -> i16 {
+    fn get_weight(&self) -> Weight {
         use MixedHyperEdge::*;
 
         match self {
@@ -566,7 +566,7 @@ impl<'a, NodeId: Identity, EdgeId: Identity> EdgeModel<NodeId, EdgeId>
     for Edge<'a, NodeId, EdgeId>
 {
     /// get weight for the edge
-    fn get_weight(&self) -> i16 {
+    fn get_weight(&self) -> Weight {
         use Edge::*;
 
         match self {
