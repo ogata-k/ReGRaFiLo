@@ -17,7 +17,7 @@ pub struct ErrorEdge<NodeId: Identity, EdgeId: Identity> {
 
 impl<NodeId: Identity, EdgeId: Identity> fmt::Display for ErrorEdge<NodeId, EdgeId> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        fmt::Display::fmt(&self.edge, f)
+        fmt::Display::fmt(&self.edge.as_model(), f)
     }
 }
 
@@ -268,14 +268,14 @@ impl<NodeId: Identity, EdgeId: Identity> fmt::Display for GraphError<NodeId, Edg
             EdgeNotSupported(edge_id, edge) => write!(
                 f,
                 "Not support edge which is the edge {} at the id {:?}.",
-                edge.as_model(),
+                edge,
                 edge_id
             ),
             IllegalEdge(edge_id, edge) => {
                 write!(
                     f,
                     "An edge {} has illegal parameter at the id {:?}.",
-                    edge.as_model(),
+                    edge,
                     edge_id
                 )
             }
@@ -283,7 +283,7 @@ impl<NodeId: Identity, EdgeId: Identity> fmt::Display for GraphError<NodeId, Edg
                 write!(
                     f,
                    "Cannot insert the edge {} at the id {:?} because exist same edges at the ids {{",
-                   edge.as_model(),
+                   edge,
                    edge_id
                 )?;
                 for (index, same_edge_id) in same_edge_ids.iter().enumerate() {
@@ -299,7 +299,7 @@ impl<NodeId: Identity, EdgeId: Identity> fmt::Display for GraphError<NodeId, Edg
                 write!(
                     f,
                     "Cannot create the edge {} at the id {:?} because fail resolve node ids {{",
-                    edge.as_model(),
+                    edge,
                     edge_id
                 )?;
                 for (index, node_id) in incidence_node_ids.iter().enumerate() {
