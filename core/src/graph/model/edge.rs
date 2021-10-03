@@ -3,6 +3,7 @@
 use crate::util::Identity;
 
 use std::fmt;
+use std::marker::PhantomData;
 
 /// Kind of Edge model
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
@@ -50,7 +51,7 @@ impl EdgeKind {
 }
 
 /// Model trait for Edge
-pub trait EdgeModel<Id: Identity> {
+pub trait EdgeModel<NodeId: Identity, EdgeId: Identity> {
     // ---
     // getter
     // ---
@@ -64,17 +65,17 @@ pub trait EdgeModel<Id: Identity> {
     /// get source node ids
     ///
     /// If undirected edge, then return empty vector.
-    fn get_source_ids(&self) -> Vec<&Id>;
+    fn get_source_ids(&self) -> Vec<&NodeId>;
 
     /// get target node ids
     ///
     /// If undirected edge, then return empty vector.
-    fn get_target_ids(&self) -> Vec<&Id>;
+    fn get_target_ids(&self) -> Vec<&NodeId>;
 
     /// get source and target node ids.
     ///
     /// If directed edge, then return empty vector.
-    fn get_source_target_ids(&self) -> Vec<&Id>;
+    fn get_source_target_ids(&self) -> Vec<&NodeId>;
 
     // ---
     // checker
@@ -117,12 +118,13 @@ pub trait EdgeModel<Id: Identity> {
 /// Model for undirected edge.
 /// If weight is 1 or no weight, the edge's weight is 1.
 #[derive(Debug, Eq, PartialEq, Clone)]
-pub struct UndirectedEdge<'a, Id: Identity> {
+pub struct UndirectedEdge<'a, NodeId: Identity, EdgeId: Identity> {
     pub(in crate::graph) weight: &'a i16,
-    pub(in crate::graph) incidence: &'a [Id; 2],
+    pub(in crate::graph) incidence: &'a [NodeId; 2],
+    pub(in crate::graph) _edge_id: PhantomData<EdgeId>,
 }
 
-impl<'a, Id: Identity> fmt::Display for UndirectedEdge<'a, Id> {
+impl<'a, NodeId: Identity, EdgeId: Identity> fmt::Display for UndirectedEdge<'a, NodeId, EdgeId> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_fmt(format_args!(
             "{{weight: {}, link: {:?}--{:?}}}",
@@ -131,7 +133,9 @@ impl<'a, Id: Identity> fmt::Display for UndirectedEdge<'a, Id> {
     }
 }
 
-impl<'a, Id: Identity> EdgeModel<Id> for UndirectedEdge<'a, Id> {
+impl<'a, NodeId: Identity, EdgeId: Identity> EdgeModel<NodeId, EdgeId>
+    for UndirectedEdge<'a, NodeId, EdgeId>
+{
     /// get weight for the edge
     fn get_weight(&self) -> i16 {
         *self.weight
@@ -145,21 +149,21 @@ impl<'a, Id: Identity> EdgeModel<Id> for UndirectedEdge<'a, Id> {
     /// get source node ids
     ///
     /// If undirected edge, then return empty vector.
-    fn get_source_ids(&self) -> Vec<&Id> {
+    fn get_source_ids(&self) -> Vec<&NodeId> {
         Vec::new()
     }
 
     /// get target node ids
     ///
     /// If undirected edge, then return empty vector.
-    fn get_target_ids(&self) -> Vec<&Id> {
+    fn get_target_ids(&self) -> Vec<&NodeId> {
         Vec::new()
     }
 
     /// get source and target node ids.
     ///
     /// If directed edge, then return empty vector.
-    fn get_source_target_ids(&self) -> Vec<&Id> {
+    fn get_source_target_ids(&self) -> Vec<&NodeId> {
         self.incidence.iter().collect()
     }
 
@@ -169,29 +173,16 @@ impl<'a, Id: Identity> EdgeModel<Id> for UndirectedEdge<'a, Id> {
     }
 }
 
-impl<'a, Id: Identity> UndirectedEdge<'a, Id> {
-    // ---
-    // constructor
-    // ---
-
-    // ---
-    // getter
-    // ---
-
-    // ---
-    // checker
-    // ---
-}
-
 /// Model for directed edge.
 /// If weight is 1 or no weight, the edge's weight is 1.
 #[derive(Debug, Eq, PartialEq, Clone)]
-pub struct DirectedEdge<'a, Id: Identity> {
+pub struct DirectedEdge<'a, NodeId: Identity, EdgeId: Identity> {
     pub(in crate::graph) weight: &'a i16,
-    pub(in crate::graph) incidence: (&'a Id, &'a Id),
+    pub(in crate::graph) incidence: (&'a NodeId, &'a NodeId),
+    pub(in crate::graph) _edge_id: PhantomData<EdgeId>,
 }
 
-impl<'a, Id: Identity> fmt::Display for DirectedEdge<'a, Id> {
+impl<'a, NodeId: Identity, EdgeId: Identity> fmt::Display for DirectedEdge<'a, NodeId, EdgeId> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_fmt(format_args!(
             "{{weight: {}, link: {:?}->{:?}}}",
@@ -200,7 +191,9 @@ impl<'a, Id: Identity> fmt::Display for DirectedEdge<'a, Id> {
     }
 }
 
-impl<'a, Id: Identity> EdgeModel<Id> for DirectedEdge<'a, Id> {
+impl<'a, NodeId: Identity, EdgeId: Identity> EdgeModel<NodeId, EdgeId>
+    for DirectedEdge<'a, NodeId, EdgeId>
+{
     /// get weight for the edge
     fn get_weight(&self) -> i16 {
         *self.weight
@@ -214,21 +207,21 @@ impl<'a, Id: Identity> EdgeModel<Id> for DirectedEdge<'a, Id> {
     /// get source node ids
     ///
     /// If undirected edge, then return empty vector.
-    fn get_source_ids(&self) -> Vec<&Id> {
+    fn get_source_ids(&self) -> Vec<&NodeId> {
         vec![self.incidence.0]
     }
 
     /// get target node ids
     ///
     /// If undirected edge, then return empty vector.
-    fn get_target_ids(&self) -> Vec<&Id> {
+    fn get_target_ids(&self) -> Vec<&NodeId> {
         vec![self.incidence.1]
     }
 
     /// get source and target node ids.
     ///
     /// If directed edge, then return empty vector.
-    fn get_source_target_ids(&self) -> Vec<&Id> {
+    fn get_source_target_ids(&self) -> Vec<&NodeId> {
         Vec::new()
     }
 
@@ -238,29 +231,15 @@ impl<'a, Id: Identity> EdgeModel<Id> for DirectedEdge<'a, Id> {
     }
 }
 
-impl<'a, Id: Identity> DirectedEdge<'a, Id> {
-    // ---
-    // constructor
-    // ---
-
-    // ---
-    // getter
-    // ---
-
-    // ---
-    // checker
-    // ---
-}
-
 /// Model for edge or hyper edge.
 /// If weight is 1 or no weight, the edge's weight is 1.
 #[derive(Debug, Eq, PartialEq, Clone)]
-pub enum MixedEdge<'a, Id: Identity> {
-    Undirected(UndirectedEdge<'a, Id>),
-    Directed(DirectedEdge<'a, Id>),
+pub enum MixedEdge<'a, NodeId: Identity, EdgeId: Identity> {
+    Undirected(UndirectedEdge<'a, NodeId, EdgeId>),
+    Directed(DirectedEdge<'a, NodeId, EdgeId>),
 }
 
-impl<'a, Id: Identity> fmt::Display for MixedEdge<'a, Id> {
+impl<'a, NodeId: Identity, EdgeId: Identity> fmt::Display for MixedEdge<'a, NodeId, EdgeId> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use MixedEdge::*;
 
@@ -271,7 +250,9 @@ impl<'a, Id: Identity> fmt::Display for MixedEdge<'a, Id> {
     }
 }
 
-impl<'a, Id: Identity> EdgeModel<Id> for MixedEdge<'a, Id> {
+impl<'a, NodeId: Identity, EdgeId: Identity> EdgeModel<NodeId, EdgeId>
+    for MixedEdge<'a, NodeId, EdgeId>
+{
     /// get weight for the edge
     fn get_weight(&self) -> i16 {
         use MixedEdge::*;
@@ -295,7 +276,7 @@ impl<'a, Id: Identity> EdgeModel<Id> for MixedEdge<'a, Id> {
     /// get source node ids
     ///
     /// If undirected edge, then return empty vector.
-    fn get_source_ids(&self) -> Vec<&Id> {
+    fn get_source_ids(&self) -> Vec<&NodeId> {
         use MixedEdge::*;
 
         match self {
@@ -307,7 +288,7 @@ impl<'a, Id: Identity> EdgeModel<Id> for MixedEdge<'a, Id> {
     /// get target node ids
     ///
     /// If undirected edge, then return empty vector.
-    fn get_target_ids(&self) -> Vec<&Id> {
+    fn get_target_ids(&self) -> Vec<&NodeId> {
         use MixedEdge::*;
 
         match self {
@@ -319,7 +300,7 @@ impl<'a, Id: Identity> EdgeModel<Id> for MixedEdge<'a, Id> {
     /// get source and target node ids.
     ///
     /// If directed edge, then return empty vector.
-    fn get_source_target_ids(&self) -> Vec<&Id> {
+    fn get_source_target_ids(&self) -> Vec<&NodeId> {
         use MixedEdge::*;
 
         match self {
@@ -344,29 +325,18 @@ impl<'a, Id: Identity> EdgeModel<Id> for MixedEdge<'a, Id> {
     }
 }
 
-impl<'a, Id: Identity> MixedEdge<'a, Id> {
-    // ---
-    // constructor
-    // ---
-
-    // ---
-    // getter
-    // ---
-
-    // ---
-    // checker
-    // ---
-}
-
 /// Model for undirected hyper edge.
 /// If weight is 1 or no weight, the edge's weight is 1.
 #[derive(Debug, Eq, PartialEq, Clone)]
-pub struct UndirectedHyperEdge<'a, Id: Identity> {
+pub struct UndirectedHyperEdge<'a, NodeId: Identity, EdgeId: Identity> {
     pub(in crate::graph) weight: &'a i16,
-    pub(in crate::graph) incidence: &'a [Id],
+    pub(in crate::graph) incidence: &'a [NodeId],
+    pub(in crate::graph) _edge_id: PhantomData<EdgeId>,
 }
 
-impl<'a, Id: Identity> fmt::Display for UndirectedHyperEdge<'a, Id> {
+impl<'a, NodeId: Identity, EdgeId: Identity> fmt::Display
+    for UndirectedHyperEdge<'a, NodeId, EdgeId>
+{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_fmt(format_args!("{{weight: {}, link: ", self.weight))?;
         f.debug_set().entries(self.incidence.iter()).finish()?;
@@ -374,7 +344,9 @@ impl<'a, Id: Identity> fmt::Display for UndirectedHyperEdge<'a, Id> {
     }
 }
 
-impl<'a, Id: Identity> EdgeModel<Id> for UndirectedHyperEdge<'a, Id> {
+impl<'a, NodeId: Identity, EdgeId: Identity> EdgeModel<NodeId, EdgeId>
+    for UndirectedHyperEdge<'a, NodeId, EdgeId>
+{
     /// get weight for the edge
     fn get_weight(&self) -> i16 {
         *self.weight
@@ -388,21 +360,21 @@ impl<'a, Id: Identity> EdgeModel<Id> for UndirectedHyperEdge<'a, Id> {
     /// get source node ids
     ///
     /// If undirected edge, then return empty vector.
-    fn get_source_ids(&self) -> Vec<&Id> {
+    fn get_source_ids(&self) -> Vec<&NodeId> {
         Vec::new()
     }
 
     /// get target node ids
     ///
     /// If undirected edge, then return empty vector.
-    fn get_target_ids(&self) -> Vec<&Id> {
+    fn get_target_ids(&self) -> Vec<&NodeId> {
         Vec::new()
     }
 
     /// get source and target node ids.
     ///
     /// If directed edge, then return empty vector.
-    fn get_source_target_ids(&self) -> Vec<&Id> {
+    fn get_source_target_ids(&self) -> Vec<&NodeId> {
         self.incidence.iter().collect()
     }
 
@@ -412,29 +384,18 @@ impl<'a, Id: Identity> EdgeModel<Id> for UndirectedHyperEdge<'a, Id> {
     }
 }
 
-impl<'a, Id: Identity> UndirectedHyperEdge<'a, Id> {
-    // ---
-    // constructor
-    // ---
-
-    // ---
-    // getter
-    // ---
-
-    // ---
-    // checker
-    // ---
-}
-
 /// Model for directed hyper edge.
 /// If weight is 1 or no weight, the edge's weight is 1.
 #[derive(Debug, Eq, PartialEq, Clone)]
-pub struct DirectedHyperEdge<'a, Id: Identity> {
+pub struct DirectedHyperEdge<'a, NodeId: Identity, EdgeId: Identity> {
     pub(in crate::graph) weight: &'a i16,
-    pub(in crate::graph) incidence: (&'a [Id], &'a [Id]),
+    pub(in crate::graph) incidence: (&'a [NodeId], &'a [NodeId]),
+    pub(in crate::graph) _edge_id: PhantomData<EdgeId>,
 }
 
-impl<'a, Id: Identity> fmt::Display for DirectedHyperEdge<'a, Id> {
+impl<'a, NodeId: Identity, EdgeId: Identity> fmt::Display
+    for DirectedHyperEdge<'a, NodeId, EdgeId>
+{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_fmt(format_args!("{{weight: {}, link: ", self.weight))?;
         f.debug_set().entries(self.incidence.0.iter()).finish()?;
@@ -444,7 +405,9 @@ impl<'a, Id: Identity> fmt::Display for DirectedHyperEdge<'a, Id> {
     }
 }
 
-impl<'a, Id: Identity> EdgeModel<Id> for DirectedHyperEdge<'a, Id> {
+impl<'a, NodeId: Identity, EdgeId: Identity> EdgeModel<NodeId, EdgeId>
+    for DirectedHyperEdge<'a, NodeId, EdgeId>
+{
     /// get weight for the edge
     fn get_weight(&self) -> i16 {
         *self.weight
@@ -458,21 +421,21 @@ impl<'a, Id: Identity> EdgeModel<Id> for DirectedHyperEdge<'a, Id> {
     /// get source node ids
     ///
     /// If undirected edge, then return empty vector.
-    fn get_source_ids(&self) -> Vec<&Id> {
+    fn get_source_ids(&self) -> Vec<&NodeId> {
         self.incidence.0.iter().collect()
     }
 
     /// get target node ids
     ///
     /// If undirected edge, then return empty vector.
-    fn get_target_ids(&self) -> Vec<&Id> {
+    fn get_target_ids(&self) -> Vec<&NodeId> {
         self.incidence.1.iter().collect()
     }
 
     /// get source and target node ids.
     ///
     /// If directed edge, then return empty vector.
-    fn get_source_target_ids(&self) -> Vec<&Id> {
+    fn get_source_target_ids(&self) -> Vec<&NodeId> {
         Vec::new()
     }
 
@@ -482,29 +445,15 @@ impl<'a, Id: Identity> EdgeModel<Id> for DirectedHyperEdge<'a, Id> {
     }
 }
 
-impl<'a, Id: Identity> DirectedHyperEdge<'a, Id> {
-    // ---
-    // constructor
-    // ---
-
-    // ---
-    // getter
-    // ---
-
-    // ---
-    // checker
-    // ---
-}
-
 /// Model for edge or hyper edge.
 /// If weight is 1 or no weight, the edge's weight is 1.
 #[derive(Debug, Eq, PartialEq, Clone)]
-pub enum MixedHyperEdge<'a, Id: Identity> {
-    Undirected(UndirectedHyperEdge<'a, Id>),
-    Directed(DirectedHyperEdge<'a, Id>),
+pub enum MixedHyperEdge<'a, NodeId: Identity, EdgeId: Identity> {
+    Undirected(UndirectedHyperEdge<'a, NodeId, EdgeId>),
+    Directed(DirectedHyperEdge<'a, NodeId, EdgeId>),
 }
 
-impl<'a, Id: Identity> fmt::Display for MixedHyperEdge<'a, Id> {
+impl<'a, NodeId: Identity, EdgeId: Identity> fmt::Display for MixedHyperEdge<'a, NodeId, EdgeId> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use MixedHyperEdge::*;
 
@@ -515,7 +464,9 @@ impl<'a, Id: Identity> fmt::Display for MixedHyperEdge<'a, Id> {
     }
 }
 
-impl<'a, Id: Identity> EdgeModel<Id> for MixedHyperEdge<'a, Id> {
+impl<'a, NodeId: Identity, EdgeId: Identity> EdgeModel<NodeId, EdgeId>
+    for MixedHyperEdge<'a, NodeId, EdgeId>
+{
     /// get weight for the edge
     fn get_weight(&self) -> i16 {
         use MixedHyperEdge::*;
@@ -539,7 +490,7 @@ impl<'a, Id: Identity> EdgeModel<Id> for MixedHyperEdge<'a, Id> {
     /// get source node ids
     ///
     /// If undirected edge, then return empty vector.
-    fn get_source_ids(&self) -> Vec<&Id> {
+    fn get_source_ids(&self) -> Vec<&NodeId> {
         use MixedHyperEdge::*;
 
         match self {
@@ -551,7 +502,7 @@ impl<'a, Id: Identity> EdgeModel<Id> for MixedHyperEdge<'a, Id> {
     /// get target node ids
     ///
     /// If undirected edge, then return empty vector.
-    fn get_target_ids(&self) -> Vec<&Id> {
+    fn get_target_ids(&self) -> Vec<&NodeId> {
         use MixedHyperEdge::*;
 
         match self {
@@ -563,7 +514,7 @@ impl<'a, Id: Identity> EdgeModel<Id> for MixedHyperEdge<'a, Id> {
     /// get source and target node ids.
     ///
     /// If directed edge, then return empty vector.
-    fn get_source_target_ids(&self) -> Vec<&Id> {
+    fn get_source_target_ids(&self) -> Vec<&NodeId> {
         use MixedHyperEdge::*;
 
         match self {
@@ -588,31 +539,17 @@ impl<'a, Id: Identity> EdgeModel<Id> for MixedHyperEdge<'a, Id> {
     }
 }
 
-impl<'a, Id: Identity> MixedHyperEdge<'a, Id> {
-    // ---
-    // constructor
-    // ---
-
-    // ---
-    // getter
-    // ---
-
-    // ---
-    // checker
-    // ---
-}
-
 /// Model for edge or hyper edge.
 /// If weight is 1 or no weight, the edge's weight is 1.
 #[derive(Debug, Eq, PartialEq, Clone)]
-pub enum Edge<'a, Id: Identity> {
-    Undirected(UndirectedEdge<'a, Id>),
-    Directed(DirectedEdge<'a, Id>),
-    UndirectedHyper(UndirectedHyperEdge<'a, Id>),
-    DirectedHyper(DirectedHyperEdge<'a, Id>),
+pub enum Edge<'a, NodeId: Identity, EdgeId: Identity> {
+    Undirected(UndirectedEdge<'a, NodeId, EdgeId>),
+    Directed(DirectedEdge<'a, NodeId, EdgeId>),
+    UndirectedHyper(UndirectedHyperEdge<'a, NodeId, EdgeId>),
+    DirectedHyper(DirectedHyperEdge<'a, NodeId, EdgeId>),
 }
 
-impl<'a, Id: Identity> fmt::Display for Edge<'a, Id> {
+impl<'a, NodeId: Identity, EdgeId: Identity> fmt::Display for Edge<'a, NodeId, EdgeId> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use Edge::*;
 
@@ -625,7 +562,9 @@ impl<'a, Id: Identity> fmt::Display for Edge<'a, Id> {
     }
 }
 
-impl<'a, Id: Identity> EdgeModel<Id> for Edge<'a, Id> {
+impl<'a, NodeId: Identity, EdgeId: Identity> EdgeModel<NodeId, EdgeId>
+    for Edge<'a, NodeId, EdgeId>
+{
     /// get weight for the edge
     fn get_weight(&self) -> i16 {
         use Edge::*;
@@ -653,7 +592,7 @@ impl<'a, Id: Identity> EdgeModel<Id> for Edge<'a, Id> {
     /// get source node ids
     ///
     /// If undirected edge, then return empty vector.
-    fn get_source_ids(&self) -> Vec<&Id> {
+    fn get_source_ids(&self) -> Vec<&NodeId> {
         use Edge::*;
 
         match self {
@@ -667,7 +606,7 @@ impl<'a, Id: Identity> EdgeModel<Id> for Edge<'a, Id> {
     /// get target node ids
     ///
     /// If undirected edge, then return empty vector.
-    fn get_target_ids(&self) -> Vec<&Id> {
+    fn get_target_ids(&self) -> Vec<&NodeId> {
         use Edge::*;
 
         match self {
@@ -681,7 +620,7 @@ impl<'a, Id: Identity> EdgeModel<Id> for Edge<'a, Id> {
     /// get source and target node ids.
     ///
     /// If directed edge, then return empty vector.
-    fn get_source_target_ids(&self) -> Vec<&Id> {
+    fn get_source_target_ids(&self) -> Vec<&NodeId> {
         use Edge::*;
 
         match self {
@@ -712,18 +651,4 @@ impl<'a, Id: Identity> EdgeModel<Id> for Edge<'a, Id> {
             _ => false,
         }
     }
-}
-
-impl<'a, Id: Identity> Edge<'a, Id> {
-    // ---
-    // constructor
-    // ---
-
-    // ---
-    // getter
-    // ---
-
-    // ---
-    // checker
-    // ---
 }

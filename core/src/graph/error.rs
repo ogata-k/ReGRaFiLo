@@ -11,29 +11,29 @@ use std::fmt::Debug;
 
 /// alias for Edge structure
 #[derive(Debug, Eq, PartialEq, Clone)]
-pub struct ErrorEdge<Id: Identity> {
-    edge: Edge<Id>,
+pub struct ErrorEdge<NodeId: Identity, EdgeId: Identity> {
+    edge: Edge<NodeId, EdgeId>,
 }
 
-impl<Id: Identity> fmt::Display for ErrorEdge<Id> {
+impl<NodeId: Identity, EdgeId: Identity> fmt::Display for ErrorEdge<NodeId, EdgeId> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(&self.edge, f)
     }
 }
 
-impl<Id: Identity> From<Edge<Id>> for ErrorEdge<Id> {
-    fn from(edge: Edge<Id>) -> Self {
+impl<NodeId: Identity, EdgeId: Identity> From<Edge<NodeId, EdgeId>> for ErrorEdge<NodeId, EdgeId> {
+    fn from(edge: Edge<NodeId, EdgeId>) -> Self {
         Self::create(edge)
     }
 }
 
-impl<Id: Identity> ErrorEdge<Id> {
+impl<NodeId: Identity, EdgeId: Identity> ErrorEdge<NodeId, EdgeId> {
     // ---
     // constructor
     // ---
 
     /// constructor
-    fn create(edge: Edge<Id>) -> Self {
+    fn create(edge: Edge<NodeId, EdgeId>) -> Self {
         ErrorEdge { edge }
     }
 
@@ -48,37 +48,41 @@ impl<Id: Identity> ErrorEdge<Id> {
     }
 
     /// create model as edge
-    pub fn as_model<'a>(&'a self) -> model::Edge<'a, Id> {
+    pub fn as_model<'a>(&'a self) -> model::Edge<'a, NodeId, EdgeId> {
         self.edge.as_model()
     }
 
     /// create model as undirected edge
-    pub fn as_undirected_model<'a>(&'a self) -> Option<model::UndirectedEdge<'a, Id>> {
+    pub fn as_undirected_model<'a>(&'a self) -> Option<model::UndirectedEdge<'a, NodeId, EdgeId>> {
         self.edge.as_undirected_model()
     }
 
     /// create model as directed edge
-    pub fn as_directed_model<'a>(&'a self) -> Option<model::DirectedEdge<'a, Id>> {
+    pub fn as_directed_model<'a>(&'a self) -> Option<model::DirectedEdge<'a, NodeId, EdgeId>> {
         self.edge.as_directed_model()
     }
 
     /// create model as mixed edge
-    pub fn as_mixed_model<'a>(&'a self) -> Option<model::MixedEdge<'a, Id>> {
+    pub fn as_mixed_model<'a>(&'a self) -> Option<model::MixedEdge<'a, NodeId, EdgeId>> {
         self.edge.as_mixed_model()
     }
 
     /// create model as undirected hyper edge
-    pub fn as_undirected_hyper_model<'a>(&'a self) -> Option<model::UndirectedHyperEdge<'a, Id>> {
+    pub fn as_undirected_hyper_model<'a>(
+        &'a self,
+    ) -> Option<model::UndirectedHyperEdge<'a, NodeId, EdgeId>> {
         self.edge.as_undirected_hyper_model()
     }
 
     /// create model as mixed hyper edge
-    pub fn as_directed_hyper_model<'a>(&'a self) -> Option<model::DirectedHyperEdge<'a, Id>> {
+    pub fn as_directed_hyper_model<'a>(
+        &'a self,
+    ) -> Option<model::DirectedHyperEdge<'a, NodeId, EdgeId>> {
         self.edge.as_directed_hyper_model()
     }
 
     /// create model as mixed hyper edge
-    pub fn as_mixed_hyper_model<'a>(&'a self) -> Option<model::MixedHyperEdge<'a, Id>> {
+    pub fn as_mixed_hyper_model<'a>(&'a self) -> Option<model::MixedHyperEdge<'a, NodeId, EdgeId>> {
         self.edge.as_mixed_hyper_model()
     }
 
@@ -93,69 +97,73 @@ impl<Id: Identity> ErrorEdge<Id> {
 
 /// Error of graph without layout
 #[derive(Debug, Eq, PartialEq, Clone)]
-pub enum GraphError<Id: Identity> {
+pub enum GraphError<NodeId: Identity, EdgeId: Identity> {
     // Node
     /// already node exist at the id.
     ///
     /// arg: node_id
-    AlreadyExistNodeAtId(Id),
+    AlreadyExistNodeAtId(NodeId),
     /// node not exist at the specified id.
     ///
     /// arg: node_id
-    NotExistNodeAtId(Id),
+    NotExistNodeAtId(NodeId),
     /// not support group error.
     ///
     /// arg: group_node_id
-    NotSupportGroupNode(Id),
+    NotSupportGroupNode(NodeId),
     /// cannot create vertex node.
     ///
     /// arg: (optional)parent_node_id, vertex_node_id
-    CannotCreateVertex(Option<Id>, Id),
+    CannotCreateVertex(Option<NodeId>, NodeId),
     /// cannot create group node.
     ///
     /// arg: (optional)parent_node_id, group_node_id, child_node_ids
-    CannotCreateGroup(Option<Id>, Id, Vec<Id>),
+    CannotCreateGroup(Option<NodeId>, NodeId, Vec<NodeId>),
     /// not exist group node at the id.
     ///
     /// arg: group_node_id
-    NotExistGroup(Id),
+    NotExistGroup(NodeId),
     /// specified children as children for the group has illegal status.
     ///
     /// arg: group_node_id, child_node_ids
-    SpecifiedIllegalChildren(Id, Vec<Id>),
+    SpecifiedIllegalChildren(NodeId, Vec<NodeId>),
     /// specified children as children for the group is not exist when not use the mode to create not exist vertex node.
     ///
     /// arg: group_node_id, child_node_ids
-    NotExistChildrenCannotMakeEdge(Id, Vec<Id>),
+    NotExistChildrenCannotMakeAsGroupChild(NodeId, Vec<NodeId>),
 
     // Edge
     /// already edge exist at the id.
     ///
     /// arg: edge_id
-    AlreadyExistEdgeAtId(Id),
+    AlreadyExistEdgeAtId(EdgeId),
     /// edge not exist at the specified id.
     ///
     /// arg: edge_id
-    NotExistEdgeAtId(Id),
+    NotExistEdgeAtId(EdgeId),
     /// not support edge error
     ///
     /// arg: edge_id, edge
-    EdgeNotSupported(Id, ErrorEdge<Id>),
+    EdgeNotSupported(EdgeId, ErrorEdge<NodeId, EdgeId>),
     /// not available edge error
     ///
     /// arg: edge_id, edge
-    IllegalEdge(Id, ErrorEdge<Id>),
+    IllegalEdge(EdgeId, ErrorEdge<NodeId, EdgeId>),
     /// exist same edge error
     ///
     /// arg: edge_id, edge, same_edge_ids
-    ExistSameEdge(Id, ErrorEdge<Id>, Vec<Id>),
+    ExistSameEdge(EdgeId, ErrorEdge<NodeId, EdgeId>, Vec<EdgeId>),
     /// specified node ids as incidence node for the edge has illegal status.
     ///
-    /// arg: edge_id, node_ids
-    SpecifiedIllegalIncidenceNodeIds(Id, ErrorEdge<Id>, Vec<Id>),
+    /// arg: edge_id, edge, node_ids
+    SpecifiedIllegalIncidenceNodeIds(EdgeId, ErrorEdge<NodeId, EdgeId>, Vec<NodeId>),
+    /// specified node ids as incidence node for the edge are not exist when not use the mode to create not exist vertex node.
+    ///
+    /// arg: edge_id, edge, node_ids
+    NotExistChildrenCannotMakeAsEdgeIncidence(EdgeId, ErrorEdge<NodeId, EdgeId>, Vec<NodeId>),
 }
 
-impl<Id: Identity> fmt::Display for GraphError<Id> {
+impl<NodeId: Identity, EdgeId: Identity> fmt::Display for GraphError<NodeId, EdgeId> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use GraphError::*;
 
@@ -234,8 +242,8 @@ impl<Id: Identity> fmt::Display for GraphError<Id> {
                     group_node_id
                 )
             }
-            NotExistChildrenCannotMakeEdge(group_node_id, child_node_ids) => {
-                write!(f, "Specified children {{")?;
+            NotExistChildrenCannotMakeAsGroupChild(group_node_id, child_node_ids) => {
+                write!(f, "Specified the group {:?} children {{", group_node_id)?;
                 for (index, child_node_id) in child_node_ids.iter().enumerate() {
                     if index == 0 {
                         write!(f, "{:?}", child_node_id)?;
@@ -243,7 +251,7 @@ impl<Id: Identity> fmt::Display for GraphError<Id> {
                         write!(f, ", {:?}", child_node_id)?;
                     }
                 }
-                write!(f, "}} are not exist for the group {:?}.", group_node_id)
+                write!(f, "}} cannot be made.")
             }
 
             // Edge
@@ -303,8 +311,23 @@ impl<Id: Identity> fmt::Display for GraphError<Id> {
                 }
                 write!(f, "}}.")
             }
+            NotExistChildrenCannotMakeAsEdgeIncidence(edge_id, edge, node_ids) => {
+                write!(f, "Specified nodes {{")?;
+                for (index, node_id) in node_ids.iter().enumerate() {
+                    if index == 0 {
+                        write!(f, "{:?}", node_id)?;
+                    } else {
+                        write!(f, ", {:?}", node_id)?;
+                    }
+                }
+                write!(
+                    f,
+                    "}} cannot be made as incidence node for the edge {} ath the id {:?}.",
+                    edge, edge_id
+                )
+            }
         }
     }
 }
 
-impl<Id: Identity> Error for GraphError<Id> {}
+impl<NodeId: Identity, EdgeId: Identity> Error for GraphError<NodeId, EdgeId> {}

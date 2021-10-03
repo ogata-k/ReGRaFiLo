@@ -1,7 +1,7 @@
 //! example for create graph without layout
 
 use regrafilo_core::graph::{Graph, GraphConfig};
-use regrafilo_core::graph::helper::GraphItemExistedResultExt;
+use regrafilo_core::graph::helper::{EdgeExistedResultExt, NodeExistedResultExt};
 use regrafilo_core::util::Identity;
 
 fn main() {
@@ -10,7 +10,7 @@ fn main() {
         .use_multiple_edge()
         .replace_same_edge()
         .create_not_exist_vertex_node();
-    let mut graph: Graph<u8> = Graph::create(config);
+    let mut graph: Graph<u8, u8> = Graph::create(config);
 
     // Create item action is failed when old item exist.
     // If catch as error, need convert to error.
@@ -84,7 +84,7 @@ fn main() {
     print_graph(&graph);
 }
 
-fn print_graph<Id: Identity>(graph: &Graph<Id>) {
+fn print_graph<NodeId: Identity, EdgeId: Identity>(graph: &Graph<NodeId, EdgeId>) {
     println!("\nDebug:\n\t{:?}", graph);
     println!("\nDisplay:\n\t{}", graph);
 }

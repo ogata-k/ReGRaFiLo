@@ -9,21 +9,21 @@ use std::collections::btree_map::Iter;
 use std::iter::Iterator;
 
 /// Iterator for edge
-pub struct EdgeIter<'a, Id: Identity> {
-    store_iter: Iter<'a, Id, Edge<Id>>,
+pub struct EdgeIter<'a, NodeId: Identity, EdgeId: Identity> {
+    store_iter: Iter<'a, EdgeId, Edge<NodeId, EdgeId>>,
 }
 
-impl<'a, Id: Identity> EdgeIter<'a, Id> {
+impl<'a, NodeId: Identity, EdgeId: Identity> EdgeIter<'a, NodeId, EdgeId> {
     /// create this iterator
-    pub(in crate::graph) fn new(store: &'a EdgeStore<Id>) -> Self {
+    pub(in crate::graph) fn new(store: &'a EdgeStore<NodeId, EdgeId>) -> Self {
         EdgeIter {
             store_iter: store.inner_store_iter(),
         }
     }
 }
 
-impl<'a, Id: Identity> Iterator for EdgeIter<'a, Id> {
-    type Item = (&'a Id, model::Edge<'a, Id>);
+impl<'a, NodeId: Identity, EdgeId: Identity> Iterator for EdgeIter<'a, NodeId, EdgeId> {
+    type Item = (&'a EdgeId, model::Edge<'a, NodeId, EdgeId>);
     fn next(&mut self) -> Option<Self::Item> {
         self.store_iter
             .next()
@@ -32,21 +32,21 @@ impl<'a, Id: Identity> Iterator for EdgeIter<'a, Id> {
 }
 
 /// Iterator for undirected edge
-pub struct UndirectedEdgeIter<'a, Id: Identity> {
-    store_iter: Iter<'a, Id, Edge<Id>>,
+pub struct UndirectedEdgeIter<'a, NodeId: Identity, EdgeId: Identity> {
+    store_iter: Iter<'a, EdgeId, Edge<NodeId, EdgeId>>,
 }
 
-impl<'a, Id: Identity> UndirectedEdgeIter<'a, Id> {
+impl<'a, NodeId: Identity, EdgeId: Identity> UndirectedEdgeIter<'a, NodeId, EdgeId> {
     /// create this iterator
-    pub(in crate::graph) fn new(store: &'a EdgeStore<Id>) -> Self {
+    pub(in crate::graph) fn new(store: &'a EdgeStore<NodeId, EdgeId>) -> Self {
         UndirectedEdgeIter {
             store_iter: store.inner_store_iter(),
         }
     }
 }
 
-impl<'a, Id: Identity> Iterator for UndirectedEdgeIter<'a, Id> {
-    type Item = (&'a Id, model::UndirectedEdge<'a, Id>);
+impl<'a, NodeId: Identity, EdgeId: Identity> Iterator for UndirectedEdgeIter<'a, NodeId, EdgeId> {
+    type Item = (&'a EdgeId, model::UndirectedEdge<'a, NodeId, EdgeId>);
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             match self.store_iter.next() {
@@ -70,21 +70,21 @@ impl<'a, Id: Identity> Iterator for UndirectedEdgeIter<'a, Id> {
 }
 
 /// Iterator for directed edge
-pub struct DirectedEdgeIter<'a, Id: Identity> {
-    store_iter: Iter<'a, Id, Edge<Id>>,
+pub struct DirectedEdgeIter<'a, NodeId: Identity, EdgeId: Identity> {
+    store_iter: Iter<'a, EdgeId, Edge<NodeId, EdgeId>>,
 }
 
-impl<'a, Id: Identity> DirectedEdgeIter<'a, Id> {
+impl<'a, NodeId: Identity, EdgeId: Identity> DirectedEdgeIter<'a, NodeId, EdgeId> {
     /// create this iterator
-    pub(in crate::graph) fn new(store: &'a EdgeStore<Id>) -> Self {
+    pub(in crate::graph) fn new(store: &'a EdgeStore<NodeId, EdgeId>) -> Self {
         DirectedEdgeIter {
             store_iter: store.inner_store_iter(),
         }
     }
 }
 
-impl<'a, Id: Identity> Iterator for DirectedEdgeIter<'a, Id> {
-    type Item = (&'a Id, model::DirectedEdge<'a, Id>);
+impl<'a, NodeId: Identity, EdgeId: Identity> Iterator for DirectedEdgeIter<'a, NodeId, EdgeId> {
+    type Item = (&'a EdgeId, model::DirectedEdge<'a, NodeId, EdgeId>);
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             match self.store_iter.next() {
@@ -108,21 +108,21 @@ impl<'a, Id: Identity> Iterator for DirectedEdgeIter<'a, Id> {
 }
 
 /// Iterator for undirected or directed edge
-pub struct MixedEdgeIter<'a, Id: Identity> {
-    store_iter: Iter<'a, Id, Edge<Id>>,
+pub struct MixedEdgeIter<'a, NodeId: Identity, EdgeId: Identity> {
+    store_iter: Iter<'a, EdgeId, Edge<NodeId, EdgeId>>,
 }
 
-impl<'a, Id: Identity> MixedEdgeIter<'a, Id> {
+impl<'a, NodeId: Identity, EdgeId: Identity> MixedEdgeIter<'a, NodeId, EdgeId> {
     /// create this iterator
-    pub(in crate::graph) fn new(store: &'a EdgeStore<Id>) -> Self {
+    pub(in crate::graph) fn new(store: &'a EdgeStore<NodeId, EdgeId>) -> Self {
         MixedEdgeIter {
             store_iter: store.inner_store_iter(),
         }
     }
 }
 
-impl<'a, Id: Identity> Iterator for MixedEdgeIter<'a, Id> {
-    type Item = (&'a Id, model::MixedEdge<'a, Id>);
+impl<'a, NodeId: Identity, EdgeId: Identity> Iterator for MixedEdgeIter<'a, NodeId, EdgeId> {
+    type Item = (&'a EdgeId, model::MixedEdge<'a, NodeId, EdgeId>);
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             match self.store_iter.next() {
@@ -146,21 +146,23 @@ impl<'a, Id: Identity> Iterator for MixedEdgeIter<'a, Id> {
 }
 
 /// Iterator for undirected hyper edge
-pub struct UndirectedHyperEdgeIter<'a, Id: Identity> {
-    store_iter: Iter<'a, Id, Edge<Id>>,
+pub struct UndirectedHyperEdgeIter<'a, NodeId: Identity, EdgeId: Identity> {
+    store_iter: Iter<'a, EdgeId, Edge<NodeId, EdgeId>>,
 }
 
-impl<'a, Id: Identity> UndirectedHyperEdgeIter<'a, Id> {
+impl<'a, NodeId: Identity, EdgeId: Identity> UndirectedHyperEdgeIter<'a, NodeId, EdgeId> {
     /// create this iterator
-    pub(in crate::graph) fn new(store: &'a EdgeStore<Id>) -> Self {
+    pub(in crate::graph) fn new(store: &'a EdgeStore<NodeId, EdgeId>) -> Self {
         UndirectedHyperEdgeIter {
             store_iter: store.inner_store_iter(),
         }
     }
 }
 
-impl<'a, Id: Identity> Iterator for UndirectedHyperEdgeIter<'a, Id> {
-    type Item = (&'a Id, model::UndirectedHyperEdge<'a, Id>);
+impl<'a, NodeId: Identity, EdgeId: Identity> Iterator
+    for UndirectedHyperEdgeIter<'a, NodeId, EdgeId>
+{
+    type Item = (&'a EdgeId, model::UndirectedHyperEdge<'a, NodeId, EdgeId>);
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             match self.store_iter.next() {
@@ -184,21 +186,23 @@ impl<'a, Id: Identity> Iterator for UndirectedHyperEdgeIter<'a, Id> {
 }
 
 /// Iterator for directed hyper edge
-pub struct DirectedHyperEdgeIter<'a, Id: Identity> {
-    store_iter: Iter<'a, Id, Edge<Id>>,
+pub struct DirectedHyperEdgeIter<'a, NodeId: Identity, EdgeId: Identity> {
+    store_iter: Iter<'a, EdgeId, Edge<NodeId, EdgeId>>,
 }
 
-impl<'a, Id: Identity> DirectedHyperEdgeIter<'a, Id> {
+impl<'a, NodeId: Identity, EdgeId: Identity> DirectedHyperEdgeIter<'a, NodeId, EdgeId> {
     /// create this iterator
-    pub(in crate::graph) fn new(store: &'a EdgeStore<Id>) -> Self {
+    pub(in crate::graph) fn new(store: &'a EdgeStore<NodeId, EdgeId>) -> Self {
         DirectedHyperEdgeIter {
             store_iter: store.inner_store_iter(),
         }
     }
 }
 
-impl<'a, Id: Identity> Iterator for DirectedHyperEdgeIter<'a, Id> {
-    type Item = (&'a Id, model::DirectedHyperEdge<'a, Id>);
+impl<'a, NodeId: Identity, EdgeId: Identity> Iterator
+    for DirectedHyperEdgeIter<'a, NodeId, EdgeId>
+{
+    type Item = (&'a EdgeId, model::DirectedHyperEdge<'a, NodeId, EdgeId>);
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             match self.store_iter.next() {
@@ -222,21 +226,21 @@ impl<'a, Id: Identity> Iterator for DirectedHyperEdgeIter<'a, Id> {
 }
 
 /// Iterator for undirected or directed hyper edge
-pub struct MixedHyperEdgeIter<'a, Id: Identity> {
-    store_iter: Iter<'a, Id, Edge<Id>>,
+pub struct MixedHyperEdgeIter<'a, NodeId: Identity, EdgeId: Identity> {
+    store_iter: Iter<'a, EdgeId, Edge<NodeId, EdgeId>>,
 }
 
-impl<'a, Id: Identity> MixedHyperEdgeIter<'a, Id> {
+impl<'a, NodeId: Identity, EdgeId: Identity> MixedHyperEdgeIter<'a, NodeId, EdgeId> {
     /// create this iterator
-    pub(in crate::graph) fn new(store: &'a EdgeStore<Id>) -> Self {
+    pub(in crate::graph) fn new(store: &'a EdgeStore<NodeId, EdgeId>) -> Self {
         MixedHyperEdgeIter {
             store_iter: store.inner_store_iter(),
         }
     }
 }
 
-impl<'a, Id: Identity> Iterator for MixedHyperEdgeIter<'a, Id> {
-    type Item = (&'a Id, model::MixedHyperEdge<'a, Id>);
+impl<'a, NodeId: Identity, EdgeId: Identity> Iterator for MixedHyperEdgeIter<'a, NodeId, EdgeId> {
+    type Item = (&'a EdgeId, model::MixedHyperEdge<'a, NodeId, EdgeId>);
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             match self.store_iter.next() {

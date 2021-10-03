@@ -1,12 +1,12 @@
 //! example for create directed graph without layout
 
 use regrafilo_core::graph::{Graph, GraphConfig};
-use regrafilo_core::graph::helper::GraphItemExistedResultExt;
+use regrafilo_core::graph::helper::{EdgeExistedResultExt, NodeExistedResultExt};
 use regrafilo_core::util::Identity;
 
 fn main() {
     let config = GraphConfig::directed_graph().use_group_node();
-    let mut graph: Graph<String> = Graph::create(config);
+    let mut graph: Graph<String, String> = Graph::create(config);
 
     // Create item action is failed when old item exist.
     // If catch as error, need convert to error.
@@ -86,7 +86,7 @@ fn main() {
     print_graph(&graph);
 }
 
-fn print_graph<Id: Identity>(graph: &Graph<Id>) {
+fn print_graph<NodeId: Identity, EdgeId: Identity>(graph: &Graph<NodeId, EdgeId>) {
     println!("\nDebug:\n\t{:?}", graph);
     println!("\nDisplay:\n\t{}", graph);
 }

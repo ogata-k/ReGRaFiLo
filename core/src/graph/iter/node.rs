@@ -10,21 +10,21 @@ use std::collections::btree_map::Iter;
 use std::iter::Iterator;
 
 /// Iterator for node
-pub struct NodeIter<'a, Id: Identity> {
-    store_iter: Iter<'a, Id, store::Node<Id>>,
+pub struct NodeIter<'a, NodeId: Identity, EdgeId: Identity> {
+    store_iter: Iter<'a, NodeId, store::Node<NodeId, EdgeId>>,
 }
 
-impl<'a, Id: Identity> NodeIter<'a, Id> {
+impl<'a, NodeId: Identity, EdgeId: Identity> NodeIter<'a, NodeId, EdgeId> {
     /// create this iterator
-    pub(in crate::graph) fn new(store: &'a NodeStore<Id>) -> Self {
+    pub(in crate::graph) fn new(store: &'a NodeStore<NodeId, EdgeId>) -> Self {
         NodeIter {
             store_iter: store.inner_store_iter(),
         }
     }
 }
 
-impl<'a, Id: Identity> Iterator for NodeIter<'a, Id> {
-    type Item = (&'a Id, model::Node<'a, Id>);
+impl<'a, NodeId: Identity, EdgeId: Identity> Iterator for NodeIter<'a, NodeId, EdgeId> {
+    type Item = (&'a NodeId, model::Node<'a, NodeId, EdgeId>);
     fn next(&mut self) -> Option<Self::Item> {
         self.store_iter
             .next()
@@ -33,21 +33,21 @@ impl<'a, Id: Identity> Iterator for NodeIter<'a, Id> {
 }
 
 /// Iterator for node point
-pub struct VertexNodeIter<'a, Id: Identity> {
-    store_iter: Iter<'a, Id, Node<Id>>,
+pub struct VertexNodeIter<'a, NodeId: Identity, EdgeId: Identity> {
+    store_iter: Iter<'a, NodeId, Node<NodeId, EdgeId>>,
 }
 
-impl<'a, Id: Identity> VertexNodeIter<'a, Id> {
+impl<'a, NodeId: Identity, EdgeId: Identity> VertexNodeIter<'a, NodeId, EdgeId> {
     /// create this iterator
-    pub(in crate::graph) fn new(store: &'a NodeStore<Id>) -> Self {
+    pub(in crate::graph) fn new(store: &'a NodeStore<NodeId, EdgeId>) -> Self {
         VertexNodeIter {
             store_iter: store.inner_store_iter(),
         }
     }
 }
 
-impl<'a, Id: Identity> Iterator for VertexNodeIter<'a, Id> {
-    type Item = (&'a Id, model::VertexNode<'a, Id>);
+impl<'a, NodeId: Identity, EdgeId: Identity> Iterator for VertexNodeIter<'a, NodeId, EdgeId> {
+    type Item = (&'a NodeId, model::VertexNode<'a, NodeId, EdgeId>);
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             match self.store_iter.next() {
@@ -71,21 +71,21 @@ impl<'a, Id: Identity> Iterator for VertexNodeIter<'a, Id> {
 }
 
 /// Iterator for node grouping
-pub struct GroupNodeIter<'a, Id: Identity> {
-    store_iter: Iter<'a, Id, Node<Id>>,
+pub struct GroupNodeIter<'a, NodeId: Identity, EdgeId: Identity> {
+    store_iter: Iter<'a, NodeId, Node<NodeId, EdgeId>>,
 }
 
-impl<'a, Id: Identity> GroupNodeIter<'a, Id> {
+impl<'a, NodeId: Identity, EdgeId: Identity> GroupNodeIter<'a, NodeId, EdgeId> {
     /// create this iterator
-    pub(in crate::graph) fn new(store: &'a NodeStore<Id>) -> Self {
+    pub(in crate::graph) fn new(store: &'a NodeStore<NodeId, EdgeId>) -> Self {
         GroupNodeIter {
             store_iter: store.inner_store_iter(),
         }
     }
 }
 
-impl<'a, Id: Identity> Iterator for GroupNodeIter<'a, Id> {
-    type Item = (&'a Id, model::GroupNode<'a, Id>);
+impl<'a, NodeId: Identity, EdgeId: Identity> Iterator for GroupNodeIter<'a, NodeId, EdgeId> {
+    type Item = (&'a NodeId, model::GroupNode<'a, NodeId, EdgeId>);
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             match self.store_iter.next() {
@@ -110,24 +110,24 @@ impl<'a, Id: Identity> Iterator for GroupNodeIter<'a, Id> {
 
 /// Iterator for grouping child node
 #[derive(Debug)]
-pub struct GroupChildNodeIter<'a, Id: Identity> {
-    group_id: Option<&'a Id>,
+pub struct GroupChildNodeIter<'a, NodeId: Identity, EdgeId: Identity> {
+    group_id: Option<&'a NodeId>,
     is_exist_group: bool,
-    group_node: Option<&'a Node<Id>>,
-    specified_group_children: Option<Vec<&'a Id>>,
-    store: &'a NodeStore<Id>,
-    store_iter: Iter<'a, Id, Node<Id>>,
+    group_node: Option<&'a Node<NodeId, EdgeId>>,
+    specified_group_children: Option<Vec<&'a NodeId>>,
+    store: &'a NodeStore<NodeId, EdgeId>,
+    store_iter: Iter<'a, NodeId, Node<NodeId, EdgeId>>,
 }
 
-impl<'a, Id: Identity> GroupChildNodeIter<'a, Id> {
+impl<'a, NodeId: Identity, EdgeId: Identity> GroupChildNodeIter<'a, NodeId, EdgeId> {
     /// create this iterator
     /// If specified group is root or not exist group, then return None.
     pub(in crate::graph) fn new<B: ?Sized>(
         group_id: Option<&'a B>,
-        store: &'a NodeStore<Id>,
+        store: &'a NodeStore<NodeId, EdgeId>,
     ) -> Self
     where
-        Id: Borrow<B>,
+        NodeId: Borrow<B>,
         B: Identity,
     {
         // get group
@@ -147,7 +147,7 @@ impl<'a, Id: Identity> GroupChildNodeIter<'a, Id> {
             .flatten();
         // exist flag for root group or specified group
         let is_exist_group = group_id.is_none() || (group_id.is_some() && group_model.is_some());
-        let child_vec: Option<Vec<&'a Id>> = result_node.map(|group| {
+        let child_vec: Option<Vec<&'a NodeId>> = result_node.map(|group| {
             group
                 .get_children_as_ref()
                 .iter()
@@ -176,7 +176,7 @@ impl<'a, Id: Identity> GroupChildNodeIter<'a, Id> {
     }
 
     /// get group id.
-    pub fn get_group_id(&self) -> Option<&Id> {
+    pub fn get_group_id(&self) -> Option<&NodeId> {
         if !self.is_exist_group {
             return None;
         }
@@ -186,7 +186,7 @@ impl<'a, Id: Identity> GroupChildNodeIter<'a, Id> {
 
     /// get group node.
     /// If specified group is root or not exist group, then return None.
-    pub fn get_group(&self) -> Option<model::GroupNode<'a, Id>> {
+    pub fn get_group(&self) -> Option<model::GroupNode<'a, NodeId, EdgeId>> {
         if !self.is_exist_group {
             return None;
         }
@@ -196,7 +196,7 @@ impl<'a, Id: Identity> GroupChildNodeIter<'a, Id> {
 
     /// get group node with id.
     /// If specified Id is None as root group, then return None.
-    pub fn get_group_with_id(&self) -> Option<(&'a Id, model::GroupNode<'a, Id>)> {
+    pub fn get_group_with_id(&self) -> Option<(&'a NodeId, model::GroupNode<'a, NodeId, EdgeId>)> {
         match (&self.group_id, self.get_group()) {
             (Some(_group_id), Some(_group)) => Some((_group_id, _group)),
             _ => None,
@@ -204,10 +204,10 @@ impl<'a, Id: Identity> GroupChildNodeIter<'a, Id> {
     }
 }
 
-impl<'a, Id: Identity> Iterator for GroupChildNodeIter<'a, Id> {
+impl<'a, NodeId: Identity, EdgeId: Identity> Iterator for GroupChildNodeIter<'a, NodeId, EdgeId> {
     type Item = (
-        Option<(&'a Id, model::GroupNode<'a, Id>)>,
-        (&'a Id, model::Node<'a, Id>),
+        Option<(&'a NodeId, model::GroupNode<'a, NodeId, EdgeId>)>,
+        (&'a NodeId, model::Node<'a, NodeId, EdgeId>),
     );
     fn next(&mut self) -> Option<Self::Item> {
         if !self.is_exist_group {

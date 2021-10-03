@@ -9,17 +9,17 @@ use std::fmt;
 
 /// Store structure for edge.
 #[derive(Eq, PartialEq, Clone)]
-pub(in crate::graph) struct EdgeStore<Id: Identity> {
-    inner: BTreeMap<Id, Edge<Id>>,
+pub(in crate::graph) struct EdgeStore<NodeId: Identity, EdgeId: Identity> {
+    inner: BTreeMap<EdgeId, Edge<NodeId, EdgeId>>,
 }
 
-impl<Id: Identity> fmt::Debug for EdgeStore<Id> {
+impl<NodeId: Identity, EdgeId: Identity> fmt::Debug for EdgeStore<NodeId, EdgeId> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_fmt(format_args!("{:?}", self.inner))
     }
 }
 
-impl<Id: Identity> fmt::Display for EdgeStore<Id> {
+impl<NodeId: Identity, EdgeId: Identity> fmt::Display for EdgeStore<NodeId, EdgeId> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut is_first = true;
         f.write_str("{")?;
@@ -35,7 +35,7 @@ impl<Id: Identity> fmt::Display for EdgeStore<Id> {
     }
 }
 
-impl<Id: Identity> EdgeStore<Id> {
+impl<NodeId: Identity, EdgeId: Identity> EdgeStore<NodeId, EdgeId> {
     // ---
     // constructor
     // ---
@@ -52,9 +52,9 @@ impl<Id: Identity> EdgeStore<Id> {
     // ---
 
     /// get edge at edge_id
-    pub(in crate::graph) fn get_edge<B: ?Sized>(&self, edge_id: &B) -> Option<&Edge<Id>>
+    pub(in crate::graph) fn get_edge<B: ?Sized>(&self, edge_id: &B) -> Option<&Edge<NodeId, EdgeId>>
     where
-        Id: Borrow<B>,
+        EdgeId: Borrow<B>,
         B: Identity,
     {
         self.inner.get(edge_id)
@@ -64,16 +64,19 @@ impl<Id: Identity> EdgeStore<Id> {
     pub(in crate::graph) fn get_edge_as_mut<B: ?Sized>(
         &mut self,
         edge_id: &B,
-    ) -> Option<&mut Edge<Id>>
+    ) -> Option<&mut Edge<NodeId, EdgeId>>
     where
-        Id: Borrow<B>,
+        EdgeId: Borrow<B>,
         B: Identity,
     {
         self.inner.get_mut(edge_id)
     }
 
     /// get incidence node ids searched by edge_ids.
-    pub(in crate::graph) fn get_incidence_node_ids_by_ids(&self, edge_ids: &[&Id]) -> Vec<&Id> {
+    pub(in crate::graph) fn get_incidence_node_ids_by_ids(
+        &self,
+        edge_ids: &[&EdgeId],
+    ) -> Vec<&NodeId> {
         let mut result = Vec::new();
         for edge_id in edge_ids.iter() {
             match self.inner.get(edge_id) {
@@ -90,7 +93,9 @@ impl<Id: Identity> EdgeStore<Id> {
     }
 
     /// inner store iter
-    pub(in crate::graph) fn inner_store_iter<'a>(&'a self) -> Iter<'a, Id, Edge<Id>> {
+    pub(in crate::graph) fn inner_store_iter<'a>(
+        &'a self,
+    ) -> Iter<'a, EdgeId, Edge<NodeId, EdgeId>> {
         self.inner.iter()
     }
 
@@ -101,14 +106,17 @@ impl<Id: Identity> EdgeStore<Id> {
     /// insert edge
     pub(in crate::graph) fn insert_edge(
         &mut self,
-        edge_id: Id,
-        edge: Edge<Id>,
-    ) -> Option<Edge<Id>> {
+        edge_id: EdgeId,
+        edge: Edge<NodeId, EdgeId>,
+    ) -> Option<Edge<NodeId, EdgeId>> {
         self.inner.insert(edge_id, edge)
     }
 
     /// get as entry
-    pub(in crate::graph) fn entry(&mut self, edge_id: Id) -> Entry<Id, Edge<Id>> {
+    pub(in crate::graph) fn entry(
+        &mut self,
+        edge_id: EdgeId,
+    ) -> Entry<EdgeId, Edge<NodeId, EdgeId>> {
         self.inner.entry(edge_id)
     }
 
@@ -119,14 +127,14 @@ impl<Id: Identity> EdgeStore<Id> {
     /// check exist edge_id
     pub(in crate::graph) fn has_edge_id<B: ?Sized>(&self, edge_id: &B) -> bool
     where
-        Id: Borrow<B>,
+        EdgeId: Borrow<B>,
         B: Identity,
     {
         self.inner.contains_key(edge_id)
     }
 
     /// check exist same edge
-    pub(in crate::graph) fn exist_same_edge(&mut self, edge: &Edge<Id>) -> bool {
+    pub(in crate::graph) fn exist_same_edge(&mut self, edge: &Edge<NodeId, EdgeId>) -> bool {
         self.inner
             .iter()
             .filter(|(_, stored_edge)| (*stored_edge).is_equal_to_without_weight(edge))
@@ -144,9 +152,12 @@ impl<Id: Identity> EdgeStore<Id> {
     }
 
     /// remove and get edge at edge_id
-    pub(in crate::graph) fn remove<B: ?Sized>(&mut self, edge_id: &B) -> Option<Edge<Id>>
+    pub(in crate::graph) fn remove<B: ?Sized>(
+        &mut self,
+        edge_id: &B,
+    ) -> Option<Edge<NodeId, EdgeId>>
     where
-        Id: Borrow<B>,
+        EdgeId: Borrow<B>,
         B: Identity,
     {
         self.inner.remove(edge_id)
@@ -156,9 +167,9 @@ impl<Id: Identity> EdgeStore<Id> {
     pub(in crate::graph) fn remove_with_get_id<B: ?Sized>(
         &mut self,
         edge_id: &B,
-    ) -> Option<(Id, Edge<Id>)>
+    ) -> Option<(EdgeId, Edge<NodeId, EdgeId>)>
     where
-        Id: Borrow<B>,
+        EdgeId: Borrow<B>,
         B: Identity,
     {
         self.inner.remove_entry(edge_id)

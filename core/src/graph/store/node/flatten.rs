@@ -4,19 +4,19 @@ use crate::util::Identity;
 
 /// ids helper to flatten ids
 #[derive(Eq, PartialEq, Clone)]
-pub(in crate::graph) struct FlattenIds<'a, Id: 'a + Identity> {
+pub(in crate::graph) struct FlattenIds<'a, NodeId: 'a + Identity> {
     is_group: bool,
-    root: &'a Id,
-    children: Vec<&'a Id>,
+    root: &'a NodeId,
+    children: Vec<&'a NodeId>,
 }
 
-impl<'a, Id: 'a + Identity> FlattenIds<'a, Id> {
+impl<'a, NodeId: 'a + Identity> FlattenIds<'a, NodeId> {
     // ---
     // constructor
     // ---
 
     /// constructor for child
-    pub(in crate::graph) fn _create_as_point(child_id: &'a Id) -> Self {
+    pub(in crate::graph) fn _create_as_point(child_id: &'a NodeId) -> Self {
         FlattenIds {
             is_group: false,
             root: child_id,
@@ -25,7 +25,10 @@ impl<'a, Id: 'a + Identity> FlattenIds<'a, Id> {
     }
 
     /// constructor for flatten group
-    pub(in crate::graph) fn _create_as_group(root_id: &'a Id, mut children: Vec<&'a Id>) -> Self {
+    pub(in crate::graph) fn _create_as_group(
+        root_id: &'a NodeId,
+        mut children: Vec<&'a NodeId>,
+    ) -> Self {
         // Do sort to use binary search
         children.sort();
         // Do unique. But did deduped because uniqueness is ensured by the way of construction.
@@ -43,12 +46,12 @@ impl<'a, Id: 'a + Identity> FlattenIds<'a, Id> {
     // ---
 
     /// get root id
-    pub(in crate::graph) fn get_root(&self) -> &Id {
+    pub(in crate::graph) fn get_root(&self) -> &NodeId {
         self.root
     }
 
     /// get grouping children
-    pub(in crate::graph) fn get_children(&self) -> &[&'a Id] {
+    pub(in crate::graph) fn get_children(&self) -> &[&'a NodeId] {
         self.children.as_slice()
     }
 

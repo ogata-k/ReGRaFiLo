@@ -3,6 +3,7 @@
 use crate::util::Identity;
 
 use std::fmt;
+use std::marker::PhantomData;
 
 /// Kind of Node model
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
@@ -27,52 +28,70 @@ impl NodeKind {
 
 /// incidence types to node
 #[derive(Debug, Eq, PartialEq, Clone)]
-pub enum Incidence<'a, Id: Identity> {
+pub enum Incidence<'a, NodeId: Identity, EdgeId: Identity> {
     /// A state in which an undirected edge is connected to a node.
-    Undirected { edge_id: &'a Id },
+    Undirected {
+        edge_id: &'a EdgeId,
+        _node_id: PhantomData<NodeId>,
+    },
 
     /// A state in which an directed edge is connected to a node as source node.
-    DirectedSource { edge_id: &'a Id },
+    DirectedSource {
+        edge_id: &'a EdgeId,
+        _node_id: PhantomData<NodeId>,
+    },
 
     /// A state in which an directed edge is connected to a node as target node.
-    DirectedTarget { edge_id: &'a Id },
+    DirectedTarget {
+        edge_id: &'a EdgeId,
+        _node_id: PhantomData<NodeId>,
+    },
 
     /// A state in which an undirected hyper edge is connected to a node.
-    UndirectedHyper { edge_id: &'a Id },
+    UndirectedHyper {
+        edge_id: &'a EdgeId,
+        _node_id: PhantomData<NodeId>,
+    },
 
     /// A state in which an directed edge is connected to a node as source node.
-    DirectedHyperSource { edge_id: &'a Id },
+    DirectedHyperSource {
+        edge_id: &'a EdgeId,
+        _node_id: PhantomData<NodeId>,
+    },
 
     /// A state in which an directed edge is connected to a node as target node.
-    DirectedHyperTarget { edge_id: &'a Id },
+    DirectedHyperTarget {
+        edge_id: &'a EdgeId,
+        _node_id: PhantomData<NodeId>,
+    },
 }
 
-impl<'a, Id: Identity> fmt::Display for Incidence<'a, Id> {
+impl<'a, NodeId: Identity, EdgeId: Identity> fmt::Display for Incidence<'a, NodeId, EdgeId> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use Incidence::*;
 
         match self {
-            Undirected { edge_id } => f.write_fmt(format_args!(
+            Undirected { edge_id, .. } => f.write_fmt(format_args!(
                 "{{type: (Undirected, Source/Target), edge_id: {:?}}}",
                 edge_id
             )),
-            DirectedSource { edge_id } => f.write_fmt(format_args!(
+            DirectedSource { edge_id, .. } => f.write_fmt(format_args!(
                 "{{type: (Directed, Source), edge_id: {:?}}}",
                 edge_id
             )),
-            DirectedTarget { edge_id } => f.write_fmt(format_args!(
+            DirectedTarget { edge_id, .. } => f.write_fmt(format_args!(
                 "{{type: (Directed, Target), edge_id: {:?}}}",
                 edge_id
             )),
-            UndirectedHyper { edge_id } => f.write_fmt(format_args!(
+            UndirectedHyper { edge_id, .. } => f.write_fmt(format_args!(
                 "{{type: (UndirectedHyper, Source/Target), edge_id: {:?}}}",
                 edge_id
             )),
-            DirectedHyperSource { edge_id } => f.write_fmt(format_args!(
+            DirectedHyperSource { edge_id, .. } => f.write_fmt(format_args!(
                 "{{type: (DirectedHyper, Source), edge_id: {:?}}}",
                 edge_id
             )),
-            DirectedHyperTarget { edge_id } => f.write_fmt(format_args!(
+            DirectedHyperTarget { edge_id, .. } => f.write_fmt(format_args!(
                 "{{type: (DirectedHyper, Target), edge_id: {:?}}}",
                 edge_id
             )),
@@ -81,7 +100,7 @@ impl<'a, Id: Identity> fmt::Display for Incidence<'a, Id> {
 }
 
 /// Model trait for Node
-pub trait NodeModel<Id: Identity> {
+pub trait NodeModel<'a, NodeId: Identity, EdgeId: Identity> {
     // ---
     // getter
     // ---
@@ -93,7 +112,10 @@ pub trait NodeModel<Id: Identity> {
     fn get_kind(&self) -> NodeKind;
 
     /// get node_id for group which is contains me.
-    fn get_parent(&self) -> &Option<Id>;
+    fn get_parent(&self) -> &Option<NodeId>;
+
+    /// get incidences to this node
+    fn get_incidences<'b: 'a>(&'b self) -> &'b [Incidence<'a, NodeId, EdgeId>];
 
     // ---
     // checker
@@ -116,13 +138,13 @@ pub trait NodeModel<Id: Identity> {
 
 /// Model for Node point
 #[derive(Debug, Eq, PartialEq, Clone)]
-pub struct VertexNode<'a, Id: Identity> {
+pub struct VertexNode<'a, NodeId: Identity, EdgeId: Identity> {
     pub(in crate::graph) weight: &'a i16,
-    pub(in crate::graph) parent: &'a Option<Id>,
-    pub(in crate::graph) incidences: Vec<Incidence<'a, Id>>,
+    pub(in crate::graph) parent: &'a Option<NodeId>,
+    pub(in crate::graph) incidences: Vec<Incidence<'a, NodeId, EdgeId>>,
 }
 
-impl<'a, Id: Identity> fmt::Display for VertexNode<'a, Id> {
+impl<'a, NodeId: Identity, EdgeId: Identity> fmt::Display for VertexNode<'a, NodeId, EdgeId> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_fmt(format_args!(
             "{{type: Vertex, weight: {}, parent: {:?}, incidences: {{",
@@ -141,7 +163,9 @@ impl<'a, Id: Identity> fmt::Display for VertexNode<'a, Id> {
     }
 }
 
-impl<'a, Id: Identity> NodeModel<Id> for VertexNode<'a, Id> {
+impl<'a, NodeId: Identity, EdgeId: Identity> NodeModel<'a, NodeId, EdgeId>
+    for VertexNode<'a, NodeId, EdgeId>
+{
     /// get weight for the node
     fn get_weight(&self) -> i16 {
         *self.weight
@@ -153,35 +177,26 @@ impl<'a, Id: Identity> NodeModel<Id> for VertexNode<'a, Id> {
     }
 
     /// get node_id for group which is contains me.
-    fn get_parent(&self) -> &Option<Id> {
+    fn get_parent(&self) -> &Option<NodeId> {
         self.parent
     }
-}
 
-impl<'a, Id: Identity> VertexNode<'a, Id> {
-    // ---
-    // constructor
-    // ---
-
-    // ---
-    // getter
-    // ---
-
-    // ---
-    // checker
-    // ---
+    /// get incidences to this node
+    fn get_incidences<'b: 'a>(&'b self) -> &'b [Incidence<'a, NodeId, EdgeId>] {
+        self.incidences.as_slice()
+    }
 }
 
 /// Model for Node group
 #[derive(Debug, Eq, PartialEq, Clone)]
-pub struct GroupNode<'a, Id: Identity> {
+pub struct GroupNode<'a, NodeId: Identity, EdgeId: Identity> {
     pub(in crate::graph) weight: &'a i16,
-    pub(in crate::graph) parent: &'a Option<Id>,
-    pub(in crate::graph) children: &'a [Id],
-    pub(in crate::graph) incidences: Vec<Incidence<'a, Id>>,
+    pub(in crate::graph) parent: &'a Option<NodeId>,
+    pub(in crate::graph) children: &'a [NodeId],
+    pub(in crate::graph) incidences: Vec<Incidence<'a, NodeId, EdgeId>>,
 }
 
-impl<'a, Id: Identity> fmt::Display for GroupNode<'a, Id> {
+impl<'a, NodeId: Identity, EdgeId: Identity> fmt::Display for GroupNode<'a, NodeId, EdgeId> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_fmt(format_args!(
             "{{type: Group, weight: {}, parent: {:?}, children: {{",
@@ -210,7 +225,9 @@ impl<'a, Id: Identity> fmt::Display for GroupNode<'a, Id> {
     }
 }
 
-impl<'a, Id: Identity> NodeModel<Id> for GroupNode<'a, Id> {
+impl<'a, NodeId: Identity, EdgeId: Identity> NodeModel<'a, NodeId, EdgeId>
+    for GroupNode<'a, NodeId, EdgeId>
+{
     /// get weight for the node
     fn get_weight(&self) -> i16 {
         *self.weight
@@ -222,12 +239,17 @@ impl<'a, Id: Identity> NodeModel<Id> for GroupNode<'a, Id> {
     }
 
     /// get node_id for group which is contains me.
-    fn get_parent(&self) -> &Option<Id> {
+    fn get_parent(&self) -> &Option<NodeId> {
         self.parent
+    }
+
+    /// get incidences to this node
+    fn get_incidences<'b: 'a>(&'b self) -> &'b [Incidence<'a, NodeId, EdgeId>] {
+        self.incidences.as_slice()
     }
 }
 
-impl<'a, Id: Identity> GroupNode<'a, Id> {
+impl<'a, NodeId: Identity, EdgeId: Identity> GroupNode<'a, NodeId, EdgeId> {
     // ---
     // constructor
     // ---
@@ -237,7 +259,7 @@ impl<'a, Id: Identity> GroupNode<'a, Id> {
     // ---
 
     /// get child nodes
-    pub fn get_children(&self) -> &[Id] {
+    pub fn get_children(&self) -> &[NodeId] {
         self.children
     }
 
@@ -248,12 +270,12 @@ impl<'a, Id: Identity> GroupNode<'a, Id> {
 
 /// Model for Node
 #[derive(Debug, Eq, PartialEq, Clone)]
-pub enum Node<'a, Id: Identity> {
-    Vertex(VertexNode<'a, Id>),
-    Group(GroupNode<'a, Id>),
+pub enum Node<'a, NodeId: Identity, EdgeId: Identity> {
+    Vertex(VertexNode<'a, NodeId, EdgeId>),
+    Group(GroupNode<'a, NodeId, EdgeId>),
 }
 
-impl<'a, Id: Identity> fmt::Display for Node<'a, Id> {
+impl<'a, NodeId: Identity, EdgeId: Identity> fmt::Display for Node<'a, NodeId, EdgeId> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use Node::*;
 
@@ -264,7 +286,9 @@ impl<'a, Id: Identity> fmt::Display for Node<'a, Id> {
     }
 }
 
-impl<'a, Id: Identity> NodeModel<Id> for Node<'a, Id> {
+impl<'a, NodeId: Identity, EdgeId: Identity> NodeModel<'a, NodeId, EdgeId>
+    for Node<'a, NodeId, EdgeId>
+{
     /// get weight for the node
     fn get_weight(&self) -> i16 {
         use Node::*;
@@ -286,7 +310,7 @@ impl<'a, Id: Identity> NodeModel<Id> for Node<'a, Id> {
     }
 
     /// get node_id for group which is contains me.
-    fn get_parent(&self) -> &Option<Id> {
+    fn get_parent(&self) -> &Option<NodeId> {
         use Node::*;
 
         match self {
@@ -294,18 +318,14 @@ impl<'a, Id: Identity> NodeModel<Id> for Node<'a, Id> {
             Group(n) => n.get_parent(),
         }
     }
-}
 
-impl<'a, Id: Identity> Node<'a, Id> {
-    // ---
-    // constructor
-    // ---
+    /// get incidences to this node
+    fn get_incidences<'b: 'a>(&'b self) -> &'b [Incidence<'a, NodeId, EdgeId>] {
+        use Node::*;
 
-    // ---
-    // getter
-    // ---
-
-    // ---
-    // checker
-    // ---
+        match self {
+            Vertex(n) => n.get_incidences(),
+            Group(n) => n.get_incidences(),
+        }
+    }
 }

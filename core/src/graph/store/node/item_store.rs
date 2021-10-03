@@ -9,17 +9,19 @@ use std::fmt;
 
 /// Store structure for node.
 #[derive(Eq, PartialEq, Clone)]
-pub(in crate::graph) struct NodeStore<Id: Identity> {
-    inner: BTreeMap<Id, Node<Id>>,
+pub(in crate::graph) struct NodeStore<NodeId: Identity, EdgeId: Identity> {
+    inner: BTreeMap<NodeId, Node<NodeId, EdgeId>>,
 }
 
-impl<Id: Identity + fmt::Debug> fmt::Debug for NodeStore<Id> {
+impl<NodeId: Identity + fmt::Debug, EdgeId: Identity + fmt::Debug> fmt::Debug
+    for NodeStore<NodeId, EdgeId>
+{
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_fmt(format_args!("{:?}", self.inner))
     }
 }
 
-impl<Id: Identity> fmt::Display for NodeStore<Id> {
+impl<NodeId: Identity, EdgeId: Identity> fmt::Display for NodeStore<NodeId, EdgeId> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut is_first = true;
         f.write_str("{")?;
@@ -35,7 +37,7 @@ impl<Id: Identity> fmt::Display for NodeStore<Id> {
     }
 }
 
-impl<Id: Identity> NodeStore<Id> {
+impl<NodeId: Identity, EdgeId: Identity> NodeStore<NodeId, EdgeId> {
     // ---
     // constructor
     // ---
@@ -52,9 +54,9 @@ impl<Id: Identity> NodeStore<Id> {
     // ---
 
     /// get node at node_id
-    pub(in crate::graph) fn get_node<B: ?Sized>(&self, node_id: &B) -> Option<&Node<Id>>
+    pub(in crate::graph) fn get_node<B: ?Sized>(&self, node_id: &B) -> Option<&Node<NodeId, EdgeId>>
     where
-        Id: Borrow<B>,
+        NodeId: Borrow<B>,
         B: Identity,
     {
         self.inner.get(node_id)
@@ -64,9 +66,9 @@ impl<Id: Identity> NodeStore<Id> {
     pub(in crate::graph) fn get_node_with_key<B: ?Sized>(
         &self,
         node_id: &B,
-    ) -> Option<(&Id, &Node<Id>)>
+    ) -> Option<(&NodeId, &Node<NodeId, EdgeId>)>
     where
-        Id: Borrow<B>,
+        NodeId: Borrow<B>,
         B: Identity,
     {
         self.inner.get_key_value(node_id)
@@ -76,18 +78,18 @@ impl<Id: Identity> NodeStore<Id> {
     pub(in crate::graph) fn get_node_as_mut<B: ?Sized>(
         &mut self,
         node_id: &B,
-    ) -> Option<&mut Node<Id>>
+    ) -> Option<&mut Node<NodeId, EdgeId>>
     where
-        Id: Borrow<B>,
+        NodeId: Borrow<B>,
         B: Identity,
     {
         self.inner.get_mut(node_id)
     }
 
     /// get incidence edge ids for node at node_id
-    pub(in crate::graph) fn get_incidence_edge_ids<B: ?Sized>(&self, node_id: &B) -> Vec<&Id>
+    pub(in crate::graph) fn get_incidence_edge_ids<B: ?Sized>(&self, node_id: &B) -> Vec<&EdgeId>
     where
-        Id: Borrow<B>,
+        NodeId: Borrow<B>,
         B: Identity,
     {
         match self.inner.get(node_id) {
@@ -103,8 +105,8 @@ impl<Id: Identity> NodeStore<Id> {
     /// get incidence edge ids from the node to top parent and get parent node ids
     pub(in crate::graph) fn get_incidence_edge_ids_from_the_node_id_and_parent_ids(
         &self,
-        node_id: &Id,
-    ) -> (Vec<&Id>, Vec<&Id>) {
+        node_id: &NodeId,
+    ) -> (Vec<&EdgeId>, Vec<&NodeId>) {
         let mut parent_node_ids = Vec::new();
         let mut incidence_edge_ids = Vec::new();
         let mut checker = vec![node_id];
@@ -142,15 +144,15 @@ impl<Id: Identity> NodeStore<Id> {
     /// get incidence edge ids for node and node's parent and grandes and it's grand and ...
     pub(in crate::graph) fn get_incidence_edge_ids_until_limit_parent_from_node<'a>(
         &'a self,
-        node: &'a Node<Id>,
-    ) -> Vec<&'a Id> {
+        node: &'a Node<NodeId, EdgeId>,
+    ) -> Vec<&'a EdgeId> {
         let mut result = Vec::new();
         let mut checker = vec![];
 
         if let Some(parent_id) = node.get_parent() {
             checker.push(parent_id);
         }
-        let incidence_edge_ids: Vec<&Id> = node
+        let incidence_edge_ids: Vec<&EdgeId> = node
             .get_incidences()
             .iter()
             .map(|incidence| incidence.get_edge_id())
@@ -171,7 +173,7 @@ impl<Id: Identity> NodeStore<Id> {
                             if let Some(parent_id) = node.get_parent() {
                                 checker.push(parent_id);
                             }
-                            let incidence_edge_ids: Vec<&Id> = node
+                            let incidence_edge_ids: Vec<&EdgeId> = node
                                 .get_incidences()
                                 .iter()
                                 .map(|incidence| incidence.get_edge_id())
@@ -191,8 +193,8 @@ impl<Id: Identity> NodeStore<Id> {
     /// if return Err(None) then node_ids is empty or node at node_id is not exist.
     pub(in crate::graph) fn get_common_parent_id_or_fail(
         &self,
-        node_ids: &[Id],
-    ) -> Result<Option<&Id>, Option<Id>> {
+        node_ids: &[NodeId],
+    ) -> Result<Option<&NodeId>, Option<NodeId>> {
         if node_ids.is_empty() {
             return Err(None);
         }
@@ -202,13 +204,13 @@ impl<Id: Identity> NodeStore<Id> {
 
         if let Some(node) = self.inner.get(first_id.unwrap()) {
             // parent checker with first child
-            let common_parent: Option<&Id> = node.get_parent().as_ref();
+            let common_parent: Option<&NodeId> = node.get_parent().as_ref();
 
             for node_id in ids_iter {
                 match self.inner.get(node_id) {
                     Some(node) => {
                         if common_parent != node.get_parent().as_ref() {
-                            // need set poped old node, but old node is not exist.
+                            // need set popped old node, but old node is not exist.
                             return Err(Some(node_id.clone()));
                         }
 
@@ -231,9 +233,9 @@ impl<Id: Identity> NodeStore<Id> {
     pub(in crate::graph) fn flatten_parent_ids<'a, B: ?Sized>(
         &'a self,
         node_id: &'a B,
-    ) -> Result<Option<FlattenIds<'a, Id>>, ()>
+    ) -> Result<Option<FlattenIds<'a, NodeId>>, ()>
     where
-        Id: Borrow<B>,
+        NodeId: Borrow<B>,
         B: Identity,
     {
         if let Some((node_id, node)) = self.inner.get_key_value(node_id) {
@@ -274,11 +276,11 @@ impl<Id: Identity> NodeStore<Id> {
     /// If not exist, do flatten with replace children. But, if fail flatten children id then return Err.
     pub(in crate::graph) fn flatten_children_id_with_check<'a>(
         &'a self,
-        parent_id: &'a Option<Id>,
-        node_id: &'a Id,
-        illegal_ids: &[&'a Id],
+        parent_id: &'a Option<NodeId>,
+        node_id: &'a NodeId,
+        illegal_ids: &[&'a NodeId],
         use_root_check: bool,
-    ) -> Result<Option<FlattenIds<'a, Id>>, ()> {
+    ) -> Result<Option<FlattenIds<'a, NodeId>>, ()> {
         if use_root_check {
             if let Some(_parent_id) = parent_id {
                 if _parent_id == node_id {
@@ -311,7 +313,7 @@ impl<Id: Identity> NodeStore<Id> {
                         return Err(());
                     }
 
-                    let mut acc: Vec<&'a Id> = Vec::new();
+                    let mut acc: Vec<&'a NodeId> = Vec::new();
                     for child_node_id in children.iter() {
                         acc.extend(self.rec_flatten_children_id_with_check(
                             parent_id,
@@ -332,10 +334,10 @@ impl<Id: Identity> NodeStore<Id> {
     /// if not exist at node_id, get Node as Vertex
     fn rec_flatten_children_id_with_check<'a>(
         &'a self,
-        parent_id: &'a Option<Id>,
-        node_id: &'a Id,
-        illegal_ids: &[&'a Id],
-    ) -> Result<Vec<&'a Id>, ()> {
+        parent_id: &'a Option<NodeId>,
+        node_id: &'a NodeId,
+        illegal_ids: &[&'a NodeId],
+    ) -> Result<Vec<&'a NodeId>, ()> {
         if let Some(_parent_id) = parent_id {
             if _parent_id == node_id {
                 return Err(());
@@ -350,7 +352,7 @@ impl<Id: Identity> NodeStore<Id> {
             match node {
                 Node::Vertex { .. } => Ok(vec![node_id]),
                 Node::Group { children, .. } => {
-                    let mut result: Vec<&'a Id> = vec![node_id];
+                    let mut result: Vec<&'a NodeId> = vec![node_id];
                     for child_id in children.iter() {
                         result.extend(self.rec_flatten_children_id_with_check(
                             parent_id,
@@ -367,7 +369,9 @@ impl<Id: Identity> NodeStore<Id> {
     }
 
     /// inner store iter
-    pub(in crate::graph) fn inner_store_iter<'a>(&'a self) -> Iter<'a, Id, Node<Id>> {
+    pub(in crate::graph) fn inner_store_iter<'a>(
+        &'a self,
+    ) -> Iter<'a, NodeId, Node<NodeId, EdgeId>> {
         self.inner.iter()
     }
 
@@ -378,14 +382,18 @@ impl<Id: Identity> NodeStore<Id> {
     /// insert node and get old node
     pub(in crate::graph) fn insert_node(
         &mut self,
-        node_id: Id,
-        node: Node<Id>,
-    ) -> Option<Node<Id>> {
+        node_id: NodeId,
+        node: Node<NodeId, EdgeId>,
+    ) -> Option<Node<NodeId, EdgeId>> {
         self.inner.insert(node_id, node)
     }
 
     /// replace node's parent id for node_ids
-    pub(in crate::graph) fn replace_parent_at_ids(&mut self, parent_id: Id, node_ids: &[Id]) {
+    pub(in crate::graph) fn replace_parent_at_ids(
+        &mut self,
+        parent_id: NodeId,
+        node_ids: &[NodeId],
+    ) {
         for node_id in node_ids.iter() {
             if let Some(node) = self.inner.get_mut(node_id) {
                 node.set_parent(parent_id.clone());
@@ -397,11 +405,11 @@ impl<Id: Identity> NodeStore<Id> {
     pub(in crate::graph) fn replace_children_id_to_id<B: ?Sized>(
         &mut self,
         target_id: &B,
-        from_ids: &[Id],
-        to_id: Id,
-    ) -> Option<&Node<Id>>
+        from_ids: &[NodeId],
+        to_id: NodeId,
+    ) -> Option<&Node<NodeId, EdgeId>>
     where
-        Id: Borrow<B>,
+        NodeId: Borrow<B>,
         B: Identity,
     {
         self.inner.get_mut(target_id).map(|parent| {
@@ -409,7 +417,7 @@ impl<Id: Identity> NodeStore<Id> {
             parent.add_child(to_id);
 
             // remove mutable
-            let parent: &Node<Id> = parent;
+            let parent: &Node<NodeId, EdgeId> = parent;
             parent
         })
     }
@@ -417,8 +425,8 @@ impl<Id: Identity> NodeStore<Id> {
     /// add incidence for the node
     pub(in crate::graph) fn add_incidence_to_already_exist_node(
         &mut self,
-        node_id: Id,
-        incidence: Incidence<Id>,
+        node_id: NodeId,
+        incidence: Incidence<NodeId, EdgeId>,
     ) {
         let node = self.inner.get_mut(&node_id).expect(&format!(
             "Already exist node at node id {:?}. Why not exist?",
@@ -430,7 +438,7 @@ impl<Id: Identity> NodeStore<Id> {
     /// add incidence for each node
     pub(in crate::graph) fn add_incidences_each_already_exist_node(
         &mut self,
-        node_incidences: Vec<(Id, Incidence<Id>)>,
+        node_incidences: Vec<(NodeId, Incidence<NodeId, EdgeId>)>,
     ) {
         for (node_id, incidences) in node_incidences.into_iter() {
             self.add_incidence_to_already_exist_node(node_id, incidences);
@@ -440,9 +448,9 @@ impl<Id: Identity> NodeStore<Id> {
     /// replace incidence for the node
     pub(in crate::graph) fn replace_incidence_for_already_exist_node(
         &mut self,
-        node_id: Id,
-        incidence: Incidence<Id>,
-        same_edge_ids: &[Id],
+        node_id: NodeId,
+        incidence: Incidence<NodeId, EdgeId>,
+        same_edge_ids: &[EdgeId],
     ) {
         let node = self.inner.get_mut(&node_id).expect(&format!(
             "Already exist node at node id {:?}. Why not exist?",
@@ -456,8 +464,8 @@ impl<Id: Identity> NodeStore<Id> {
     /// replace same edge incidence for each node
     pub(in crate::graph) fn replace_incidences_each_already_exist_node(
         &mut self,
-        node_incidences: Vec<(Id, Incidence<Id>)>,
-        same_edge_ids: &[Id],
+        node_incidences: Vec<(NodeId, Incidence<NodeId, EdgeId>)>,
+        same_edge_ids: &[EdgeId],
     ) {
         for (node_id, incidences) in node_incidences.into_iter() {
             self.replace_incidence_for_already_exist_node(node_id, incidences, same_edge_ids);
@@ -485,9 +493,12 @@ impl<Id: Identity> NodeStore<Id> {
     }
 
     /// remove and get node at node_id
-    pub(in crate::graph) fn remove<B: ?Sized>(&mut self, node_id: &B) -> Option<Node<Id>>
+    pub(in crate::graph) fn remove<B: ?Sized>(
+        &mut self,
+        node_id: &B,
+    ) -> Option<Node<NodeId, EdgeId>>
     where
-        Id: Borrow<B>,
+        NodeId: Borrow<B>,
         B: Identity,
     {
         self.inner.remove(node_id)
@@ -497,9 +508,9 @@ impl<Id: Identity> NodeStore<Id> {
     pub(in crate::graph) fn remove_with_get_id<B: ?Sized>(
         &mut self,
         node_id: &B,
-    ) -> Option<(Id, Node<Id>)>
+    ) -> Option<(NodeId, Node<NodeId, EdgeId>)>
     where
-        Id: Borrow<B>,
+        NodeId: Borrow<B>,
         B: Identity,
     {
         self.inner.remove_entry(node_id)
@@ -509,26 +520,31 @@ impl<Id: Identity> NodeStore<Id> {
     pub(in crate::graph) fn remove_children_id<B: ?Sized>(
         &mut self,
         target_id: &B,
-        from_ids: &[Id],
-    ) -> Option<&Node<Id>>
+        from_ids: &[NodeId],
+    ) -> Option<&Node<NodeId, EdgeId>>
     where
-        Id: Borrow<B>,
+        NodeId: Borrow<B>,
         B: Identity,
     {
         self.inner.get_mut(target_id).map(|parent| {
             parent.remove_children(from_ids);
 
             // remove mutable
-            let parent: &Node<Id> = parent;
+            let parent: &Node<NodeId, EdgeId> = parent;
             parent
         })
     }
 
     /// Remove incidence edge whose edge id is in specified.
-    pub(in crate::graph) fn remove_edges_by_id<B: ?Sized>(&mut self, node_id: &B, edge_id: &B)
-    where
-        Id: Borrow<B>,
+    pub(in crate::graph) fn remove_edges_by_id<B: ?Sized, C: ?Sized>(
+        &mut self,
+        node_id: &B,
+        edge_id: &C,
+    ) where
+        NodeId: Borrow<B>,
         B: Identity,
+        EdgeId: Borrow<C>,
+        C: Identity,
     {
         if let Some(node) = self.inner.get_mut(node_id) {
             node.remove_incidence_by_id(edge_id);
@@ -536,7 +552,10 @@ impl<Id: Identity> NodeStore<Id> {
     }
 
     /// Remove incidence edge whose edge ids is in specified.
-    pub(in crate::graph) fn remove_edges_by_ids(&mut self, removed_node_id_edge_id: &[(Id, Id)]) {
+    pub(in crate::graph) fn remove_edges_by_ids(
+        &mut self,
+        removed_node_id_edge_id: &[(NodeId, EdgeId)],
+    ) {
         for (node_id, edge_id) in removed_node_id_edge_id.iter() {
             self.remove_edges_by_id(node_id, edge_id);
         }

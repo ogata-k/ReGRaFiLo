@@ -16,54 +16,56 @@ pub mod helper {
     use crate::graph::{model, Graph};
     use crate::util::Identity;
 
-    /// helper for handling result data
-    pub trait GraphItemExistedResultExt<Id: Identity> {
-        // ---
-        // node
-        // ---
+    /// helper for handling existed node
+    pub trait NodeExistedResultExt<NodeId: Identity, EdgeId: Identity> {
         /// If old node exist, then return Err(GraphError::AlreadyNodeExist). Others same.
-        fn old_node_exist_to_error(self) -> Result<(), GraphError<Id>>;
+        fn old_node_exist_to_error(self) -> Result<(), GraphError<NodeId, EdgeId>>;
         /// If old node exist, then return Ok(Some(model::Node))
         fn with_old_node_model<'a>(
             self,
-            graph: &'a Graph<Id>,
-        ) -> Result<Option<(Id, model::Node<'a, Id>)>, GraphError<Id>>;
+            graph: &'a Graph<NodeId, EdgeId>,
+        ) -> Result<Option<(NodeId, model::Node<'a, NodeId, EdgeId>)>, GraphError<NodeId, EdgeId>>;
         /// call callback when old node exist
-        fn call_if_old_node_exist<F>(self, callback: F) -> Result<(), GraphError<Id>>
+        fn call_if_old_node_exist<F>(self, callback: F) -> Result<(), GraphError<NodeId, EdgeId>>
         where
-            F: FnOnce(Id) -> Result<(), GraphError<Id>>;
+            F: FnOnce(NodeId) -> Result<(), GraphError<NodeId, EdgeId>>;
         /// map if inserted node. If op's arg is None then create just time else already exist.
-        fn map_if_node_inserted<U, F>(self, op: F) -> Result<U, GraphError<Id>>
+        fn map_if_node_inserted<U, F>(self, op: F) -> Result<U, GraphError<NodeId, EdgeId>>
         where
-            F: FnOnce(Option<Id>) -> Result<U, GraphError<Id>>;
+            F: FnOnce(Option<NodeId>) -> Result<U, GraphError<NodeId, EdgeId>>;
+    }
 
-        // ---
-        // edge
-        // ---
+    /// helper for handling existed edge
+    pub trait EdgeExistedResultExt<NodeId: Identity, EdgeId: Identity> {
         /// If old edge exist, then return Err(GraphError::AlreadyEdgeExist). Others same.
-        fn old_edge_exist_to_error(self) -> Result<(), GraphError<Id>>;
+        fn old_edge_exist_to_error(self) -> Result<(), GraphError<NodeId, EdgeId>>;
         /// If old edge exist, then return Ok(Some(model::Edge))
         fn with_old_edge_model<'a>(
             self,
-            graph: &'a Graph<Id>,
-        ) -> Result<Option<(Id, model::Edge<'a, Id>)>, GraphError<Id>>;
+            graph: &'a Graph<NodeId, EdgeId>,
+        ) -> Result<Option<(EdgeId, model::Edge<'a, NodeId, EdgeId>)>, GraphError<NodeId, EdgeId>>;
         /// call callback when old edge exist
-        fn call_if_old_edge_exist<F>(self, callback: F) -> Result<(), GraphError<Id>>
+        fn call_if_old_edge_exist<F>(self, callback: F) -> Result<(), GraphError<NodeId, EdgeId>>
         where
-            F: FnOnce(Id) -> Result<(), GraphError<Id>>;
+            F: FnOnce(EdgeId) -> Result<(), GraphError<NodeId, EdgeId>>;
         /// map if inserted edge. If op's arg is None then create just time else already exist.
-        fn map_if_edge_inserted<U, F>(self, op: F) -> Result<U, GraphError<Id>>
+        fn map_if_edge_inserted<U, F>(self, op: F) -> Result<U, GraphError<NodeId, EdgeId>>
         where
-            F: FnOnce(Option<Id>) -> Result<U, GraphError<Id>>;
+            F: FnOnce(Option<EdgeId>) -> Result<U, GraphError<NodeId, EdgeId>>;
     }
 
     /// If this value is Ok(Some(id)), then old graph item exist at the id.
-    pub type GraphItemExistedResult<Id> = Result<Option<Id>, GraphError<Id>>;
-    impl<Id: Identity> GraphItemExistedResultExt<Id> for GraphItemExistedResult<Id> {
+    pub type GraphItemExistedResult<Id: Identity, NodeId: Identity, EdgeId: Identity> =
+        Result<Option<Id>, GraphError<NodeId, EdgeId>>;
+
+    impl<NodeId: Identity, EdgeId: Identity> NodeExistedResultExt<NodeId, EdgeId>
+        for GraphItemExistedResult<NodeId, NodeId, EdgeId>
+    {
         fn with_old_node_model<'a>(
             self,
-            graph: &'a Graph<Id>,
-        ) -> Result<Option<(Id, model::Node<'a, Id>)>, GraphError<Id>> {
+            graph: &'a Graph<NodeId, EdgeId>,
+        ) -> Result<Option<(NodeId, model::Node<'a, NodeId, EdgeId>)>, GraphError<NodeId, EdgeId>>
+        {
             self.map_if_node_inserted(|node_id| match node_id {
                 None => Ok(None),
                 Some(_node_id) => {
@@ -76,13 +78,13 @@ pub mod helper {
             })
         }
 
-        fn old_node_exist_to_error(self) -> Result<(), GraphError<Id>> {
+        fn old_node_exist_to_error(self) -> Result<(), GraphError<NodeId, EdgeId>> {
             self.and_then(old_node_exist_to_error)
         }
 
-        fn call_if_old_node_exist<F>(self, callback: F) -> Result<(), GraphError<Id>>
+        fn call_if_old_node_exist<F>(self, callback: F) -> Result<(), GraphError<NodeId, EdgeId>>
         where
-            F: FnOnce(Id) -> Result<(), GraphError<Id>>,
+            F: FnOnce(NodeId) -> Result<(), GraphError<NodeId, EdgeId>>,
         {
             match self {
                 Ok(None) => Ok(()),
@@ -91,24 +93,29 @@ pub mod helper {
             }
         }
 
-        fn map_if_node_inserted<U, F>(self, op: F) -> Result<U, GraphError<Id>>
+        fn map_if_node_inserted<U, F>(self, op: F) -> Result<U, GraphError<NodeId, EdgeId>>
         where
-            F: FnOnce(Option<Id>) -> Result<U, GraphError<Id>>,
+            F: FnOnce(Option<NodeId>) -> Result<U, GraphError<NodeId, EdgeId>>,
         {
             match self {
                 Ok(s) => op(s),
                 Err(e) => Err(e),
             }
         }
+    }
 
-        fn old_edge_exist_to_error(self) -> Result<(), GraphError<Id>> {
+    impl<NodeId: Identity, EdgeId: Identity> EdgeExistedResultExt<NodeId, EdgeId>
+        for GraphItemExistedResult<EdgeId, NodeId, EdgeId>
+    {
+        fn old_edge_exist_to_error(self) -> Result<(), GraphError<NodeId, EdgeId>> {
             self.and_then(old_edge_exist_to_error)
         }
 
         fn with_old_edge_model<'a>(
             self,
-            graph: &'a Graph<Id>,
-        ) -> Result<Option<(Id, model::Edge<'a, Id>)>, GraphError<Id>> {
+            graph: &'a Graph<NodeId, EdgeId>,
+        ) -> Result<Option<(EdgeId, model::Edge<'a, NodeId, EdgeId>)>, GraphError<NodeId, EdgeId>>
+        {
             self.map_if_edge_inserted(|edge_id| match edge_id {
                 None => Ok(None),
                 Some(_edge_id) => {
@@ -121,9 +128,9 @@ pub mod helper {
             })
         }
 
-        fn call_if_old_edge_exist<F>(self, callback: F) -> Result<(), GraphError<Id>>
+        fn call_if_old_edge_exist<F>(self, callback: F) -> Result<(), GraphError<NodeId, EdgeId>>
         where
-            F: FnOnce(Id) -> Result<(), GraphError<Id>>,
+            F: FnOnce(EdgeId) -> Result<(), GraphError<NodeId, EdgeId>>,
         {
             match self {
                 Ok(None) => Ok(()),
@@ -132,9 +139,9 @@ pub mod helper {
             }
         }
 
-        fn map_if_edge_inserted<U, F>(self, op: F) -> Result<U, GraphError<Id>>
+        fn map_if_edge_inserted<U, F>(self, op: F) -> Result<U, GraphError<NodeId, EdgeId>>
         where
-            F: FnOnce(Option<Id>) -> Result<U, GraphError<Id>>,
+            F: FnOnce(Option<EdgeId>) -> Result<U, GraphError<NodeId, EdgeId>>,
         {
             match self {
                 Ok(s) => op(s),
@@ -148,9 +155,9 @@ pub mod helper {
     /// e.g.
     /// let result: Result<Option<Id>, GraphError>;  // result for create new node
     /// result.and_then(old_node_exist_to_error)?;
-    pub fn old_node_exist_to_error<Id: Identity>(
-        old_node_exist: Option<Id>,
-    ) -> Result<(), GraphError<Id>> {
+    pub fn old_node_exist_to_error<NodeId: Identity, EdgeId: Identity>(
+        old_node_exist: Option<NodeId>,
+    ) -> Result<(), GraphError<NodeId, EdgeId>> {
         match old_node_exist {
             Some(node_id) => {
                 // old node exist
@@ -165,9 +172,9 @@ pub mod helper {
     /// e.g.
     /// let result: Result<Option<Id>, GraphError>;  // result for create new edge
     /// result.and_then(old_edge_exist_to_error)?;
-    pub fn old_edge_exist_to_error<Id: Identity>(
-        old_edge_exist: Option<Id>,
-    ) -> Result<(), GraphError<Id>> {
+    pub fn old_edge_exist_to_error<NodeId: Identity, EdgeId: Identity>(
+        old_edge_exist: Option<EdgeId>,
+    ) -> Result<(), GraphError<NodeId, EdgeId>> {
         match old_edge_exist {
             Some(edge_id) => {
                 // old edge exist
@@ -191,20 +198,21 @@ use crate::util::Identity;
 pub use config::*;
 use helper::*;
 use std::collections::btree_map::Entry;
+use std::marker::PhantomData;
 
 /// graph without layout
 #[derive(Debug, Eq, PartialEq, Clone)]
-pub struct Graph<Id: Identity> {
+pub struct Graph<NodeId: Identity, EdgeId: Identity> {
     config: GraphConfig,
-    nodes: NodeStore<Id>,
-    edges: EdgeStore<Id>,
+    nodes: NodeStore<NodeId, EdgeId>,
+    edges: EdgeStore<NodeId, EdgeId>,
 }
 
-impl<Id: Identity> fmt::Display for Graph<Id> {
+impl<NodeId: Identity, EdgeId: Identity> fmt::Display for Graph<NodeId, EdgeId> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.write_fmt(format_args!(
             "{}{{config: {}, nodes: {}, edges: {}}}",
-            self.config.get_type(),
+            self.config.get_graph_type(),
             self.config,
             self.nodes,
             self.edges
@@ -212,7 +220,7 @@ impl<Id: Identity> fmt::Display for Graph<Id> {
     }
 }
 
-impl<Id: Identity> Graph<Id> {
+impl<NodeId: Identity, EdgeId: Identity> Graph<NodeId, EdgeId> {
     // ---
     // constructor
     // ---
@@ -229,9 +237,9 @@ impl<Id: Identity> Graph<Id> {
     /// Generate incidences data from the edge with assume that we already check support edge.
     fn generate_incidences_without_check(
         &self,
-        edge_id: &Id,
-        edge: &store::Edge<Id>,
-    ) -> Vec<(Id, store::Incidence<Id>)> {
+        edge_id: &EdgeId,
+        edge: &store::Edge<NodeId, EdgeId>,
+    ) -> Vec<(NodeId, store::Incidence<NodeId, EdgeId>)> {
         let mut result = Vec::new();
         // No check support incidence with config
         match &edge {
@@ -305,8 +313,8 @@ impl<Id: Identity> Graph<Id> {
     /// get incidence node ids to edges which incidence to the node which is between the node_id and top parent and get parent node ids
     fn get_incidence_node_ids_from_self_and_parent_node_ids(
         &self,
-        node_id: &Id,
-    ) -> (Vec<&Id>, Vec<&Id>) {
+        node_id: &NodeId,
+    ) -> (Vec<&NodeId>, Vec<&NodeId>) {
         let (incidence_edge_ids_from_self, parent_node_ids) = self
             .nodes
             .get_incidence_edge_ids_from_the_node_id_and_parent_ids(node_id);
@@ -318,9 +326,9 @@ impl<Id: Identity> Graph<Id> {
     }
 
     /// get node at node_id
-    pub fn get_node<'a, B: ?Sized>(&'a self, node_id: &B) -> Option<model::Node<'a, Id>>
+    pub fn get_node<'a, B: ?Sized>(&'a self, node_id: &B) -> Option<model::Node<'a, NodeId, EdgeId>>
     where
-        Id: Borrow<B>,
+        NodeId: Borrow<B>,
         B: Identity,
     {
         self.nodes.get_node(node_id).map(|node| node.as_model())
@@ -330,9 +338,9 @@ impl<Id: Identity> Graph<Id> {
     pub fn get_vertex_node<'a, B: ?Sized>(
         &'a self,
         node_id: &B,
-    ) -> Option<model::VertexNode<'a, Id>>
+    ) -> Option<model::VertexNode<'a, NodeId, EdgeId>>
     where
-        Id: Borrow<B>,
+        NodeId: Borrow<B>,
         B: Identity,
     {
         self.nodes
@@ -342,9 +350,12 @@ impl<Id: Identity> Graph<Id> {
     }
 
     /// get node group at node_id
-    pub fn get_group_node<'a, B: ?Sized>(&'a self, node_id: &B) -> Option<model::GroupNode<'a, Id>>
+    pub fn get_group_node<'a, B: ?Sized>(
+        &'a self,
+        node_id: &B,
+    ) -> Option<model::GroupNode<'a, NodeId, EdgeId>>
     where
-        Id: Borrow<B>,
+        NodeId: Borrow<B>,
         B: Identity,
     {
         self.nodes
@@ -354,17 +365,17 @@ impl<Id: Identity> Graph<Id> {
     }
 
     /// to iterator for node
-    pub fn node_iter<'a>(&'a self) -> NodeIter<'a, Id> {
+    pub fn node_iter<'a>(&'a self) -> NodeIter<'a, NodeId, EdgeId> {
         NodeIter::new(&self.nodes)
     }
 
     /// to iterator for node point
-    pub fn vertex_node_iter<'a>(&'a self) -> VertexNodeIter<'a, Id> {
+    pub fn vertex_node_iter<'a>(&'a self) -> VertexNodeIter<'a, NodeId, EdgeId> {
         VertexNodeIter::new(&self.nodes)
     }
 
     /// to iterator for node group
-    pub fn group_node_iter<'a>(&'a self) -> GroupNodeIter<'a, Id> {
+    pub fn group_node_iter<'a>(&'a self) -> GroupNodeIter<'a, NodeId, EdgeId> {
         GroupNodeIter::new(&self.nodes)
     }
 
@@ -372,9 +383,9 @@ impl<Id: Identity> Graph<Id> {
     pub fn group_child_node_iter<'a, B: ?Sized>(
         &'a self,
         group_id: Option<&'a B>,
-    ) -> GroupChildNodeIter<'a, Id>
+    ) -> GroupChildNodeIter<'a, NodeId, EdgeId>
     where
-        Id: Borrow<B>,
+        NodeId: Borrow<B>,
         B: Identity,
     {
         GroupChildNodeIter::new(group_id, &self.nodes)
@@ -385,14 +396,14 @@ impl<Id: Identity> Graph<Id> {
     // ---
 
     /// get edge ids which have same incidence nodes
-    fn get_same_edge_ids(&self, edge: &Edge<Id>) -> Vec<Id> {
+    fn get_same_edge_ids(&self, edge: &Edge<NodeId, EdgeId>) -> Vec<EdgeId> {
         match edge.get_incidence_node_ids_as_ref().first() {
             None => vec![],
             Some(node_id) => {
                 return match self.nodes.get_node(node_id) {
                     None => Vec::new(),
                     Some(node) => {
-                        let will_check_edge_ids: Vec<&Id> = node
+                        let will_check_edge_ids: Vec<&EdgeId> = node
                             .get_incidences()
                             .iter()
                             .map(|incidence| incidence.get_edge_id())
@@ -415,9 +426,9 @@ impl<Id: Identity> Graph<Id> {
     }
 
     /// get edge at edge_id
-    pub fn get_edge<'a, B: ?Sized>(&'a self, edge_id: &B) -> Option<model::Edge<'a, Id>>
+    pub fn get_edge<'a, B: ?Sized>(&'a self, edge_id: &B) -> Option<model::Edge<'a, NodeId, EdgeId>>
     where
-        Id: Borrow<B>,
+        EdgeId: Borrow<B>,
         B: Identity,
     {
         self.edges.get_edge(edge_id).map(|edge| edge.as_model())
@@ -427,9 +438,9 @@ impl<Id: Identity> Graph<Id> {
     pub fn get_undirected_edge<'a, B: ?Sized>(
         &'a self,
         edge_id: &B,
-    ) -> Option<model::UndirectedEdge<'a, Id>>
+    ) -> Option<model::UndirectedEdge<'a, NodeId, EdgeId>>
     where
-        Id: Borrow<B>,
+        EdgeId: Borrow<B>,
         B: Identity,
     {
         self.edges
@@ -442,9 +453,9 @@ impl<Id: Identity> Graph<Id> {
     pub fn get_directed_edge<'a, B: ?Sized>(
         &'a self,
         edge_id: &B,
-    ) -> Option<model::DirectedEdge<'a, Id>>
+    ) -> Option<model::DirectedEdge<'a, NodeId, EdgeId>>
     where
-        Id: Borrow<B>,
+        EdgeId: Borrow<B>,
         B: Identity,
     {
         self.edges
@@ -454,9 +465,12 @@ impl<Id: Identity> Graph<Id> {
     }
 
     /// get mixed edge at edge_id
-    pub fn get_mixed_edge<'a, B: ?Sized>(&'a self, edge_id: &B) -> Option<model::MixedEdge<'a, Id>>
+    pub fn get_mixed_edge<'a, B: ?Sized>(
+        &'a self,
+        edge_id: &B,
+    ) -> Option<model::MixedEdge<'a, NodeId, EdgeId>>
     where
-        Id: Borrow<B>,
+        EdgeId: Borrow<B>,
         B: Identity,
     {
         self.edges
@@ -469,9 +483,9 @@ impl<Id: Identity> Graph<Id> {
     pub fn get_undirected_hyper_edge<'a, B: ?Sized>(
         &'a self,
         edge_id: &B,
-    ) -> Option<model::UndirectedHyperEdge<'a, Id>>
+    ) -> Option<model::UndirectedHyperEdge<'a, NodeId, EdgeId>>
     where
-        Id: Borrow<B>,
+        EdgeId: Borrow<B>,
         B: Identity,
     {
         self.edges
@@ -484,9 +498,9 @@ impl<Id: Identity> Graph<Id> {
     pub fn get_directed_hyper_edge<'a, B: ?Sized>(
         &'a self,
         edge_id: &B,
-    ) -> Option<model::DirectedHyperEdge<'a, Id>>
+    ) -> Option<model::DirectedHyperEdge<'a, NodeId, EdgeId>>
     where
-        Id: Borrow<B>,
+        EdgeId: Borrow<B>,
         B: Identity,
     {
         self.edges
@@ -499,9 +513,9 @@ impl<Id: Identity> Graph<Id> {
     pub fn get_mixed_hyper_edge<'a, B: ?Sized>(
         &'a self,
         edge_id: &B,
-    ) -> Option<model::MixedHyperEdge<'a, Id>>
+    ) -> Option<model::MixedHyperEdge<'a, NodeId, EdgeId>>
     where
-        Id: Borrow<B>,
+        EdgeId: Borrow<B>,
         B: Identity,
     {
         self.edges
@@ -511,37 +525,37 @@ impl<Id: Identity> Graph<Id> {
     }
 
     /// to iterator for edge
-    pub fn edge_iter<'a>(&'a self) -> EdgeIter<'a, Id> {
+    pub fn edge_iter<'a>(&'a self) -> EdgeIter<'a, NodeId, EdgeId> {
         EdgeIter::new(&self.edges)
     }
 
     /// to iterator for undirected edge
-    pub fn undirected_edge_iter<'a>(&'a self) -> UndirectedEdgeIter<'a, Id> {
+    pub fn undirected_edge_iter<'a>(&'a self) -> UndirectedEdgeIter<'a, NodeId, EdgeId> {
         UndirectedEdgeIter::new(&self.edges)
     }
 
     /// to iterator for directed edge
-    pub fn directed_edge_iter<'a>(&'a self) -> DirectedEdgeIter<'a, Id> {
+    pub fn directed_edge_iter<'a>(&'a self) -> DirectedEdgeIter<'a, NodeId, EdgeId> {
         DirectedEdgeIter::new(&self.edges)
     }
 
     /// to iterator for undirected of directed edge
-    pub fn mixed_edge_iter<'a>(&'a self) -> MixedEdgeIter<'a, Id> {
+    pub fn mixed_edge_iter<'a>(&'a self) -> MixedEdgeIter<'a, NodeId, EdgeId> {
         MixedEdgeIter::new(&self.edges)
     }
 
     /// to iterator for undirected hyper edge
-    pub fn undirected_hyper_edge_iter<'a>(&'a self) -> UndirectedHyperEdgeIter<'a, Id> {
+    pub fn undirected_hyper_edge_iter<'a>(&'a self) -> UndirectedHyperEdgeIter<'a, NodeId, EdgeId> {
         UndirectedHyperEdgeIter::new(&self.edges)
     }
 
     /// to iterator for directed hyper edge
-    pub fn directed_hyper_edge_iter<'a>(&'a self) -> DirectedHyperEdgeIter<'a, Id> {
+    pub fn directed_hyper_edge_iter<'a>(&'a self) -> DirectedHyperEdgeIter<'a, NodeId, EdgeId> {
         DirectedHyperEdgeIter::new(&self.edges)
     }
 
     /// to iterator for undirected or directed hyper edge
-    pub fn mixed_hyper_edge_iter<'a>(&'a self) -> MixedHyperEdgeIter<'a, Id> {
+    pub fn mixed_hyper_edge_iter<'a>(&'a self) -> MixedHyperEdgeIter<'a, NodeId, EdgeId> {
         MixedHyperEdgeIter::new(&self.edges)
     }
 
@@ -557,9 +571,9 @@ impl<Id: Identity> Graph<Id> {
     /// If already exist at the id, then will not vertex node and return the node_id.
     pub fn add_vertex_node(
         &mut self,
-        parent_id: Option<Id>,
-        node_id: Id,
-    ) -> GraphItemExistedResult<Id> {
+        parent_id: Option<NodeId>,
+        node_id: NodeId,
+    ) -> GraphItemExistedResult<NodeId, NodeId, EdgeId> {
         self.add_vertex_node_with_weight(parent_id, node_id, 1)
     }
 
@@ -567,10 +581,10 @@ impl<Id: Identity> Graph<Id> {
     /// If already exist at the id, then will not vertex node and return the node_id.
     pub fn add_vertex_node_with_weight(
         &mut self,
-        parent_id: Option<Id>,
-        node_id: Id,
+        parent_id: Option<NodeId>,
+        node_id: NodeId,
         weight: i16,
-    ) -> GraphItemExistedResult<Id> {
+    ) -> GraphItemExistedResult<NodeId, NodeId, EdgeId> {
         self.add_vertex_node_with_weight_if_old_not_exist(parent_id, node_id, weight)
     }
 
@@ -578,10 +592,10 @@ impl<Id: Identity> Graph<Id> {
     /// If already exist at the id, then will not vertex node and return the node_id.
     fn add_vertex_node_with_weight_if_old_not_exist(
         &mut self,
-        parent_id: Option<Id>,
-        node_id: Id,
+        parent_id: Option<NodeId>,
+        node_id: NodeId,
         weight: i16,
-    ) -> GraphItemExistedResult<Id> {
+    ) -> GraphItemExistedResult<NodeId, NodeId, EdgeId> {
         // check old exist
         if self.nodes.get_node(&node_id).is_some() {
             // old node exist
@@ -626,10 +640,10 @@ impl<Id: Identity> Graph<Id> {
     /// If already exist at the id, then will not create group node and return the node id.
     pub fn add_group_node(
         &mut self,
-        parent_id: Option<Id>,
-        node_id: Id,
-        children: Vec<Id>,
-    ) -> GraphItemExistedResult<Id> {
+        parent_id: Option<NodeId>,
+        node_id: NodeId,
+        children: Vec<NodeId>,
+    ) -> GraphItemExistedResult<NodeId, NodeId, EdgeId> {
         self.add_group_node_with_weight(parent_id, node_id, 1, children)
     }
 
@@ -637,11 +651,11 @@ impl<Id: Identity> Graph<Id> {
     /// If already exist at the id, then will not create group node and return the node id.
     pub fn add_group_node_with_weight(
         &mut self,
-        parent_id: Option<Id>,
-        node_id: Id,
+        parent_id: Option<NodeId>,
+        node_id: NodeId,
         weight: i16,
-        children: Vec<Id>,
-    ) -> GraphItemExistedResult<Id> {
+        children: Vec<NodeId>,
+    ) -> GraphItemExistedResult<NodeId, NodeId, EdgeId> {
         self.add_group_node_with_weight_if_old_not_exist(parent_id, node_id, weight, children)
     }
 
@@ -650,11 +664,11 @@ impl<Id: Identity> Graph<Id> {
     /// If use the mode to create not exist vertex node and children is available, create not exist child as vertex node.
     fn add_group_node_with_weight_if_old_not_exist(
         &mut self,
-        parent_id: Option<Id>,
-        node_id: Id,
+        parent_id: Option<NodeId>,
+        node_id: NodeId,
         weight: i16,
-        child_node_ids: Vec<Id>,
-    ) -> GraphItemExistedResult<Id> {
+        child_node_ids: Vec<NodeId>,
+    ) -> GraphItemExistedResult<NodeId, NodeId, EdgeId> {
         // check old exist
         if self.nodes.get_node(&node_id).is_some() {
             // old node exist
@@ -689,7 +703,7 @@ impl<Id: Identity> Graph<Id> {
         let not_exist_child_ids =
             self.check_children_can_be_made_group(&parent_id, &node_id, &child_node_ids)?;
         if !not_exist_child_ids.is_empty() && !config.can_create_not_exist_vertex_node() {
-            return Err(GraphError::NotExistChildrenCannotMakeEdge(
+            return Err(GraphError::NotExistChildrenCannotMakeAsGroupChild(
                 node_id,
                 not_exist_child_ids,
             ));
@@ -750,10 +764,10 @@ impl<Id: Identity> Graph<Id> {
         &mut self,
         node_id: &B,
         new_weight: F,
-    ) -> Result<(), GraphError<Id>>
+    ) -> Result<(), GraphError<NodeId, EdgeId>>
     where
-        Id: Borrow<B>,
-        B: Identity + ToOwned<Owned = Id>,
+        NodeId: Borrow<B>,
+        B: Identity + ToOwned<Owned = NodeId>,
         F: FnOnce(model::NodeKind, i16) -> i16,
     {
         return match self.nodes.get_node_as_mut(node_id) {
@@ -778,10 +792,10 @@ impl<Id: Identity> Graph<Id> {
     /// If use the mode to create not exist vertex node and children is available, create not exist incidence nodes as vertex node.
     pub fn add_undirected_edge(
         &mut self,
-        edge_id: Id,
-        node_id1: Id,
-        node_id2: Id,
-    ) -> GraphItemExistedResult<Id> {
+        edge_id: EdgeId,
+        node_id1: NodeId,
+        node_id2: NodeId,
+    ) -> GraphItemExistedResult<EdgeId, NodeId, EdgeId> {
         self.add_undirected_edge_with_weight(edge_id, node_id1, node_id2, 1)
     }
 
@@ -790,11 +804,11 @@ impl<Id: Identity> Graph<Id> {
     /// If use the mode to create not exist vertex node and children is available, create not exist incidence nodes as vertex node.
     pub fn add_undirected_edge_with_weight(
         &mut self,
-        edge_id: Id,
-        node_id1: Id,
-        node_id2: Id,
+        edge_id: EdgeId,
+        node_id1: NodeId,
+        node_id2: NodeId,
         weight: i16,
-    ) -> GraphItemExistedResult<Id> {
+    ) -> GraphItemExistedResult<EdgeId, NodeId, EdgeId> {
         self.add_edge_with_weight_if_old_not_exist(
             edge_id,
             Edge::undirected_with_weight(node_id1, node_id2, weight),
@@ -806,10 +820,10 @@ impl<Id: Identity> Graph<Id> {
     /// If use the mode to create not exist vertex node and children is available, create not exist incidence nodes as vertex node.
     pub fn add_directed_edge(
         &mut self,
-        edge_id: Id,
-        source_node_id: Id,
-        target_node_id: Id,
-    ) -> GraphItemExistedResult<Id> {
+        edge_id: EdgeId,
+        source_node_id: NodeId,
+        target_node_id: NodeId,
+    ) -> GraphItemExistedResult<EdgeId, NodeId, EdgeId> {
         self.add_directed_edge_with_weight(edge_id, source_node_id, target_node_id, 1)
     }
 
@@ -818,11 +832,11 @@ impl<Id: Identity> Graph<Id> {
     /// If use the mode to create not exist vertex node and children is available, create not exist incidence nodes as vertex node.
     pub fn add_directed_edge_with_weight(
         &mut self,
-        edge_id: Id,
-        source_node_id: Id,
-        target_node_id: Id,
+        edge_id: EdgeId,
+        source_node_id: NodeId,
+        target_node_id: NodeId,
         weight: i16,
-    ) -> GraphItemExistedResult<Id> {
+    ) -> GraphItemExistedResult<EdgeId, NodeId, EdgeId> {
         self.add_edge_with_weight_if_old_not_exist(
             edge_id,
             Edge::directed_with_weight(source_node_id, target_node_id, weight),
@@ -834,9 +848,9 @@ impl<Id: Identity> Graph<Id> {
     /// If use the mode to create not exist vertex node and children is available, create not exist incidence nodes as vertex node.
     pub fn add_undirected_hyper_edge(
         &mut self,
-        edge_id: Id,
-        node_ids: Vec<Id>,
-    ) -> GraphItemExistedResult<Id> {
+        edge_id: EdgeId,
+        node_ids: Vec<NodeId>,
+    ) -> GraphItemExistedResult<EdgeId, NodeId, EdgeId> {
         self.add_undirected_hyper_edge_with_weight(edge_id, node_ids, 1)
     }
 
@@ -845,10 +859,10 @@ impl<Id: Identity> Graph<Id> {
     /// If use the mode to create not exist vertex node and children is available, create not exist incidence nodes as vertex node.
     pub fn add_undirected_hyper_edge_with_weight(
         &mut self,
-        edge_id: Id,
-        node_ids: Vec<Id>,
+        edge_id: EdgeId,
+        node_ids: Vec<NodeId>,
         weight: i16,
-    ) -> GraphItemExistedResult<Id> {
+    ) -> GraphItemExistedResult<EdgeId, NodeId, EdgeId> {
         self.add_edge_with_weight_if_old_not_exist(
             edge_id,
             Edge::undirected_hyper_with_weight(node_ids, weight),
@@ -860,10 +874,10 @@ impl<Id: Identity> Graph<Id> {
     /// If use the mode to create not exist vertex node and children is available, create not exist incidence nodes as vertex node.
     pub fn add_directed_hyper_edge(
         &mut self,
-        edge_id: Id,
-        source_node_ids: Vec<Id>,
-        target_node_ids: Vec<Id>,
-    ) -> GraphItemExistedResult<Id> {
+        edge_id: EdgeId,
+        source_node_ids: Vec<NodeId>,
+        target_node_ids: Vec<NodeId>,
+    ) -> GraphItemExistedResult<EdgeId, NodeId, EdgeId> {
         self.add_directed_hyper_edge_with_weight(edge_id, source_node_ids, target_node_ids, 1)
     }
 
@@ -872,11 +886,11 @@ impl<Id: Identity> Graph<Id> {
     /// If use the mode to create not exist vertex node and children is available, create not exist incidence nodes as vertex node.
     pub fn add_directed_hyper_edge_with_weight(
         &mut self,
-        edge_id: Id,
-        source_node_ids: Vec<Id>,
-        target_node_ids: Vec<Id>,
+        edge_id: EdgeId,
+        source_node_ids: Vec<NodeId>,
+        target_node_ids: Vec<NodeId>,
         weight: i16,
-    ) -> GraphItemExistedResult<Id> {
+    ) -> GraphItemExistedResult<EdgeId, NodeId, EdgeId> {
         self.add_edge_with_weight_if_old_not_exist(
             edge_id,
             Edge::directed_hyper_with_weight(source_node_ids, target_node_ids, weight),
@@ -887,9 +901,9 @@ impl<Id: Identity> Graph<Id> {
     /// If inserted at the edge_id, replace insert at the edge_id
     fn add_edge_with_weight_if_old_not_exist(
         &mut self,
-        edge_id: Id,
-        edge: Edge<Id>,
-    ) -> GraphItemExistedResult<Id> {
+        edge_id: EdgeId,
+        edge: Edge<NodeId, EdgeId>,
+    ) -> GraphItemExistedResult<EdgeId, NodeId, EdgeId> {
         // check old exist
         if self.edges.get_edge(&edge_id).is_some() {
             // old edge exist
@@ -911,8 +925,9 @@ impl<Id: Identity> Graph<Id> {
         // check can construct the edge
         let not_exist_child_ids = self.check_incidence_nodes_can_make_edge(&edge_id, &edge)?;
         if !not_exist_child_ids.is_empty() && !config.can_create_not_exist_vertex_node() {
-            return Err(GraphError::NotExistChildrenCannotMakeEdge(
+            return Err(GraphError::NotExistChildrenCannotMakeAsEdgeIncidence(
                 edge_id,
+                edge.into(),
                 not_exist_child_ids,
             ));
         }
@@ -984,10 +999,10 @@ impl<Id: Identity> Graph<Id> {
         &mut self,
         edge_id: &B,
         new_weight: F,
-    ) -> Result<(), GraphError<Id>>
+    ) -> Result<(), GraphError<NodeId, EdgeId>>
     where
-        Id: Borrow<B>,
-        B: Identity + ToOwned<Owned = Id>,
+        EdgeId: Borrow<B>,
+        B: Identity + ToOwned<Owned = EdgeId>,
         F: FnOnce(model::EdgeKind, i16) -> i16,
     {
         return match self.edges.get_edge_as_mut(edge_id) {
@@ -1010,10 +1025,10 @@ impl<Id: Identity> Graph<Id> {
     /// check children to be able to make group at node id in the parent
     fn check_children_can_be_made_group(
         &self,
-        parent_id: &Option<Id>,
-        node_id: &Id,
-        child_node_ids: &[Id],
-    ) -> Result<Vec<Id>, GraphError<Id>> {
+        parent_id: &Option<NodeId>,
+        node_id: &NodeId,
+        child_node_ids: &[NodeId],
+    ) -> Result<Vec<NodeId>, GraphError<NodeId, EdgeId>> {
         let mut not_exist_children_id = Vec::new();
         let mut exist_error_children_id = Vec::new();
 
@@ -1107,9 +1122,9 @@ impl<Id: Identity> Graph<Id> {
     /// check incidence nodes to be able to make group at edge id
     fn check_incidence_nodes_can_make_edge(
         &self,
-        edge_id: &Id,
-        edge: &store::Edge<Id>,
-    ) -> Result<Vec<Id>, GraphError<Id>> {
+        edge_id: &EdgeId,
+        edge: &store::Edge<NodeId, EdgeId>,
+    ) -> Result<Vec<NodeId>, GraphError<NodeId, EdgeId>> {
         let mut not_exist_children_id = Vec::new();
         let mut exist_error_children_id = Vec::new();
         let mut checkers = Vec::new();
@@ -1171,7 +1186,7 @@ impl<Id: Identity> Graph<Id> {
     }
 
     /// check configure support this edge type.
-    fn is_support_edge(&self, edge: &Edge<Id>) -> bool {
+    fn is_support_edge(&self, edge: &Edge<NodeId, EdgeId>) -> bool {
         use store::Edge::*;
         let config = self.get_config();
 
@@ -1208,14 +1223,14 @@ impl<Id: Identity> Graph<Id> {
     /// return value is Vec<(node_id, edge_id>
     fn remove_node_id_and_illegal_edge_with_collect(
         &mut self,
-        deleted_node_id: &Id,
-        deleted_node: Node<Id>,
-    ) -> Vec<(Id, Id)> {
+        deleted_node_id: &NodeId,
+        deleted_node: Node<NodeId, EdgeId>,
+    ) -> Vec<(NodeId, EdgeId)> {
         let deleted_incidences = deleted_node.into_incidences();
-        let mut will_delete_node_id_edge_id: Vec<(Id, Id)> = Vec::new();
+        let mut will_delete_node_id_edge_id: Vec<(NodeId, EdgeId)> = Vec::new();
         for incidence in deleted_incidences.into_iter() {
             match incidence {
-                Incidence::Undirected { edge_id } => {
+                Incidence::Undirected { edge_id, .. } => {
                     let edge_entry = self.edges.entry(edge_id);
                     match edge_entry {
                         Entry::Vacant(_) => {
@@ -1261,17 +1276,16 @@ impl<Id: Identity> Graph<Id> {
                                 }
                             } else {
                                 panic!(
-                                    "Unknown edge {} for incidence {}",
+                                    "Unknown edge {} at the edge_id {:?} for undirected incidence ",
                                     occupied.get(),
-                                    Incidence::Undirected {
-                                        edge_id: occupied.key()
-                                    }
+                                    occupied.key(),
                                 )
                             }
                         }
                     }
                 }
-                Incidence::DirectedSource { edge_id } | Incidence::DirectedTarget { edge_id } => {
+                Incidence::DirectedSource { edge_id, .. }
+                | Incidence::DirectedTarget { edge_id, .. } => {
                     let edge_entry = self.edges.entry(edge_id);
                     match edge_entry {
                         Entry::Vacant(_) => {
@@ -1321,17 +1335,15 @@ impl<Id: Identity> Graph<Id> {
                                 }
                             } else {
                                 panic!(
-                                    "Unknown edge {} for incidence {}",
+                                    "Unknown edge {} at the edge_id {:?} for directed source or target incidence ",
                                     occupied.get(),
-                                    Incidence::Undirected {
-                                        edge_id: occupied.key()
-                                    }
+                                    occupied.key(),
                                 )
                             }
                         }
                     }
                 }
-                Incidence::UndirectedHyper { edge_id } => {
+                Incidence::UndirectedHyper { edge_id, .. } => {
                     let edge_entry = self.edges.entry(edge_id);
                     match edge_entry {
                         Entry::Vacant(_) => {
@@ -1351,18 +1363,16 @@ impl<Id: Identity> Graph<Id> {
                                 }
                             } else {
                                 panic!(
-                                    "Unknown edge {} for incidence {}",
+                                    "Unknown edge {} at the edge_id {:?} for undirected hyper incidence ",
                                     occupied.get(),
-                                    Incidence::Undirected {
-                                        edge_id: occupied.key()
-                                    }
+                                    occupied.key(),
                                 )
                             }
                         }
                     }
                 }
-                Incidence::DirectedHyperSource { edge_id }
-                | Incidence::DirectedHyperTarget { edge_id } => {
+                Incidence::DirectedHyperSource { edge_id, .. }
+                | Incidence::DirectedHyperTarget { edge_id, .. } => {
                     let edge_entry = self.edges.entry(edge_id);
                     match edge_entry {
                         Entry::Vacant(_) => {
@@ -1408,11 +1418,9 @@ impl<Id: Identity> Graph<Id> {
                                 }
                             } else {
                                 panic!(
-                                    "Unknown edge {} for incidence {}",
+                                    "Unknown edge {} at the edge_id {:?} for directed hyper source or target incidence ",
                                     occupied.get(),
-                                    Incidence::Undirected {
-                                        edge_id: occupied.key()
-                                    }
+                                    occupied.key(),
                                 )
                             }
                         }
@@ -1428,27 +1436,27 @@ impl<Id: Identity> Graph<Id> {
     ///
     /// If exist node, then return the id.
     /// If specify node is group, remove the group node and not remove the group's children.
-    pub fn delete_node<B: ?Sized>(&mut self, node_id: &B) -> Option<Id>
+    pub fn delete_node<B: ?Sized>(&mut self, node_id: &B) -> Option<NodeId>
     where
-        Id: Borrow<B>,
+        NodeId: Borrow<B>,
         B: Identity,
     {
         if let Some((remove_node_id, remove_node)) = self.nodes.remove_with_get_id(node_id) {
             // If exist parent. remove the child from the parent group which have this node as the child.
             if let Some(parent_id) = remove_node.get_parent() {
-                if let Some(_parent) = self.nodes.get_node_as_mut::<Id>(parent_id) {
+                if let Some(_parent) = self.nodes.get_node_as_mut::<NodeId>(parent_id) {
                     _parent.remove_child(node_id);
                 }
             }
 
-            let _children: Vec<Id> = remove_node.get_children().to_vec();
+            let _children: Vec<NodeId> = remove_node.get_children().to_vec();
 
             let will_delete_incidences =
                 self.remove_node_id_and_illegal_edge_with_collect(&remove_node_id, remove_node);
             self.nodes.remove_edges_by_ids(&will_delete_incidences);
 
             for child_id in _children.iter() {
-                if let Some(child) = self.nodes.get_node_as_mut::<Id>(child_id) {
+                if let Some(child) = self.nodes.get_node_as_mut::<NodeId>(child_id) {
                     child.remove_parent();
                 }
             }
@@ -1463,9 +1471,9 @@ impl<Id: Identity> Graph<Id> {
     ///
     /// If exist node, then return the id.
     /// If specify node is group, remove the group node and the group's children.
-    pub fn delete_node_if_group_with_child<B: ?Sized>(&mut self, node_id: &B) -> Option<Id>
+    pub fn delete_node_if_group_with_child<B: ?Sized>(&mut self, node_id: &B) -> Option<NodeId>
     where
-        Id: Borrow<B>,
+        NodeId: Borrow<B>,
         B: Identity,
     {
         self.rec_delete_node_if_group_with_child(node_id, true)
@@ -1479,29 +1487,29 @@ impl<Id: Identity> Graph<Id> {
         &mut self,
         node_id: &B,
         is_root: bool,
-    ) -> Option<Id>
+    ) -> Option<NodeId>
     where
-        Id: Borrow<B>,
+        NodeId: Borrow<B>,
         B: Identity,
     {
         if let Some((remove_node_id, remove_node)) = self.nodes.remove_with_get_id(node_id) {
             if is_root {
                 // If exist parent. remove the child from the parent group which have this node as the child.
                 if let Some(parent_id) = remove_node.get_parent() {
-                    if let Some(_parent) = self.nodes.get_node_as_mut::<Id>(parent_id) {
+                    if let Some(_parent) = self.nodes.get_node_as_mut::<NodeId>(parent_id) {
                         _parent.remove_child(node_id);
                     }
                 }
             }
 
-            let mut _children: Vec<Id> = remove_node.get_children().to_vec();
+            let mut _children: Vec<NodeId> = remove_node.get_children().to_vec();
 
             let will_delete_incidences =
                 self.remove_node_id_and_illegal_edge_with_collect(&remove_node_id, remove_node);
             self.nodes.remove_edges_by_ids(&will_delete_incidences);
 
             for child_id in _children.iter() {
-                self.rec_delete_node_if_group_with_child::<Id>(child_id, false);
+                self.rec_delete_node_if_group_with_child::<NodeId>(child_id, false);
             }
 
             Some(remove_node_id)
@@ -1514,28 +1522,28 @@ impl<Id: Identity> Graph<Id> {
     ///
     /// If exist node, then return the id.
     /// If specify node is group, remove the group node and not remove the group's children.
-    pub fn delete_node_with_edge<B: ?Sized>(&mut self, node_id: &B) -> Option<Id>
+    pub fn delete_node_with_edge<B: ?Sized>(&mut self, node_id: &B) -> Option<NodeId>
     where
-        Id: Borrow<B>,
+        NodeId: Borrow<B>,
         B: Identity,
     {
         if let Some((remove_node_id, remove_node)) = self.nodes.remove_with_get_id(node_id) {
             // If exist parent. remove the child from the parent group which have this node as the child.
             if let Some(parent_id) = remove_node.get_parent() {
-                if let Some(_parent) = self.nodes.get_node_as_mut::<Id>(parent_id) {
+                if let Some(_parent) = self.nodes.get_node_as_mut::<NodeId>(parent_id) {
                     _parent.remove_child(node_id);
                 }
             }
 
-            let _children: Vec<Id> = remove_node.get_children().to_vec();
+            let _children: Vec<NodeId> = remove_node.get_children().to_vec();
 
             let edge_ids = remove_node.incidences_into_edge_ids();
             for edge_id in edge_ids.iter() {
-                self.delete_edge::<Id>(edge_id);
+                self.delete_edge::<EdgeId>(edge_id);
             }
 
             for child_id in _children.iter() {
-                if let Some(child) = self.nodes.get_node_as_mut::<Id>(child_id) {
+                if let Some(child) = self.nodes.get_node_as_mut::<NodeId>(child_id) {
                     child.remove_parent();
                 }
             }
@@ -1553,9 +1561,9 @@ impl<Id: Identity> Graph<Id> {
     pub fn delete_node_with_edge_if_group_with_child<B: ?Sized>(
         &mut self,
         node_id: &B,
-    ) -> Option<Id>
+    ) -> Option<NodeId>
     where
-        Id: Borrow<B>,
+        NodeId: Borrow<B>,
         B: Identity,
     {
         self.rec_delete_node_with_edge_if_group_with_child(node_id, true)
@@ -1569,30 +1577,30 @@ impl<Id: Identity> Graph<Id> {
         &mut self,
         node_id: &B,
         is_root: bool,
-    ) -> Option<Id>
+    ) -> Option<NodeId>
     where
-        Id: Borrow<B>,
+        NodeId: Borrow<B>,
         B: Identity,
     {
         if let Some((remove_node_id, remove_node)) = self.nodes.remove_with_get_id(node_id) {
             if is_root {
                 // If exist parent. remove the child from the parent group which have this node as the child.
                 if let Some(parent_id) = remove_node.get_parent() {
-                    if let Some(_parent) = self.nodes.get_node_as_mut::<Id>(parent_id) {
+                    if let Some(_parent) = self.nodes.get_node_as_mut::<NodeId>(parent_id) {
                         _parent.remove_child(node_id);
                     }
                 }
             }
 
-            let mut _children: Vec<Id> = remove_node.get_children().to_vec();
+            let mut _children: Vec<NodeId> = remove_node.get_children().to_vec();
 
             let edge_ids = remove_node.incidences_into_edge_ids();
             for edge_id in edge_ids.iter() {
-                self.delete_edge::<Id>(edge_id);
+                self.delete_edge::<EdgeId>(edge_id);
             }
 
             for child_id in _children.iter() {
-                self.rec_delete_node_with_edge_if_group_with_child::<Id>(child_id, false);
+                self.rec_delete_node_with_edge_if_group_with_child::<NodeId>(child_id, false);
             }
 
             Some(remove_node_id)
@@ -1604,9 +1612,9 @@ impl<Id: Identity> Graph<Id> {
     /// delete edge without delete node.
     ///
     /// If exist edge, then return the id.
-    pub fn delete_edge<B: ?Sized>(&mut self, edge_id: &B) -> Option<Id>
+    pub fn delete_edge<B: ?Sized>(&mut self, edge_id: &B) -> Option<EdgeId>
     where
-        Id: Borrow<B>,
+        EdgeId: Borrow<B>,
         B: Identity,
     {
         if let Some((remove_edge_id, remove_edge)) = self.edges.remove_with_get_id(edge_id) {
@@ -1626,15 +1634,15 @@ impl<Id: Identity> Graph<Id> {
     ///
     /// If exist edge, then return the id.
     /// If specify edge's incidence node is group, remove the group node and not remove the group's children.
-    pub fn delete_edge_with_node<B: ?Sized>(&mut self, edge_id: &B) -> Option<Id>
+    pub fn delete_edge_with_node<B: ?Sized>(&mut self, edge_id: &B) -> Option<EdgeId>
     where
-        Id: Borrow<B>,
+        EdgeId: Borrow<B>,
         B: Identity,
     {
         if let Some((remove_edge_id, remove_edge)) = self.edges.remove_with_get_id(edge_id) {
             let incidence_node_ids = remove_edge.into_incidence_node_ids();
             for incidence_node_id in incidence_node_ids.iter() {
-                self.delete_node::<Id>(incidence_node_id);
+                self.delete_node::<NodeId>(incidence_node_id);
             }
 
             Some(remove_edge_id)
@@ -1650,15 +1658,15 @@ impl<Id: Identity> Graph<Id> {
     pub fn delete_edge_with_node_if_group_with_child<B: ?Sized>(
         &mut self,
         edge_id: &B,
-    ) -> Option<Id>
+    ) -> Option<EdgeId>
     where
-        Id: Borrow<B>,
+        EdgeId: Borrow<B>,
         B: Identity,
     {
         if let Some((remove_edge_id, remove_edge)) = self.edges.remove_with_get_id(edge_id) {
             let incidence_node_ids = remove_edge.into_incidence_node_ids();
             for incidence_node_id in incidence_node_ids.iter() {
-                self.delete_node_if_group_with_child::<Id>(incidence_node_id);
+                self.delete_node_if_group_with_child::<NodeId>(incidence_node_id);
             }
 
             Some(remove_edge_id)
