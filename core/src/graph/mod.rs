@@ -55,7 +55,7 @@ pub mod helper {
     }
 
     /// If this value is Ok(Some(id)), then old graph item exist at the id.
-    pub type GraphItemExistedResult<Id: Identity, NodeId: Identity, EdgeId: Identity> =
+    pub type GraphItemExistedResult<Id, NodeId, EdgeId> =
         Result<Option<Id>, GraphError<NodeId, EdgeId>>;
 
     impl<NodeId: Identity, EdgeId: Identity> NodeExistedResultExt<NodeId, EdgeId>
@@ -198,7 +198,6 @@ use crate::util::{Identity, Weight};
 pub use config::*;
 use helper::*;
 use std::collections::btree_map::Entry;
-use std::marker::PhantomData;
 
 /// graph without layout
 #[derive(Debug, Eq, PartialEq, Clone)]
