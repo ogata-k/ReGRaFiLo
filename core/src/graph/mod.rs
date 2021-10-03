@@ -609,10 +609,12 @@ impl<NodeId: Identity, EdgeId: Identity> Graph<NodeId, EdgeId> {
             }
 
             // check parent
-            if let Some(parent) = self.nodes.get_node(&_parent_id) {
+            if let Some(parent) = self.nodes.get_node_as_mut(&_parent_id) {
                 if !parent.is_group() {
                     return Err(GraphError::NotExistGroup(parent_id.unwrap()));
                 }
+
+                parent.add_child(node_id.clone());
             } else {
                 return Err(GraphError::NotExistGroup(parent_id.unwrap()));
             }
